@@ -1,4 +1,5 @@
 Require Export Stlc.SpecSyntax.
+Require Export Coq.Relations.Relation_Operators.
 
 (** ** Evaluation *)
 
@@ -94,7 +95,7 @@ Fixpoint ECtx (C: PCtx) : Prop :=
 
 Reserved Notation "t₁ --> t₂" (at level 40).
 Inductive eval : Tm → Tm → Prop :=
-  | eval_ctx {C t t'} :
+  | eval_ctx C {t t'} :
       t --> t' → ECtx C → pctx_app t C --> pctx_app t' C
   | eval_beta {τ₁ t₁ t₂} :
       Value t₂ →
@@ -126,6 +127,9 @@ where "t₁ --> t₂" := (eval t₁ t₂).
 Inductive Terminating (t : Tm) : Prop :=
   | TerminatingI : (∀ t', t --> t' → Terminating t') → Terminating t.
 Notation "t ⇓" := (Terminating t) (at level 8, format "t ⇓").
+
+Definition evalStar := clos_refl_trans_1n Tm eval.
+Definition evalPlus := clos_trans_1n Tm eval.
 
 (* Local Variables: *)
 (* coq-load-path: (("." "Stlc")) *)

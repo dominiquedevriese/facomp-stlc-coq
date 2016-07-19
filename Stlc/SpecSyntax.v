@@ -55,6 +55,10 @@ Inductive Ty : Set :=
   | tprod (τ₁ τ₂: Ty)
   | tsum (τ₁ τ₂: Ty).
 
+Notation "A ⊎ B" := (tsum A B) (at level 85, right associativity).
+Notation "A × B" := (tprod A B) (at level 85, right associativity).
+Notation "A ⇒ B" := (tarr A B) (at level 85, right associativity).
+
 Inductive Tm : Set :=
   | var (i: Ix)
   | abs (τ: Ty) (t: Tm)
