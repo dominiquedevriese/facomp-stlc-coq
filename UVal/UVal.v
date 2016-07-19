@@ -25,35 +25,35 @@ Definition inUnit (n : nat) : Tm := abs tunit (inr (inl (var 0))).
 
 Lemma inUnitT {Γ n} : ⟪ Γ ⊢ inUnit n : tunit ⇒ UVal (S n) ⟫.
 Proof.
-  unfold inUnit, UVal. crushTyping.
+  unfold inUnit. crushTyping.
 Qed.
 
 Definition inBool (n : nat) : Tm := abs tbool (inr (inr (inl (var 0)))).
 
 Lemma inBoolT {Γ n} : ⟪ Γ ⊢ inBool n : tbool ⇒ UVal (S n) ⟫.
 Proof.
-  unfold inBool, UVal. crushTyping.
+  unfold inBool. crushTyping.
 Qed.
 
 Definition inProd (n : nat) : Tm := abs (UVal n × UVal n) (inr (inr (inr (inl (var 0))))).
 
 Lemma inProd_T {Γ n} : ⟪ Γ ⊢ inProd n : (UVal n × UVal n) ⇒ UVal (S n) ⟫.
 Proof.
-  unfold inProd, UVal. crushTyping.
+  unfold inProd. crushTyping.
 Qed.
 
 Definition inArr (n : nat) : Tm := abs (UVal n ⇒ UVal n) (inr (inr (inr (inr (inl (var 0)))))).
 
 Lemma inArr_T {Γ n} : ⟪ Γ ⊢ inArr n : (UVal n ⇒ UVal n) ⇒ UVal (S n) ⟫.
 Proof.
-  unfold inArr, UVal. crushTyping.
+  unfold inArr. crushTyping.
 Qed.
 
 Definition inSum (n : nat) : Tm := abs (UVal n ⊎ UVal n) (inr (inr (inr (inr (inr (var 0)))))).
 
 Lemma inSum_T {Γ n} : ⟪ Γ ⊢ inSum n : (UVal n ⊎ UVal n) ⇒ UVal (S n) ⟫.
 Proof.
-  unfold inSum, UVal. crushTyping.
+  unfold inSum. crushTyping.
 Qed.
 
 
