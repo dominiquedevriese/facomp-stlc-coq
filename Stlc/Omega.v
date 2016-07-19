@@ -4,26 +4,27 @@ Require Export Stlc.SpecTyping.
 Require Export Stlc.LemmasTyping.
 Require Export Stlc.LemmasEvaluation.
 
-Definition stlcOmega (ty : Ty) : Tm := app (fixt tunit ty (abs (tunit ⇒ ty) (var 0))) unit. 
+Definition stlcOmega (ty : Ty) : Tm :=
+  app (fixt tunit ty (abs (tunit ⇒ ty) (var 0))) unit.
 
 Lemma stlcOmegaT {Γ ty} : ⟪ Γ ⊢ stlcOmega ty : ty ⟫.
 Proof.
   unfold stlcOmega. crushTyping.
 Qed.
 
-Definition stlcOmegaHelp (ty : Ty) : Tm := app (abs tunit (app (fixt tunit ty (abs (tunit ⇒ ty) (var 0)))[wkl 1] (var 0))) unit.
+Definition stlcOmegaHelp (ty : Ty) : Tm :=
+  app (abs tunit (app (fixt tunit ty (abs (tunit ⇒ ty) (var 0))) (var 0))) unit.
 
-
-Lemma stlcOmega_cycles {ty} : evalPlus (stlcOmega ty) (stlcOmega ty).
+Lemma stlcOmega_cycles {ty} : stlcOmega ty -->+ stlcOmega ty.
 Proof.
-  apply t1n_trans with (stlcOmegaHelp ty).
-  * unfold stlcOmega, stlcOmegaHelp. refine (eval_ctx (papp₁ phole unit) _ _); constructor.
-  * apply t1n_step.
-    unfold stlcOmega, stlcOmegaHelp.
-    repeat constructor.
+  cut (stlcOmega ty --> stlcOmegaHelp ty ∧ stlcOmegaHelp ty --> stlcOmega ty).
+  - destruct 1. eauto with eval.
+  - unfold stlcOmega, stlcOmegaHelp; split.
+    + apply (eval_ctx (papp₁ phole unit)); constructor.
+    + repeat constructor.
 Qed.
-    
-Lemma stlcOmega_div {ty} : ~Terminating (stlcOmega ty).
+
+Lemma stlcOmega_div {ty} : (stlcOmega ty)⇑.
 Proof.
   apply cycles_dont_terminate.
   apply stlcOmega_cycles.

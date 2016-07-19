@@ -90,6 +90,16 @@ Proof.
     crushTyping.
 Qed.
 
+Lemma termination_value {t τ} (wt: ⟪ empty ⊢ t : τ ⟫) :
+  t⇓ → ∃ t', t -->* t' ∧ Value t'.
+Proof.
+  induction 1.
+  destruct (progress wt) as [|(t' & ?)].
+  - eauto with eval.
+  - destruct (H0 t' H1) as (t'' & vt'' & ?);
+      eauto using preservation with eval.
+Qed.
+
 (* Local Variables: *)
 (* coq-load-path: (("." "Stlc")) *)
 (* End: *)

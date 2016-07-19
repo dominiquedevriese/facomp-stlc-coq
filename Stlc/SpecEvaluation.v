@@ -93,7 +93,7 @@ Fixpoint ECtx (C: PCtx) : Prop :=
 (*     | cfixt τ₁ τ₂ ℂ   => fixt τ₁ τ₂ (ectx_app ℂ t') *)
 (*   end. *)
 
-Reserved Notation "t₁ --> t₂" (at level 40).
+Reserved Notation "t₁ --> t₂" (at level 80).
 Inductive eval : Tm → Tm → Prop :=
   | eval_ctx C {t t'} :
       t --> t' → ECtx C → pctx_app t C --> pctx_app t' C
@@ -120,16 +120,28 @@ Inductive eval : Tm → Tm → Prop :=
       Value t₁ →
       seq t₁ t₂ --> t₂
   | eval_fix {τ₁ τ₂ t} :
-      fixt τ₁ τ₂ (abs (tarr τ₁ τ₂) t) -->
-      subst0 (abs τ₁ (app (fixt τ₁ τ₂ (abs (tarr τ₁ τ₂) t))[wkl 1] (var 0))) t
+      fixt τ₁ τ₂ (abs (τ₁ ⇒ τ₂) t) -->
+      subst0 (abs τ₁ (app (fixt τ₁ τ₂ (abs (τ₁ ⇒ τ₂) t[wkl 1 ↑])) (var 0))) t
 where "t₁ --> t₂" := (eval t₁ t₂).
 
-Inductive Terminating (t : Tm) : Prop :=
+Inductive Terminating (t: Tm) : Prop :=
   | TerminatingI : (∀ t', t --> t' → Terminating t') → Terminating t.
 Notation "t ⇓" := (Terminating t) (at level 8, format "t ⇓").
 
-Definition evalStar := clos_refl_trans_1n Tm eval.
-Definition evalPlus := clos_trans_1n Tm eval.
+Lemma TerminatingD (t: Tm) (m: t⇓) :
+  ∀ t', t --> t' → Terminating t'.
+Proof. inversion m; auto. Qed.
+
+Notation "t ⇑" := (not (Terminating t)) (at level 8, format "t ⇑").
+
+(* Definition evalStar := clos_refl_trans_1n Tm eval. *)
+(* Definition evalPlus := clos_trans_1n Tm eval. *)
+Notation "t₁ -->* t₂" := (clos_refl_trans_1n Tm eval t₁ t₂) (at level 80).
+Notation "t₁ -->+ t₂" := (clos_trans_1n Tm eval t₁ t₂) (at level 80).
+
+Hint Constructors eval : eval.
+Hint Constructors clos_refl_trans_1n : eval.
+Hint Constructors clos_trans_1n : eval.
 
 (* Local Variables: *)
 (* coq-load-path: (("." "Stlc")) *)
