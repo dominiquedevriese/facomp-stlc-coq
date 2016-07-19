@@ -89,25 +89,10 @@ Hint Rewrite wkr_dunion : infrastructure.
 
 (** *** Renaming *)
 
-Lemma apply_ren_id (i: Ix) :
-  ren_id i = i.
-Proof. reflexivity. Qed.
-Hint Rewrite apply_ren_id : infrastructure.
-
-Lemma apply_ren_up_S (ξ: Ren) (i: Ix) :
-  (ξ ↑) (S i) = wkl 1 (ξ i).
-Proof. reflexivity. Qed.
-Hint Rewrite apply_ren_up_S : infrastructure.
-
 Lemma apply_ren_ups_wkl (ξ: Ren) (δ: Dom) (i: Ix) :
   (ξ ↑⋆ δ) (wkl δ i) = wkl δ (ξ i).
 Proof. induction δ; crush. Qed.
 Hint Rewrite apply_ren_ups_wkl : infrastructure.
-
-Lemma apply_ren_comp (ξ₁ ξ₂ : Ren) :
-  ∀ i, (ξ₁ >-> ξ₂) i = ξ₂ (ξ₁ i).
-Proof. reflexivity. Qed.
-Hint Rewrite apply_ren_comp : infrastructure.
 
 Lemma ren_id_up : ren_id ↑ = ren_id.
 Proof. extensionality i; destruct i; auto. Qed.
@@ -161,15 +146,6 @@ Hint Rewrite ren_comp_assoc : infrastructure.
 
 (** *** Substitution *)
 
-Lemma apply_sub_id : ∀ i, sub_id i = var i.
-Proof. reflexivity. Qed.
-Hint Rewrite apply_sub_id : infrastructure.
-
-Lemma apply_sub_up_S (ζ: Sub) (i: Ix) :
-  (ζ ↑) (S i) = (ζ i)[wkl 1].
-Proof. reflexivity. Qed.
-Hint Rewrite apply_sub_up_S : infrastructure.
-
 Lemma apply_sub_ups_wkl (ζ: Sub) (δ: Dom) (i: Ix) :
   (ζ ↑⋆ δ) (wkl δ i) = (ζ i)[wkl δ].
 Proof.
@@ -177,11 +153,6 @@ Proof.
   rewrite IHδ; crush.
 Qed.
 Hint Rewrite apply_sub_ups_wkl : infrastructure.
-
-Lemma apply_sub_comp (ζ₁ ζ₂ : Sub) :
-  ∀ i, (ζ₁ >=> ζ₂) i = (ζ₁ i)[ζ₂].
-Proof. reflexivity. Qed.
-Hint Rewrite apply_sub_comp : infrastructure.
 
 Lemma ren_toSub_up ξ : ⌈ξ⌉ ↑ = ⌈ξ ↑⌉.
 Proof. extensionality i; destruct i; crush. Qed.
@@ -286,11 +257,6 @@ Lemma sub_comp_assoc ζ₁ ζ₂ ζ₃ :
   ζ₁ >=> (ζ₂ >=> ζ₃) = (ζ₁ >=> ζ₂) >=> ζ₃.
 Proof. extensionality i; crush. Qed.
 Hint Rewrite sub_comp_assoc : infrastructure.
-
-Lemma apply_ren_toSub ξ i :
-  ⌈ξ⌉ i = var (ξ i).
-Proof. reflexivity. Qed.
-Hint Rewrite apply_ren_toSub : infrastructure.
 
 (** *** Environments *)
 

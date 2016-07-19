@@ -206,20 +206,20 @@ Notation "xs · x" := (snoc xs x) (at level 55, left associativity).
 Arguments snoc {_} xs x i.
 
 (** Moving morphisms under binders *)
-Class UpArr (mor: Type) := up : mor → mor.
+Class UpArr (A: Type) := up : (Ix → A) → (Ix → A).
 
 (** Never unfold automatically. We encode the desired reduction
     behaviour using rewrite rules. *)
-Arguments up {_ _} ζ : simpl never.
+Arguments up {_ _} ξ !i /.
 Notation "m ↑" :=
   (up m) (at level 53, left associativity).
 
-Fixpoint ups {mor: Type} `{UpArr mor} (υ: mor) (δ: Dom) : mor :=
+Fixpoint ups {A: Type} `{UpArr A} (υ: Ix → A) (δ: Dom) : (Ix → A) :=
   match δ with
     | O   => υ
     | S δ => ups υ δ ↑
   end.
-Arguments ups {_ _} υ !δ /.
+Arguments ups {_ _} υ !δ / i.
 Notation "m ↑⋆ δ" :=
   (ups m δ) (at level 53, left associativity).
 
@@ -237,8 +237,12 @@ Definition WsRen (γ₁ γ₂: Dom) (ξ: Ren) : Prop :=
 
 Definition ren_comp (ξ₁ ξ₂ : Ren) : Ren := fun i => ξ₂ (ξ₁ i).
 Notation "ξ₁ >-> ξ₂" := (ren_comp ξ₁ ξ₂) (at level 56).
+Arguments ren_comp ξ₁ ξ₂ i /.
+
 Definition ren_id : Ren := fun i => i.
-Instance ren_up : UpArr Ren := fun ξ => (ξ >-> wkl 1) · 0.
+Arguments ren_id i /.
+
+Instance ren_up : UpArr Ix := fun ξ => (ξ >-> wkl 1) · 0.
 
 Instance applyRenTm : Apply Ren Tm :=
   fix renTm (ξ: Ren) (t : Tm) : Tm :=
@@ -278,9 +282,13 @@ Definition WsSub (γ₁ γ₂: Dom) (ζ: Sub) : Prop :=
   ∀ i, γ₁ ∋ i → wsTm γ₂ (ζ i).
 
 Definition sub_id : Sub := fun i => var i.
+Arguments sub_id i /.
+
 Definition sub_comp_ren (ζ: Sub) (ξ: Ren) : Sub :=
   fun i => (ζ i)[ξ].
-Instance sub_up : UpArr Sub :=
+Arguments sub_comp_ren ζ ξ i /.
+
+Instance sub_up : UpArr Tm :=
   fun ζ => sub_comp_ren ζ (wkl 1) · var 0.
 
 Instance applySubTm : Apply Sub Tm :=
@@ -309,6 +317,7 @@ Arguments sub_comp ζ₁ ζ₂ i /.
 
 Definition ren_toSub (ξ: Ren) : Sub := fun i => var (ξ i).
 Notation "⌈ ρ ⌉" := (ren_toSub ρ) (format "⌈ ρ ⌉").
+Arguments ren_toSub ξ i /.
 
 Fixpoint sub_beta (δ: Dom) (ζ: Sub) : Sub :=
   fun i =>

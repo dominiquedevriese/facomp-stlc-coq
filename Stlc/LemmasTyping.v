@@ -298,6 +298,7 @@ Lemma wtSub_sub_beta (Γ Δ: Env) :
 Proof.
   unfold WtSub; induction Δ; crush.
   - destruct i; crush.
+  - destruct i; crush.
     apply IHΔ; crush.
 Qed.
 Hint Resolve wtSub_sub_beta : ws.
