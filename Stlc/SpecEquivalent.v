@@ -8,7 +8,3 @@ Definition PCtxEquivalent (Γ: Env) (t₁ t₂: Tm) (τ: Ty) : Prop :=
 Notation "⟪  Γ ⊢ t₁ ≃ t₂ : τ  ⟫" :=
   (PCtxEquivalent Γ t₁ t₂ τ)
   (at level 0, Γ at level 10, t₁ at level 10, t₂ at level 10, τ at level 10).
-
-(* Local Variables: *)
-(* coq-load-path: (("." "Stlc")) *)
-(* End: *)

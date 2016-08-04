@@ -99,7 +99,3 @@ Proof.
   - destruct (H0 t' H1) as (t'' & vt'' & ?);
       eauto using preservation with eval.
 Qed.
-
-(* Local Variables: *)
-(* coq-load-path: (("." "Stlc")) *)
-(* End: *)

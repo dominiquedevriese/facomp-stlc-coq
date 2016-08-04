@@ -29,7 +29,3 @@ Proof.
   apply cycles_dont_terminate.
   apply stlcOmega_cycles.
 Qed.
-
-(* Local Variables: *)
-(* coq-load-path: (("." "Stlc")) *)
-(* End: *)

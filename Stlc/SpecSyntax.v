@@ -332,7 +332,3 @@ Arguments sub_beta !δ ζ !i /.
 
 Definition sub_beta1 (t: Tm) : Sub := sub_beta 1 (sub_id · t).
 Definition subst0 (t' t: Tm) : Tm := t[sub_beta1 t'].
-
-(* Local Variables: *)
-(* coq-load-path: (("." "Stlc")) *)
-(* End: *)

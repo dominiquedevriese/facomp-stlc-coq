@@ -227,7 +227,3 @@ Qed.
 Lemma cycles_dont_terminate {t} :
   t -->+ t → t⇑.
 Proof. induction 2 using Terminating_ind'; eauto. Qed.
-
-(* Local Variables: *)
-(* coq-load-path: (("." "Stlc")) *)
-(* End: *)

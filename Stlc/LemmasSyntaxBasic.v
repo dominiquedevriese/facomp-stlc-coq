@@ -269,7 +269,3 @@ Lemma dom_ecat (Γ₁ Γ₂: Env) :
   dom (Γ₁ ▻▻ Γ₂) = dom Γ₁ ∪ dom Γ₂.
 Proof. induction Γ₂; crush. Qed.
 Hint Rewrite dom_ecat : infrastructure.
-
-(* Local Variables: *)
-(* coq-load-path: (("." "Stlc")) *)
-(* End: *)

@@ -62,7 +62,3 @@ Lemma eq_pctx_pfixt c t τ₁ τ₂ c₁ :
   c = pfixt τ₁ τ₂ c₁ → fixt τ₁ τ₂ (pctx_app t c₁) = pctx_app t c.
 Proof. intros; subst; reflexivity. Qed.
 Hint Resolve eq_pctx_pfixt : pctx.
-
-(* Local Variables: *)
-(* coq-load-path: (("." "Stlc")) *)
-(* End: *)

@@ -344,7 +344,3 @@ Ltac crushTyping :=
 
 Hint Extern 20 (⟪ _ ⊢ _ : _ ⟫) =>
   crushTyping : typing.
-
-(* Local Variables: *)
-(* coq-load-path: (("." "Stlc")) *)
-(* End: *)

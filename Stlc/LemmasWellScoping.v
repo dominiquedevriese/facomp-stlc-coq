@@ -363,7 +363,3 @@ Lemma wsSub_sub_beta1 γ t (wt: wsTm γ t) :
   WsSub (S γ) γ (sub_beta1 t).
 Proof. apply (wsSub_sub_beta γ 1); crush. Qed.
 Hint Resolve wsSub_sub_beta1 : ws.
-
-(* Local Variables: *)
-(* coq-load-path: (("." "Stlc")) *)
-(* End: *)

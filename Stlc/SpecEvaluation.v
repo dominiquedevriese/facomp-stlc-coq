@@ -142,7 +142,3 @@ Notation "t₁ -->+ t₂" := (clos_trans_1n Tm eval t₁ t₂) (at level 80).
 Hint Constructors eval : eval.
 Hint Constructors clos_refl_trans_1n : eval.
 Hint Constructors clos_trans_1n : eval.
-
-(* Local Variables: *)
-(* coq-load-path: (("." "Stlc")) *)
-(* End: *)

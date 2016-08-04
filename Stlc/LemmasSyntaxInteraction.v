@@ -118,7 +118,3 @@ Proof.
   f_equal; auto using sub_beta1_comm.
 Qed.
 Hint Rewrite subst0_comm : infrastructure.
-
-(* Local Variables: *)
-(* coq-load-path: (("." "Stlc")) *)
-(* End: *)

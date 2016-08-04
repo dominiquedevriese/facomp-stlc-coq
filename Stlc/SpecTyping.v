@@ -162,7 +162,3 @@ Definition WtRen (Γ₁ Γ₂: Env) (ξ: Ren) : Prop :=
   ∀ i T, ⟪ i : T ∈ Γ₁ ⟫ → ⟪ (ξ i) : T ∈ Γ₂ ⟫.
 Definition WtSub (Γ₁ Γ₂: Env) (ζ: Sub) : Prop :=
   ∀ i T, ⟪ i : T ∈ Γ₁ ⟫ → ⟪ Γ₂ ⊢ (ζ i) : T ⟫.
-
-(* Local Variables: *)
-(* coq-load-path: (("." "Stlc")) *)
-(* End: *)

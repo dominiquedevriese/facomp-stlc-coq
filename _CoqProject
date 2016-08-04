@@ -1,0 +1,14 @@
+-R . FaComp
+Stlc/LemmasEvaluation.v
+Stlc/LemmasProgramContext.v
+Stlc/LemmasSyntaxBasic.v
+Stlc/LemmasSyntaxInteraction.v
+Stlc/LemmasTyping.v
+Stlc/LemmasWellScoping.v
+Stlc/Omega.v
+Stlc/SpecEquivalent.v
+Stlc/SpecEvaluation.v
+Stlc/SpecSyntax.v
+Stlc/SpecTyping.v
+Stlc/TypeSafety.v
+UVal/UVal.v
