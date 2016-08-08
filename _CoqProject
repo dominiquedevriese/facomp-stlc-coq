@@ -13,4 +13,10 @@ Stlc/SpecEvaluation.v
 Stlc/SpecSyntax.v
 Stlc/SpecTyping.v
 Stlc/TypeSafety.v
+Utlc/Inst.v
+Utlc/LemmasEvaluation.v
+Utlc/LemmasScoping.v
+Utlc/SpecEvaluation.v
+Utlc/SpecScoping.v
+Utlc/SpecSyntax.v
 UVal/UVal.v
