@@ -1,6 +1,6 @@
+Require Export Db.Lemmas.
 Require Export Stlc.SpecSyntax.
 Require Export Stlc.SpecEvaluation.
-Require Export Stlc.LemmasSyntaxBasic.
 Require Export Coq.Program.Tactics.
 
 (* ** Evaluation contexts *)
@@ -166,7 +166,7 @@ Qed.
 Lemma inversion_termination_evalcontext :
   ∀ C t, ECtx C → Terminating (pctx_app t C) → Terminating t.
 Proof.
-  induction C; crush; destruct_conjs;
+  induction C; crushStlc; destruct_conjs;
   try match goal with
         | [ H: False |- _ ] => destruct H
       end.

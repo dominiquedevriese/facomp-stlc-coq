@@ -1,5 +1,5 @@
-Require Export SpecTyping.
-Require Export SpecEvaluation.
+Require Export Stlc.SpecTyping.
+Require Export Stlc.SpecEvaluation.
 
 Definition PCtxEquivalent (Γ: Env) (t₁ t₂: Tm) (τ: Ty) : Prop :=
   ∀ C τ',

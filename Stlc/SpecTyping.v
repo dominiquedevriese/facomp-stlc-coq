@@ -1,9 +1,9 @@
-Require Export SpecSyntax.
+Require Export Stlc.SpecSyntax.
 
 (** * Typing *)
 
 Reserved Notation "⟪  i : T ∈ Γ  ⟫"
-  (at level 0, i at level 10, Γ at level 10).
+  (at level 0, i at level 98, Γ at level 98).
 Inductive GetEvar : Env → Ix → Ty → Prop :=
   | GetEvarHere {Γ T} :
       ⟪   O : T ∈ Γ ▻ T  ⟫
@@ -13,7 +13,7 @@ Inductive GetEvar : Env → Ix → Ty → Prop :=
 where "⟪  i : T ∈ Γ  ⟫" := (GetEvar Γ i T).
 
 Reserved Notation "⟪  Γ ⊢ t : T  ⟫"
-  (at level 0, Γ at level 10, t at level 10, T at level 10 ).
+  (at level 0, Γ at level 98, t at level 98, T at level 98 ).
 Inductive Typing (Γ: Env) : Tm → Ty → Prop :=
   | WtVar {i T} :
       ⟪ i : T ∈ Γ ⟫ →
@@ -67,9 +67,9 @@ Inductive Typing (Γ: Env) : Tm → Ty → Prop :=
 where "⟪  Γ ⊢ t : T  ⟫" := (Typing Γ t T).
 
 Reserved Notation "⟪ ⊢ C : Γ₀ , τ₀ → Γ , τ ⟫"
-  (at level 0, C at level 10,
-   Γ₀ at level 10, τ₀ at level 10,
-   Γ at level 10, τ at level 10,
+  (at level 0, C at level 98,
+   Γ₀ at level 98, τ₀ at level 98,
+   Γ at level 98, τ at level 98,
    format "⟪  ⊢  C  :  Γ₀ ,  τ₀  →  Γ ,  τ  ⟫").
 Inductive PCtxTyping (Γ₀: Env) (τ₀: Ty) (Γ: Env) : PCtx → Ty → Prop :=
   | WtPAbs {C τ₁ τ₂} :
@@ -158,7 +158,7 @@ Proof.
   induction wC₂; cbn; eauto using PCtxTyping.
 Qed.
 
-Definition WtRen (Γ₁ Γ₂: Env) (ξ: Ren) : Prop :=
+Definition WtRen (Γ₁ Γ₂: Env) (ξ: Sub Ix) : Prop :=
   ∀ i T, ⟪ i : T ∈ Γ₁ ⟫ → ⟪ (ξ i) : T ∈ Γ₂ ⟫.
-Definition WtSub (Γ₁ Γ₂: Env) (ζ: Sub) : Prop :=
+Definition WtSub (Γ₁ Γ₂: Env) (ζ: Sub Tm) : Prop :=
   ∀ i T, ⟪ i : T ∈ Γ₁ ⟫ → ⟪ Γ₂ ⊢ (ζ i) : T ⟫.

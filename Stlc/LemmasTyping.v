@@ -1,5 +1,7 @@
+Require Export Db.Spec.
+Require Export Db.Lemmas.
+Require Export Stlc.Inst.
 Require Export Stlc.SpecTyping.
-Require Export Stlc.LemmasSyntaxBasic.
 
 Hint Constructors GetEvar : ws.
 
@@ -60,8 +62,9 @@ Ltac crush :=
   intros;
   repeat
     (cbn in *;
-     repeat crushRewriteH;
-     repeat crushSyntaxMatchH;
+     crushRewriteH;
+     repeat crushDbMatchH;
+     repeat crushStlcSyntaxMatchH;
      repeat crushTypingMatchH);
   try discriminate;
   eauto with ws.
@@ -103,22 +106,22 @@ Lemma wtRen_closed ξ Δ : WtRen empty Δ ξ.
 Proof. unfold WtRen; intros. inversion H. Qed.
 Hint Resolve wtRen_closed : ws.
 
-Lemma wtRen_id (Γ: Env) : WtRen Γ Γ ren_id.
-Proof. unfold WtRen, ren_id; auto. Qed.
-Hint Resolve wtRen_id : ws.
+Lemma wtRen_idm (Γ: Env) : WtRen Γ Γ (idm Ix).
+Proof. unfold WtRen, idm; auto. Qed.
+Hint Resolve wtRen_idm : ws.
 
 Lemma wtRen_comp {Γ₁ Γ₂ Γ₃ ξ₁ ξ₂} :
   WtRen Γ₁ Γ₂ ξ₁ → WtRen Γ₂ Γ₃ ξ₂ → WtRen Γ₁ Γ₃ (ξ₁ >-> ξ₂).
-Proof. unfold WtRen, ren_comp; auto. Qed.
+Proof. unfold WtRen, comp; simpl; auto. Qed.
 Hint Resolve wtRen_comp : ws.
 
 (*************************************************************************)
 
-Definition WtRenNatural (Γ₁ Γ₂: Env) (ξ₁ ξ₂: Ren) : Prop :=
+Definition WtRenNatural (Γ₁ Γ₂: Env) (ξ₁ ξ₂: Sub Ix) : Prop :=
   ∀ i T, ⟪ (ξ₁ i) : T ∈ Γ₁ ⟫ → ⟪ (ξ₂ i) : T ∈ Γ₂ ⟫.
 
 Lemma wtRen_natural
-  {f₁ f₂: Env → Env} {ξ₁ ξ₂: Ren}
+  {f₁ f₂: Env → Env} {ξ₁ ξ₂: Sub Ix}
   (hyp: ∀ Γ, WtRenNatural (f₁ Γ) (f₂ Γ) ξ₁ ξ₂) :
   ∀ Γ₁ Γ₂ ξ,
     WtRen Γ₁ (f₁ Γ₂) (ξ >-> ξ₁) →
@@ -127,38 +130,38 @@ Proof. unfold WtRenNatural, WtRen in *; eauto. Qed.
 
 (*************************************************************************)
 
-Lemma wtRen_wkl (Δ: Env) :
-  ∀ Γ, WtRen Γ (Γ ▻▻ Δ) (wkl (dom Δ)).
+Lemma wtRen_wkms (Δ: Env) :
+  ∀ Γ, WtRen Γ (Γ ▻▻ Δ) (wkms (dom Δ)).
 Proof. unfold WtRen. induction Δ; crush. Qed.
-Hint Resolve wtRen_wkl : ws.
+Hint Resolve wtRen_wkms : ws.
 
-Lemma wtiIx_wkl (Δ: Env) :
+Lemma wtiIx_wkms (Δ: Env) :
   ∀ (Γ: Env) (i: Ix) T,
-    ⟪ (wkl (dom Δ) i) : T ∈ (Γ ▻▻ Δ) ⟫ → ⟪ i : T ∈ Γ ⟫.
+    ⟪ (wkms (dom Δ) i) : T ∈ (Γ ▻▻ Δ) ⟫ → ⟪ i : T ∈ Γ ⟫.
 Proof. induction Δ; eauto with wsi. Qed.
-Hint Resolve wtiIx_wkl : wsi.
+Hint Resolve wtiIx_wkms : wsi.
 
-Lemma wtRen_wkl1 Γ T :
-  WtRen Γ (Γ ▻ T) (wkl 1).
-Proof. apply (wtRen_wkl (empty ▻ T)). Qed.
-Hint Resolve wtRen_wkl1 : ws.
+Lemma wtRen_wkm Γ T :
+  WtRen Γ (Γ ▻ T) wkm.
+Proof. apply (wtRen_wkms (empty ▻ T)). Qed.
+Hint Resolve wtRen_wkm : ws.
 
-Lemma wtiIx_wkl1 Γ i T :
-  ⟪ (wkl 1 i) : T ∈ (Γ ▻ T) ⟫ → ⟪ i : T ∈ Γ ⟫.
-Proof. apply (wtiIx_wkl (empty ▻ T)). Qed.
-Hint Resolve wtiIx_wkl1 : wsi.
+Lemma wtiIx_wkm Γ i T :
+  ⟪ (wkm i) : T ∈ (Γ ▻ T) ⟫ → ⟪ i : T ∈ Γ ⟫.
+Proof. apply (wtiIx_wkms (empty ▻ T)). Qed.
+Hint Resolve wtiIx_wkm : wsi.
 
-Lemma wtRenNatural_wkl_id Δ :
-  ∀ Γ, WtRenNatural (Γ ▻▻ Δ) Γ (wkl (dom Δ)) ren_id.
-Proof. unfold WtRenNatural; eauto using wtiIx_wkl. Qed.
-Hint Resolve wtRenNatural_wkl_id : wsi.
+Lemma wtRenNatural_wkms_id Δ :
+  ∀ Γ, WtRenNatural (Γ ▻▻ Δ) Γ (wkms (dom Δ)) (idm Ix).
+Proof. unfold WtRenNatural; eauto using wtiIx_wkms. Qed.
+Hint Resolve wtRenNatural_wkms_id : wsi.
 
-Lemma wtiRen_comp_wkl Δ :
+Lemma wtiRen_comp_wkms Δ :
   ∀ Γ₁ Γ₂ ξ,
-    WtRen Γ₁ (Γ₂ ▻▻ Δ) (ξ >-> wkl (dom Δ)) →
+    WtRen Γ₁ (Γ₂ ▻▻ Δ) (ξ >-> wkms (dom Δ)) →
     WtRen Γ₁ Γ₂        ξ.
-Proof. apply (wtRen_natural (wtRenNatural_wkl_id Δ)). Qed.
-Hint Resolve wtiRen_comp_wkl : wsi.
+Proof. apply (wtRen_natural (wtRenNatural_wkms_id Δ)). Qed.
+Hint Resolve wtiRen_comp_wkms : wsi.
 
 Lemma wtRen_snoc Γ₁ Γ₂ ξ x T :
   WtRen Γ₁ Γ₂ ξ → ⟪ x : T ∈ Γ₂ ⟫ → WtRen (Γ₁ ▻ T) Γ₂ (ξ · x).
@@ -181,13 +184,13 @@ Hint Resolve wtiIx_snoc : wsi.
 
 Lemma wtRen_up {Γ₁ Γ₂ ξ} (wξ: WtRen Γ₁ Γ₂ ξ) :
   ∀ T, WtRen (Γ₁ ▻ T) (Γ₂ ▻ T) (ξ ↑).
-Proof. unfold up, ren_up; crush. Qed.
+Proof. unfold up; crush. Qed.
 Hint Resolve wtRen_up : ws.
 
 Lemma wtiRen_up Γ₁ Γ₂ ξ T :
   WtRen (Γ₁ ▻ T) (Γ₂ ▻ T) (ξ ↑) → WtRen Γ₁ Γ₂ ξ.
 Proof.
-  unfold up, ren_up, WtRen. crush.
+  unfold up, WtRen. crush.
   specialize (H (S i) T0). eauto with ws wsi.
 Qed.
 Hint Resolve wtiRen_up : wsi.
@@ -203,7 +206,7 @@ Proof. induction Δ; eauto with wsi. Qed.
 Hint Resolve wtiRen_ups : wsi.
 
 Lemma wtRen_beta (Γ Δ: Env) :
-  ∀ ξ, WtRen Δ Γ ξ → WtRen (Γ ▻▻ Δ) Γ (ren_beta (dom Δ) ξ).
+  ∀ ξ, WtRen Δ Γ ξ → WtRen (Γ ▻▻ Δ) Γ (beta (dom Δ) ξ).
 Proof. unfold WtRen; induction Δ; crush. Qed.
 Hint Resolve wtRen_beta : ws.
 
@@ -212,11 +215,11 @@ Lemma typing_ren {Γ₁ t T} (wt: ⟪ Γ₁ ⊢ t : T ⟫) :
 Proof. induction wt; try econstructor; crush. Qed.
 
 Lemma typing_weakening Δ {Γ t T} (wt: ⟪ Γ ⊢ t : T ⟫) :
-  ⟪ Γ ▻▻ Δ ⊢ t[wkl (dom Δ)] : T ⟫.
+  ⟪ Γ ▻▻ Δ ⊢ t[@wkms Ix _ _ (dom Δ)] : T ⟫.
 Proof. eapply (typing_ren wt); crush. Qed.
 
 Lemma typing_weakening1 T' {Γ t T} (wt: ⟪ Γ ⊢ t : T ⟫) :
-  ⟪ Γ ▻ T' ⊢ t[wkl 1] : T ⟫.
+  ⟪ Γ ▻ T' ⊢ t[@wkms Ix _ _ 1] : T ⟫.
 Proof. eapply (typing_ren wt); crush. Qed.
 
 (*************************************************************************)
@@ -225,9 +228,9 @@ Lemma wtSub_closed ζ Δ : WtSub empty Δ ζ.
 Proof. unfold WtSub; intros. inversion H. Qed.
 Hint Resolve wtSub_closed : ws.
 
-Lemma wtSub_id (Γ: Env) : WtSub Γ Γ sub_id.
-Proof. unfold WtSub, sub_id; auto using WtVar. Qed.
-Hint Resolve wtSub_id : ws.
+Lemma wtSub_idm (Γ: Env) : WtSub Γ Γ (idm Tm).
+Proof. unfold WtSub, idm; auto using WtVar. Qed.
+Hint Resolve wtSub_idm : ws.
 
 Lemma wtSub_snoc Γ₁ Γ₂ ζ t T :
   WtSub Γ₁ Γ₂ ζ → ⟪ Γ₂ ⊢ t : T ⟫ → WtSub (Γ₁ ▻ T) Γ₂ (ζ · t).
@@ -245,22 +248,21 @@ Lemma wtSub_toSub ξ Γ₁ Γ₂ :
   WtRen Γ₁ Γ₂ ξ → WtSub Γ₁ Γ₂ ⌈ξ⌉.
 Proof. unfold WtRen, WtSub; eauto using WtVar. Qed.
 
-Lemma wtSub_wkl (Δ: Env) :
-  ∀ Γ, WtSub Γ (Γ ▻▻ Δ) ⌈wkl (dom Δ)⌉.
-Proof. eauto using wtRen_wkl, wtSub_toSub. Qed.
-Hint Resolve wtSub_wkl : ws.
+Lemma wtSub_wkms (Δ: Env) :
+  ∀ Γ, WtSub Γ (Γ ▻▻ Δ) ⌈@wkms Ix _ _ (dom Δ)⌉.
+Proof. eauto using wtRen_wkms, wtSub_toSub. Qed.
+Hint Resolve wtSub_wkms : ws.
 
-Lemma wtSub_wkl1 Γ T :
-  WtSub Γ (Γ ▻ T) ⌈wkl 1⌉.
-Proof. apply (wtSub_wkl (empty ▻ T)). Qed.
-Hint Resolve wtSub_wkl1 : ws.
+Lemma wtSub_wkm Γ T :
+  WtSub Γ (Γ ▻ T) ⌈wkm⌉.
+Proof. apply (wtSub_wkms (empty ▻ T)). Qed.
+Hint Resolve wtSub_wkm : ws.
 
 Lemma wtSub_up {Γ₁ Γ₂ ζ} (wζ: WtSub Γ₁ Γ₂ ζ) :
   ∀ T, WtSub (Γ₁ ▻ T) (Γ₂ ▻ T) (ζ ↑).
 Proof.
-  unfold up, sub_up; intros.
+  unfold up; intros.
   eapply wtSub_snoc.
-  unfold sub_comp_ren; cbn.
   intros i T' wiT'.
   eapply typing_weakening1; eauto with ws.
   eauto using WtVar, GetEvar.
@@ -279,7 +281,7 @@ Proof. induction wt; crush. Qed.
 Lemma wtSub_comp {Γ₁ Γ₂ Γ₃ ζ₁ ζ₂} :
   WtSub Γ₁ Γ₂ ζ₁ → WtSub Γ₂ Γ₃ ζ₂ → WtSub Γ₁ Γ₃ (ζ₁ >=> ζ₂).
 Proof.
-  unfold WtSub, sub_comp; intros.
+  unfold WtSub, comp; intros.
   eapply typing_sub; eauto.
 Qed.
 Hint Resolve wtSub_comp : ws.
@@ -293,25 +295,22 @@ Hint Resolve wtiTm_snoc : wsi.
 
 (*************************************************************************)
 
-Lemma wtSub_sub_beta (Γ Δ: Env) :
-  ∀ ζ, WtSub Δ Γ ζ → WtSub (Γ ▻▻ Δ) Γ (sub_beta (dom Δ) ζ).
+Lemma wtSub_beta (Γ Δ: Env) :
+  ∀ ζ, WtSub Δ Γ ζ → WtSub (Γ ▻▻ Δ) Γ (beta (dom Δ) ζ).
 Proof.
   unfold WtSub; induction Δ; crush.
-  - destruct i; crush.
-  - destruct i; crush.
-    apply IHΔ; crush.
 Qed.
-Hint Resolve wtSub_sub_beta : ws.
+Hint Resolve wtSub_beta : ws.
 
-Lemma wtSub_sub_beta1 Γ t T (wi: ⟪ Γ ⊢ t : T ⟫) :
-  WtSub (Γ ▻ T) Γ (sub_beta1 t).
-Proof. apply (wtSub_sub_beta Γ (empty ▻ T)); crush. Qed.
-Hint Resolve wtSub_sub_beta1 : ws.
+Lemma wtSub_beta1 Γ t T (wi: ⟪ Γ ⊢ t : T ⟫) :
+  WtSub (Γ ▻ T) Γ (beta1 t).
+Proof. apply (wtSub_beta Γ (empty ▻ T)); crush. Qed.
+Hint Resolve wtSub_beta1 : ws.
 
 (*************************************************************************)
 
-Lemma typing_sub_beta {Γ Δ t T ζ} :
-  WtSub Δ Γ ζ → ⟪ (Γ ▻▻ Δ) ⊢ t : T ⟫ → ⟪ Γ ⊢ t[sub_beta (dom Δ) ζ] : T ⟫.
+Lemma typing_beta {Γ Δ t T ζ} :
+  WtSub Δ Γ ζ → ⟪ (Γ ▻▻ Δ) ⊢ t : T ⟫ → ⟪ Γ ⊢ t[beta (dom Δ) ζ] : T ⟫.
 Proof. intros; eapply typing_sub; eauto with ws. Qed.
 
 Lemma typing_subst0 {Γ t T t' T'} :
@@ -322,12 +321,16 @@ Proof. intros; eapply typing_sub; eauto with ws. Qed.
 
 Ltac crushTypingMatchH2 :=
   match goal with
-    | [ |- ⟪ _ ⊢ @ap _ Tm applyRenTm _ ?t : _ ⟫
+    | [ |- ⟪ _ ⊢ @ap Tm Ix vrIx _ ?ξ ?t : _ ⟫
       ] => eapply typing_ren
-    | [ |- ⟪ _ ⊢ @ap _ Tm applySubTm _ ?t : _ ⟫
+    | [ |- ⟪ _ ⊢ @ap Tm Tm vrTm _ ?ζ ?t : _ ⟫
       ] => eapply typing_sub
     | [ |- ⟪ _ ⊢ subst0 _ _ : _ ⟫
       ] => eapply typing_subst0
+    | [ |- WtSub (_ ▻ _) _ (beta _ _)
+      ] => eapply wtSub_beta
+    | [ |- WtSub (_ ▻ _) _ (beta1 _)
+      ] => eapply wtSub_beta1
   end.
 
 Ltac crushTyping :=
@@ -335,12 +338,12 @@ Ltac crushTyping :=
   repeat
     (cbn in *;
      repeat crushRewriteH;
-     repeat crushSyntaxMatchH;
+     repeat crushStlcSyntaxMatchH;
      repeat crushTypingMatchH;
-     repeat crushTypingMatchH2
-    );
-  try discriminate;
-  eauto with ws.
+     repeat crushTypingMatchH2;
+     try discriminate;
+     eauto with ws
+    ).
 
 Hint Extern 20 (⟪ _ ⊢ _ : _ ⟫) =>
   crushTyping : typing.

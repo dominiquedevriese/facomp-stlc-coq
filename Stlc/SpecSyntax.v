@@ -1,51 +1,4 @@
-Require Export Coq.Unicode.Utf8.
-
-(** * Basic definitions
-
-    This Section contains basic definitions for the de Bruijn representation
-    of the abstract syntax.  *)
-
-(** ** Domains *)
-
-(** [Dom] is the representation of domains of typing contexts
-    or of simultaneous renamings/substitutions. For the de
-    Bruijn representation with a single sort with variables,
-    we can represent domains as natural numbers. *)
-Definition Dom : Set := nat.
-
-Fixpoint dunion (δ₁ δ₂ : Dom) {struct δ₂} : Dom :=
-  match δ₂ with
-    | O    => δ₁
-    | S δ₂ => S (dunion δ₁ δ₂)
-  end.
-Notation "δ₁ ∪ δ₂" := (dunion δ₁ δ₂) (at level 55, left associativity).
-
-(** ** De Bruijn indices. *)
-Definition Ix : Set := nat.
-
-Reserved Notation "γ ∋ i" (at level 80).
-Inductive wsIx : Dom → Ix → Prop :=
-  | ws0 γ   :         S γ ∋ 0
-  | wsS γ i : γ ∋ i → S γ ∋ S i
-where "γ ∋ i" := (wsIx γ i).
-
-(* Structure of (Γ ∋ i → (Γ,Δ) ∋ i), aka plus, raise. *)
-Fixpoint wkl (δ: Dom) (i: Ix) {struct δ} : Ix :=
-  match δ with
-    | O   => i
-    | S δ => S (wkl δ i)
-  end.
-
-(* Structure of (Δ ∋ i → (Γ,Δ) ∋ i), aka id, inject. *)
-Fixpoint wkr (γ: Dom) (i: Ix) {struct i} : Ix :=
-  match i with
-    | O    => O
-    | S i  => S (wkr γ i)
-  end.
-
-(* Only simplify when fully applied. *)
-Arguments wkl !δ i /.
-Arguments wkr γ !i /.
+Require Export Db.Spec.
 
 (** ** Simply typed terms. *)
 Inductive Ty : Set :=
@@ -58,6 +11,27 @@ Inductive Ty : Set :=
 Notation "A ⊎ B" := (tsum A B) (at level 85, right associativity).
 Notation "A × B" := (tprod A B) (at level 85, right associativity).
 Notation "A ⇒ B" := (tarr A B) (at level 85, right associativity).
+
+(** ** Typing environments. *)
+
+Inductive Env : Set :=
+  | empty
+  | evar (Γ : Env) (τ : Ty).
+
+Fixpoint dom (Γ: Env) : Dom :=
+  match Γ with
+    | empty    => O
+    | evar Γ τ => S (dom Γ)
+  end.
+Notation "Γ ▻ T" := (evar Γ T) (at level 55, left associativity).
+
+Reserved Notation "Γ₁ ▻▻ Γ₂" (at level 55, left associativity).
+Fixpoint ecat (Γ₁ Γ₂ : Env) {struct Γ₂} : Env :=
+  match Γ₂ with
+    | empty  => Γ₁
+    | Γ₂ ▻ τ => (Γ₁ ▻▻ Γ₂) ▻ τ
+  end
+where "Γ₁ ▻▻ Γ₂" := (ecat Γ₁ Γ₂).
 
 Inductive Tm : Set :=
   | var (i: Ix)
@@ -76,29 +50,32 @@ Inductive Tm : Set :=
   | seq (t₁ t₂: Tm)
   | fixt (τ₁ τ₂: Ty) (t: Tm).
 
-(* Well-scoping predicate. *)
-Reserved Notation "⟨  γ ⊢ t  ⟩"
-  (at level 0, γ at level 10, t at level 10).
-Inductive wsTm (γ: Dom) : Tm → Prop :=
-  | WsVar {i}           : γ ∋ i → ⟨ γ ⊢ var i ⟩
-  | WsAbs {τ t}         : ⟨ S γ ⊢ t ⟩ → ⟨ γ ⊢ abs τ t ⟩
-  | WsApp {t₁ t₂}       : ⟨ γ ⊢ t₁ ⟩ → ⟨ γ ⊢ t₂ ⟩ → ⟨ γ ⊢ app t₁ t₂ ⟩
-  | WsUnit              : ⟨ γ ⊢ unit ⟩
-  | WsTrue              : ⟨ γ ⊢ true ⟩
-  | WsFalse             : ⟨ γ ⊢ false ⟩
-  | WsIte {t₁ t₂ t₃}    : ⟨ γ ⊢ t₁ ⟩ → ⟨ γ ⊢ t₂ ⟩ →
-                          ⟨ γ ⊢ t₃ ⟩ → ⟨ γ ⊢ ite t₁ t₂ t₃ ⟩
-  | WsProj1 {t}         : ⟨ γ ⊢ t ⟩ → ⟨ γ ⊢ proj₁ t ⟩
-  | WsProj2 {t}         : ⟨ γ ⊢ t ⟩ → ⟨ γ ⊢ proj₂ t ⟩
-  | WsPair {t₁ t₂}      : ⟨ γ ⊢ t₁ ⟩ → ⟨ γ ⊢ t₂ ⟩ → ⟨ γ ⊢ pair t₁ t₂ ⟩
-  | WsInj₁ {t}          : ⟨ γ ⊢ t ⟩ → ⟨ γ ⊢ inl t ⟩
-  | WsInj₂ {t}          : ⟨ γ ⊢ t ⟩ → ⟨ γ ⊢ inr t ⟩
-  | WsCaseof {t₁ t₂ t₃} : ⟨ γ ⊢ t₁ ⟩ → ⟨ S γ ⊢ t₂ ⟩ →
-                          ⟨ S γ ⊢ t₃ ⟩ → ⟨ γ ⊢ caseof t₁ t₂ t₃ ⟩
-  | WsSeq {t₁ t₂}       : ⟨ γ ⊢ t₁ ⟩ → ⟨ γ ⊢ t₂ ⟩ → ⟨ γ ⊢ seq t₁ t₂ ⟩
-  | WsFixt {τ₁ τ₂ t}    : ⟨ γ ⊢ t ⟩ → ⟨ γ ⊢ fixt τ₁ τ₂ t ⟩
-where "⟨  γ ⊢ t  ⟩" := (wsTm γ t).
+Section WellScoping.
 
+  (* Keep this in a section so that the notation for the ws type-class is only
+     locally overwritten. *)
+  Inductive wsTm (γ: Dom) : Tm → Prop :=
+    | WsVar {i}           : γ ∋ i → ⟨ γ ⊢ var i ⟩
+    | WsAbs {τ t}         : ⟨ S γ ⊢ t ⟩ → ⟨ γ ⊢ abs τ t ⟩
+    | WsApp {t₁ t₂}       : ⟨ γ ⊢ t₁ ⟩ → ⟨ γ ⊢ t₂ ⟩ → ⟨ γ ⊢ app t₁ t₂ ⟩
+    | WsUnit              : ⟨ γ ⊢ unit ⟩
+    | WsTrue              : ⟨ γ ⊢ true ⟩
+    | WsFalse             : ⟨ γ ⊢ false ⟩
+    | WsIte {t₁ t₂ t₃}    : ⟨ γ ⊢ t₁ ⟩ → ⟨ γ ⊢ t₂ ⟩ →
+                            ⟨ γ ⊢ t₃ ⟩ → ⟨ γ ⊢ ite t₁ t₂ t₃ ⟩
+    | WsProj1 {t}         : ⟨ γ ⊢ t ⟩ → ⟨ γ ⊢ proj₁ t ⟩
+    | WsProj2 {t}         : ⟨ γ ⊢ t ⟩ → ⟨ γ ⊢ proj₂ t ⟩
+    | WsPair {t₁ t₂}      : ⟨ γ ⊢ t₁ ⟩ → ⟨ γ ⊢ t₂ ⟩ → ⟨ γ ⊢ pair t₁ t₂ ⟩
+    | WsInj₁ {t}          : ⟨ γ ⊢ t ⟩ → ⟨ γ ⊢ inl t ⟩
+    | WsInj₂ {t}          : ⟨ γ ⊢ t ⟩ → ⟨ γ ⊢ inr t ⟩
+    | WsCaseof {t₁ t₂ t₃} : ⟨ γ ⊢ t₁ ⟩ → ⟨ S γ ⊢ t₂ ⟩ →
+                            ⟨ S γ ⊢ t₃ ⟩ → ⟨ γ ⊢ caseof t₁ t₂ t₃ ⟩
+    | WsSeq {t₁ t₂}       : ⟨ γ ⊢ t₁ ⟩ → ⟨ γ ⊢ t₂ ⟩ → ⟨ γ ⊢ seq t₁ t₂ ⟩
+    | WsFixt {τ₁ τ₂ t}    : ⟨ γ ⊢ t ⟩ → ⟨ γ ⊢ fixt τ₁ τ₂ t ⟩
+  where "⟨ γ ⊢ t ⟩" := (wsTm γ t).
+
+End WellScoping.
+Instance WsTm : Ws Tm := wsTm.
 
 (** ** Program contexts *)
 
@@ -169,166 +146,70 @@ Fixpoint pctx_cat (C₀ C: PCtx) {struct C} : PCtx :=
     | pfixt τ₁ τ₂ C    => pfixt τ₁ τ₂ (pctx_cat C₀ C)
   end.
 
+Section Application.
 
-(** ** Typing environments. *)
+  Context {Y: Type}.
+  Context {vrY: Vr Y}.
+  Context {wkY: Wk Y}.
+  Context {vrTm: Vr Tm}.
+  Context {liftYTm: Lift Y Tm}.
 
-Inductive Env : Set :=
-  | empty
-  | evar (Γ : Env) (τ : Ty).
-
-Fixpoint dom (Γ: Env) : Dom :=
-  match Γ with
-    | empty    => O
-    | evar Γ τ => S (dom Γ)
-  end.
-Notation "Γ ▻ T" := (evar Γ T) (at level 55, left associativity).
-
-Reserved Notation "Γ₁ ▻▻ Γ₂" (at level 55, left associativity).
-Fixpoint ecat (Γ₁ Γ₂ : Env) {struct Γ₂} : Env :=
-  match Γ₂ with
-    | empty  => Γ₁
-    | Γ₂ ▻ τ => (Γ₁ ▻▻ Γ₂) ▻ τ
-  end
-where "Γ₁ ▻▻ Γ₂" := (ecat Γ₁ Γ₂).
-
-(** * Morphisms *)
-
-(** ** Common *)
-
-(** Extension of morphisms. *)
-Definition snoc {A: Type} (xs: Ix → A) (x: A) : Ix → A :=
-  fun i =>
-    match i with
-      | O   => x
-      | S i => xs i
+  Fixpoint apTm (ζ: Sub Y) (t: Tm) {struct t} : Tm :=
+    match t with
+      | var x           => lift (ζ x)
+      | abs T t₂        => abs T (apTm (ζ↑) t₂)
+      | app t₁ t₂       => app (apTm ζ t₁) (apTm ζ t₂)
+      | unit            => unit
+      | true            => true
+      | false           => false
+      | ite t₁ t₂ t₃    => ite (apTm ζ t₁) (apTm ζ t₂) (apTm ζ t₃)
+      | pair t₁ t₂      => pair (apTm ζ t₁) (apTm ζ t₂)
+      | proj₁ t         => proj₁ (apTm ζ t)
+      | proj₂ t         => proj₂ (apTm ζ t)
+      | inl t           => inl (apTm ζ t)
+      | inr t           => inr (apTm ζ t)
+      | caseof t₁ t₂ t₃ => caseof (apTm ζ t₁) (apTm (ζ↑) t₂) (apTm (ζ↑) t₃)
+      | seq t₁ t₂       => seq (apTm ζ t₁) (apTm ζ t₂)
+      | fixt τ₁ τ₂ t    => fixt τ₁ τ₂ (apTm ζ t)
     end.
-Notation "xs · x" := (snoc xs x) (at level 55, left associativity).
-Arguments snoc {_} xs x i.
+  (* Global Arguments apTm ζ !t /. *)
 
-(** Moving morphisms under binders *)
-Class UpArr (A: Type) := up : (Ix → A) → (Ix → A).
+End Application.
 
-(** Never unfold automatically. We encode the desired reduction
-    behaviour using rewrite rules. *)
-Arguments up {_ _} ξ !i /.
-Notation "m ↑" :=
-  (up m) (at level 53, left associativity).
-
-Fixpoint ups {A: Type} `{UpArr A} (υ: Ix → A) (δ: Dom) : (Ix → A) :=
-  match δ with
-    | O   => υ
-    | S δ => ups υ δ ↑
-  end.
-Arguments ups {_ _} υ !δ / i.
-Notation "m ↑⋆ δ" :=
-  (ups m δ) (at level 53, left associativity).
-
-Class Apply (mor tm: Type) := ap : mor → tm → tm.
-Arguments ap {_ _ _} ζ !t /.
-Notation "t '[' m ']'" :=
-  (ap m t) (at level 8, left associativity, format "t [ m ]").
-
-
-(** ** Renamings *)
-
-Definition Ren : Set := Ix → Ix.
-Definition WsRen (γ₁ γ₂: Dom) (ξ: Ren) : Prop :=
-  ∀ i, γ₁ ∋ i → γ₂ ∋ ξ i.
-
-Definition ren_comp (ξ₁ ξ₂ : Ren) : Ren := fun i => ξ₂ (ξ₁ i).
-Notation "ξ₁ >-> ξ₂" := (ren_comp ξ₁ ξ₂) (at level 56).
-Arguments ren_comp ξ₁ ξ₂ i /.
-
-Definition ren_id : Ren := fun i => i.
-Arguments ren_id i /.
-
-Instance ren_up : UpArr Ix := fun ξ => (ξ >-> wkl 1) · 0.
-
-Instance applyRenTm : Apply Ren Tm :=
-  fix renTm (ξ: Ren) (t : Tm) : Tm :=
-  match t with
-    | var x           => var (ξ x)
-    | abs T t₂        => abs T (renTm (ξ↑) t₂)
-    | app t₁ t₂       => app (renTm ξ t₁) (renTm ξ t₂)
-    | unit            => unit
-    | true            => true
-    | false           => false
-    | ite t₁ t₂ t₃    => ite (renTm ξ t₁) (renTm ξ t₂) (renTm ξ t₃)
-    | pair t₁ t₂      => pair (renTm ξ t₁) (renTm ξ t₂)
-    | proj₁ t         => proj₁ (renTm ξ t)
-    | proj₂ t         => proj₂ (renTm ξ t)
-    | inl t           => inl (renTm ξ t)
-    | inr t           => inr (renTm ξ t)
-    | caseof t₁ t₂ t₃ => caseof (renTm ξ t₁) (renTm (ξ↑) t₂) (renTm (ξ↑) t₃)
-    | seq t₁ t₂       => seq (renTm ξ t₁) (renTm ξ t₂)
-    | fixt τ₁ τ₂ t    => fixt τ₁ τ₂ (renTm ξ t)
+Ltac crushStlcSyntaxMatchH :=
+  match goal with
+    | [ H: S _ = S _             |- _ ] => apply eq_add_S in H
+    | [ H: tarr _ _  = tarr _ _  |- _ ] => inversion H; clear H
+    | [ H: tprod _ _ = tprod _ _ |- _ ] => inversion H; clear H
+    | [ H: tsum _ _ = tsum _ _   |- _ ] => inversion H; clear H
+    | [ |- S _          = S _          ] => f_equal
+    | [ |- var _        = var _        ] => f_equal
+    | [ |- abs _ _      = abs _ _      ] => f_equal
+    | [ |- app _ _      = app _ _      ] => f_equal
+    | [ |- unit         = unit         ] => reflexivity
+    | [ |- true         = true         ] => reflexivity
+    | [ |- false        = false        ] => reflexivity
+    | [ |- ite _ _ _    = ite _ _ _    ] => f_equal
+    | [ |- pair _ _     = pair _ _     ] => f_equal
+    | [ |- proj₁ _      = proj₁ _      ] => f_equal
+    | [ |- proj₂ _      = proj₂ _      ] => f_equal
+    | [ |- inl _        = inl _        ] => f_equal
+    | [ |- inr _        = inr _        ] => f_equal
+    | [ |- caseof _ _ _ = caseof _ _ _ ] => f_equal
+    | [ |- seq _ _      = seq _ _      ] => f_equal
+    | [ |- fixt _ _ _   = fixt _ _ _   ] => f_equal
+    | [ |- _ ▻ _        = _ ▻ _        ] => f_equal
+    | [ |- context[apTm ?ξ ?t] ] =>
+      change (apTm ξ t) with t[ξ]
   end.
 
-Fixpoint ren_beta (δ: Dom) (ξ: Ren) : Ren :=
-  fun i =>
-    match δ with
-      | O   => i
-      | S δ => match i with
-                 | O   => ξ O
-                 | S i => ren_beta δ (wkl 1 >-> ξ) i
-               end
-    end.
-
-
-(** ** Substitutions *)
-
-Definition Sub : Set := Ix → Tm.
-Definition WsSub (γ₁ γ₂: Dom) (ζ: Sub) : Prop :=
-  ∀ i, γ₁ ∋ i → wsTm γ₂ (ζ i).
-
-Definition sub_id : Sub := fun i => var i.
-Arguments sub_id i /.
-
-Definition sub_comp_ren (ζ: Sub) (ξ: Ren) : Sub :=
-  fun i => (ζ i)[ξ].
-Arguments sub_comp_ren ζ ξ i /.
-
-Instance sub_up : UpArr Tm :=
-  fun ζ => sub_comp_ren ζ (wkl 1) · var 0.
-
-Instance applySubTm : Apply Sub Tm :=
-  fix subTm (ζ: Sub) (t : Tm) : Tm :=
-  match t with
-    | var x           => ζ x
-    | abs T t₂        => abs T (subTm (ζ↑) t₂)
-    | app t₁ t₂       => app (subTm ζ t₁) (subTm ζ t₂)
-    | unit            => unit
-    | true            => true
-    | false           => false
-    | ite t₁ t₂ t₃    => ite (subTm ζ t₁) (subTm ζ t₂) (subTm ζ t₃)
-    | pair t₁ t₂      => pair (subTm ζ t₁) (subTm ζ t₂)
-    | proj₁ t         => proj₁ (subTm ζ t)
-    | proj₂ t         => proj₂ (subTm ζ t)
-    | inl t           => inl (subTm ζ t)
-    | inr t           => inr (subTm ζ t)
-    | caseof t₁ t₂ t₃ => caseof (subTm ζ t₁) (subTm (ζ↑) t₂) (subTm (ζ↑) t₃)
-    | seq t₁ t₂       => seq (subTm ζ t₁) (subTm ζ t₂)
-    | fixt τ₁ τ₂ t    => fixt τ₁ τ₂ (subTm ζ t)
-  end.
-
-Definition sub_comp (ζ₁ ζ₂ : Sub) : Sub := fun i => (ζ₁ i)[ζ₂].
-Notation "ζ₁ >=> ζ₂" := (sub_comp ζ₁ ζ₂) (at level 56).
-Arguments sub_comp ζ₁ ζ₂ i /.
-
-Definition ren_toSub (ξ: Ren) : Sub := fun i => var (ξ i).
-Notation "⌈ ρ ⌉" := (ren_toSub ρ) (format "⌈ ρ ⌉").
-Arguments ren_toSub ξ i /.
-
-Fixpoint sub_beta (δ: Dom) (ζ: Sub) : Sub :=
-  fun i =>
-    match δ with
-      | O   => var i
-      | S δ => match i with
-                 | O   => ζ O
-                 | S i => sub_beta δ (⌈wkl 1⌉ >=> ζ) i
-               end
-    end.
-Arguments sub_beta !δ ζ !i /.
-
-Definition sub_beta1 (t: Tm) : Sub := sub_beta 1 (sub_id · t).
-Definition subst0 (t' t: Tm) : Tm := t[sub_beta1 t'].
+Ltac crushStlc :=
+  intros;
+  repeat
+    (cbn in *;
+     crushRewriteH;
+     repeat crushDbMatchH;
+     repeat crushStlcSyntaxMatchH;
+     try discriminate;
+     try subst);
+  eauto.

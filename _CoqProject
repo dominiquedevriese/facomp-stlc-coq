@@ -1,10 +1,12 @@
 -R . FaComp
+Db/Inst.v
+Db/Lemmas.v
+Db/Spec.v
+Db/WellScoping.v
+Stlc/Inst.v
 Stlc/LemmasEvaluation.v
 Stlc/LemmasProgramContext.v
-Stlc/LemmasSyntaxBasic.v
-Stlc/LemmasSyntaxInteraction.v
 Stlc/LemmasTyping.v
-Stlc/LemmasWellScoping.v
 Stlc/Omega.v
 Stlc/SpecEquivalent.v
 Stlc/SpecEvaluation.v
