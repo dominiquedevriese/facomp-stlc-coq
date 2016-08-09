@@ -3,6 +3,7 @@ Require Utlc.SpecSyntax.
 Require Import Stlc.SpecTyping.
 Require Import Stlc.LemmasTyping.
 Require Import Utlc.SpecScoping.
+Require Import Utlc.LemmasScoping.
 Require Utlc.Fix.
 
 Module SS := Stlc.SpecSyntax.
@@ -54,28 +55,8 @@ Fixpoint erase_pctx (C : SS.PCtx) : US.PCtx :=
 Lemma erase_scope (t : SS.Tm) (Γ : SS.Env) (τ : SS.Ty) :
   ⟪ Γ ⊢ t : τ ⟫ -> ⟨ dom Γ ⊢ erase t ⟩.
 Proof.
-  revert Γ τ.
-  induction t; intros Γ τ' H; inversion H; clear H; simpl; constructor.
-  * exact (getEvar_wsIx _ _ _ H1).
-  * exact (IHt _ _ H3).
-  * exact (IHt1 _ _ H2).
-  * exact (IHt2 _ _ H4).
-  * exact (IHt1 _ _ H3).
-  * exact (IHt2 _ _ H5).
-  * exact (IHt3 _ _ H6).
-  * exact (IHt1 _ _ H2).
-  * exact (IHt2 _ _ H4).
-  * exact (IHt _ _ H1).
-  * exact (IHt _ _ H1).
-  * exact (IHt _ _ H1).
-  * exact (IHt _ _ H1).
-  * exact (IHt1 _ _ H3).
-  * exact (IHt2 _ _ H5).
-  * exact (IHt3 _ _ H6).
-  * exact (IHt1 _ _ H2).
-  * exact (IHt2 _ _ H4).
-  * apply UF.ufix_ws.
-  * exact (IHt _ _ H4).
+  intro wt; induction wt; crushUtlcScoping.
+  apply UF.ufix_ws.
 Qed.
 
 Lemma erase_pctx_scope (C : SS.PCtx) (Γ₀ Γ : SS.Env) (τ₀ τ : SS.Ty) :

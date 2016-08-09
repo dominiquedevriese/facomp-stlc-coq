@@ -10,7 +10,7 @@ Instance wkT {T} {vrT: Vr T}
   {apTIxInj: LemApInj T Ix} : Wk T :=
   {| wk := ap wk;
      wk_inj := ap_inj wk_inj;
-     wk_vr := ap_vr S
+     wk_vr := ap_vr wk
   |}.
 
 Module Type Kit.
@@ -72,5 +72,13 @@ Module Inst (kit: Kit).
   (* Automatically populate the infrastructure database for type TM with lemmas
      for which the rewrite direction is certain. *)
   Hint Rewrite (apply_beta1_comm TM) : infrastructure.
+  Hint Rewrite (ap_comp' TM TM TM) : infrastructure.
+  Hint Rewrite (wkm_beta_cancel TM) : infrastructure.
+  Hint Rewrite (wkm_beta_cancel' TM) : infrastructure.
+  Hint Rewrite (wkm_beta_cancel'' TM) : infrastructure.
+  Hint Rewrite (wkms_beta_cancel TM) : infrastructure.
+  Hint Rewrite (wkms_beta_cancel' TM) : infrastructure.
+  Hint Rewrite (wkms_beta_cancel'' TM) : infrastructure.
+  Hint Rewrite (beta1_comm TM) : infrastructure.
 
 End Inst.

@@ -88,6 +88,21 @@ Inductive eval : UTm → UTm → Prop :=
       seq t₁ t₂ --> t₂
 where "t₁ --> t₂" := (eval t₁ t₂).
 
+Lemma eval_beta' {t₁ t₂ t'} :
+  Value t₂ → t' = t₁[beta1 t₂] →
+  app (abs t₁) t₂ --> t'.
+Proof. intros; subst; constructor; auto. Qed.
+
+Lemma eval_case_inl' {t t₁ t₂ t'} :
+  Value t → t' = t₁[beta1 t] →
+  caseof (inl t) t₁ t₂ --> t'.
+Proof. intros; subst; constructor; auto. Qed.
+
+Lemma eval_case_inr' {t t₁ t₂ t'} :
+  Value t → t' = t₂[beta1 t] →
+  caseof (inr t) t₁ t₂ --> t'.
+Proof. intros; subst; constructor; auto. Qed.
+
 Inductive Terminating (t: UTm) : Prop :=
   | TerminatingI : (∀ t', t --> t' → Terminating t') → Terminating t.
 Notation "t ⇓" := (Terminating t) (at level 8, format "t ⇓").

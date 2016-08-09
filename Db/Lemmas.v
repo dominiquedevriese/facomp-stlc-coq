@@ -336,6 +336,11 @@ Section Lemmas.
     Proof. induction δ; crushDb. Qed.
     Hint Rewrite apply_beta_wks: infrastructure2.
 
+    Lemma wkm_beta_cancel (ξ: Sub X) :
+      wkm >=> beta 1 ξ = idm X.
+    Proof. extensionality i; crushDb. Qed.
+    (* Hint Rewrite wkms_beta_cancel: infrastructure. *)
+
     Lemma wkms_beta_cancel δ (ξ: Sub X) :
       wkms δ >=> beta δ ξ = idm X.
     Proof. extensionality i; crushDb. Qed.
@@ -343,12 +348,24 @@ Section Lemmas.
 
     Context {compUpX: LemCompUp X X}.
 
-    Lemma wkms_beta_cancel' δ k (ξ: Sub X) :
+    Lemma wkm_beta_cancel' (ξ: Sub X) :
+      wkm↑ >=> (beta 1 ξ)↑ = idm X.
+    Proof. rewrite <- comp_up, wkm_beta_cancel; apply up_idm. Qed.
+    (* Hint Rewrite wkms_beta_cancel: infrastructure. *)
+
+    Lemma wkm_beta_cancel'' k (ξ: Sub X) :
+      wkm ↑⋆ k >=> (beta 1 ξ) ↑⋆ k = idm X.
+    Proof. rewrite <- comp_ups, wkm_beta_cancel; apply ups_idm. Qed.
+    (* Hint Rewrite wkms_beta_cancel: infrastructure. *)
+
+    Lemma wkms_beta_cancel' δ (ξ: Sub X) :
+      (wkms δ)↑ >=> (beta δ ξ)↑ = idm X.
+    Proof. rewrite <- comp_up, wkms_beta_cancel; apply up_idm. Qed.
+    (* Hint Rewrite wkms_beta_cancel: infrastructure. *)
+
+    Lemma wkms_beta_cancel'' δ k (ξ: Sub X) :
       (wkms δ ↑⋆ k) >=> (beta δ ξ ↑⋆ k) = idm X.
-    Proof.
-      rewrite <- comp_ups, wkms_beta_cancel;
-      apply ups_idm.
-    Qed.
+    Proof. rewrite <- comp_ups, wkms_beta_cancel; apply ups_idm. Qed.
     (* Hint Rewrite wkms_beta_cancel: infrastructure. *)
 
   End BetaInteraction.
