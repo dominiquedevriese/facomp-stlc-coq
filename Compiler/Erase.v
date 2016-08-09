@@ -59,44 +59,14 @@ Proof.
   apply UF.ufix_ws.
 Qed.
 
+Ltac apply_erase_scope :=
+  match goal with
+      [ H : ⟪ _ ⊢ ?t : _ ⟫ |- ⟨ _ ⊢ erase ?t ⟩ ] => refine (erase_scope _ _ _ H)
+  end.
+
 Lemma erase_pctx_scope (C : SS.PCtx) (Γ₀ Γ : SS.Env) (τ₀ τ : SS.Ty) :
   ⟪ ⊢ C : Γ₀ , τ₀ → Γ , τ ⟫ → ⟨ ⊢ erase_pctx C : dom Γ₀ → dom Γ ⟩.
 Proof.
-  revert Γ₀ Γ τ₀ τ.
-  induction C; intros Γ₀ Γ τ₀ τ H; inversion H; clear H; simpl; constructor.
-  * exact (IHC _ _ _ _ H3).
-  * exact (IHC _ _ _ _ H2).
-  * exact (erase_scope _ _ _ H4).
-  * exact (erase_scope _ _ _ H2).
-  * exact (IHC _ _ _ _ H4).
-  * exact (IHC _ _ _ _ H3).
-  * exact (erase_scope _ _ _ H5).
-  * exact (erase_scope _ _ _ H6).
-  * exact (erase_scope _ _ _ H3).
-  * exact (IHC _ _ _ _ H5).
-  * exact (erase_scope _ _ _ H6).
-  * exact (erase_scope _ _ _ H3).
-  * exact (erase_scope _ _ _ H5).
-  * exact (IHC _ _ _ _ H6).
-  * exact (IHC _ _ _ _ H2).
-  * exact (erase_scope _ _ _ H4).
-  * exact (erase_scope _ _ _ H2).
-  * exact (IHC _ _ _ _ H4).
-  * exact (IHC _ _ _ _ H1).
-  * exact (IHC _ _ _ _ H1).
-  * exact (IHC _ _ _ _ H1).
-  * exact (IHC _ _ _ _ H1).
-  * exact (IHC _ _ _ _ H3).
-  * exact (erase_scope _ _ _ H5).
-  * exact (erase_scope _ _ _ H6).
-  * exact (erase_scope _ _ _ H3).
-  * exact (IHC _ _ _ _ H5).
-  * exact (erase_scope _ _ _ H6).
-  * exact (erase_scope _ _ _ H3).
-  * exact (erase_scope _ _ _ H5).
-  * exact (IHC _ _ _ _ H6).
-  * exact (IHC _ _ _ _ H2).
-  * exact (erase_scope _ _ _ H4).
-  * apply UF.ufix_ws.
-  * exact (IHC _ _ _ _ H4).
+  intro wt; induction wt; crushUtlcScoping; try apply_erase_scope.
+  apply UF.ufix_ws.
 Qed.

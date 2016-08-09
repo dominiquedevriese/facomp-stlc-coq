@@ -67,6 +67,24 @@ Ltac crushScopingMatchH :=
     | [ |- ⟨ _ ⊢ seq _ _      ⟩ ] => econstructor
     | [ |- context[wsUTm ?γ ?t] ] =>
       change (wsUTm γ t) with ⟨ γ ⊢ t ⟩
+    | [ |- ⟨ ⊢ phole : _ → _        ⟩ ] => econstructor
+    | [ |- ⟨ ⊢ pabs _ : _ → _        ⟩ ] => econstructor
+    | [ |- ⟨ ⊢ papp₁ _ _ : _ → _     ⟩ ] => econstructor
+    | [ |- ⟨ ⊢ papp₂ _ _ : _ → _     ⟩ ] => econstructor
+    | [ |- ⟨ ⊢ pite₁ _ _ _  : _ → _  ⟩ ] => econstructor
+    | [ |- ⟨ ⊢ pite₂ _ _ _  : _ → _  ⟩ ] => econstructor
+    | [ |- ⟨ ⊢ pite₃ _ _ _  : _ → _  ⟩ ] => econstructor
+    | [ |- ⟨ ⊢ ppair₁ _ _ : _ → _    ⟩ ] => econstructor
+    | [ |- ⟨ ⊢ ppair₂ _ _ : _ → _    ⟩ ] => econstructor
+    | [ |- ⟨ ⊢ pproj₁ _ : _ → _     ⟩ ] => econstructor
+    | [ |- ⟨ ⊢ pproj₂ _ : _ → _     ⟩ ] => econstructor
+    | [ |- ⟨ ⊢ pinl _ : _ → _       ⟩ ] => econstructor
+    | [ |- ⟨ ⊢ pinr _ : _ → _       ⟩ ] => econstructor
+    | [ |- ⟨ ⊢ pcaseof₁ _ _ _ : _ → _⟩ ] => econstructor
+    | [ |- ⟨ ⊢ pcaseof₂ _ _ _ : _ → _⟩ ] => econstructor
+    | [ |- ⟨ ⊢ pcaseof₃ _ _ _ : _ → _⟩ ] => econstructor
+    | [ |- ⟨ ⊢ pseq₁ _ _ : _ → _     ⟩ ] => econstructor
+    | [ |- ⟨ ⊢ pseq₂ _ _ : _ → _     ⟩ ] => econstructor
   end.
 
 Ltac crushUtlcScoping :=
