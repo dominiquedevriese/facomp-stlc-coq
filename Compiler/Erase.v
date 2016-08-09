@@ -49,7 +49,7 @@ Fixpoint erase_pctx (C : SS.PCtx) : US.PCtx :=
     | SS.pcaseof₃ t₁ t₂ C => US.pcaseof₃ (erase t₁) (erase t₂) (erase_pctx C)
     | SS.pseq₁ C t => US.pseq₁ (erase_pctx C) (erase t)
     | SS.pseq₂ t C => US.pseq₂ (erase t) (erase_pctx C)
-    | SS.pfixt τ₁ τ₂ C => US.papp₂ ufix (erase_pctx C)
+    | SS.pfixt τ₁ τ₂ C => US.papp₂ UF.ufix (erase_pctx C)
   end.
 
 Lemma erase_scope (t : SS.Tm) (Γ : SS.Env) (τ : SS.Ty) :
