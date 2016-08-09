@@ -1,4 +1,6 @@
 -R . FaComp
+Compiler/Erase.v
+Compiler/ProtectConfine.v
 Db/Inst.v
 Db/Lemmas.v
 Db/Spec.v
@@ -13,13 +15,11 @@ Stlc/SpecEvaluation.v
 Stlc/SpecSyntax.v
 Stlc/SpecTyping.v
 Stlc/TypeSafety.v
+UVal/UVal.v
+Utlc/Fix.v
 Utlc/Inst.v
 Utlc/LemmasEvaluation.v
 Utlc/LemmasScoping.v
 Utlc/SpecEvaluation.v
 Utlc/SpecScoping.v
 Utlc/SpecSyntax.v
-Utlc/Fix.v
-Compiler/Erase.v
-Compiler/ProtectConfine.v
-UVal/UVal.v
