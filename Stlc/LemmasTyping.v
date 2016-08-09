@@ -214,15 +214,16 @@ Hint Resolve wtRen_beta : ws.
 
 Lemma typing_ren {Γ₁ t T} (wt: ⟪ Γ₁ ⊢ t : T ⟫) :
   ∀ Γ₂ ξ, WtRen Γ₁ Γ₂ ξ → ⟪ Γ₂ ⊢ t[ξ] : T ⟫.
-Proof. induction wt; try econstructor; crush. Qed.
+Proof. induction wt; econstructor; crush. Qed.
+Hint Resolve typing_ren : ws.
 
-Lemma typing_weakening Δ {Γ t T} (wt: ⟪ Γ ⊢ t : T ⟫) :
-  ⟪ Γ ▻▻ Δ ⊢ t[@wkms Ix _ _ (dom Δ)] : T ⟫.
-Proof. eapply (typing_ren wt); crush. Qed.
+(* Lemma typing_weakening Δ {Γ t T} (wt: ⟪ Γ ⊢ t : T ⟫) : *)
+(*   ⟪ Γ ▻▻ Δ ⊢ t[@wkms Ix _ _ (dom Δ)] : T ⟫. *)
+(* Proof. apply (typing_ren wt), wtRen_wkms. Qed. *)
 
-Lemma typing_weakening1 T' {Γ t T} (wt: ⟪ Γ ⊢ t : T ⟫) :
-  ⟪ Γ ▻ T' ⊢ t[@wkms Ix _ _ 1] : T ⟫.
-Proof. eapply (typing_ren wt); crush. Qed.
+(* Lemma typing_weakening1 T' {Γ t T} (wt: ⟪ Γ ⊢ t : T ⟫) : *)
+(*   ⟪ Γ ▻ T' ⊢ t[@wkm Ix _ _] : T ⟫. *)
+(* Proof. apply (typing_weakening (empty ▻ T') wt). Qed. *)
 
 (*************************************************************************)
 
@@ -262,13 +263,7 @@ Hint Resolve wtSub_wkm : ws.
 
 Lemma wtSub_up {Γ₁ Γ₂ ζ} (wζ: WtSub Γ₁ Γ₂ ζ) :
   ∀ T, WtSub (Γ₁ ▻ T) (Γ₂ ▻ T) (ζ ↑).
-Proof.
-  unfold up; intros.
-  eapply wtSub_snoc.
-  intros i T' wiT'.
-  eapply typing_weakening1; eauto with ws.
-  eauto using WtVar, GetEvar.
-Qed.
+Proof. inversion 1; crush. Qed.
 Hint Resolve wtSub_up : ws.
 
 Lemma wtSub_ups Γ₁ Γ₂ Δ ζ :
@@ -311,13 +306,13 @@ Hint Resolve wtSub_beta1 : ws.
 
 (*************************************************************************)
 
-Lemma typing_beta {Γ Δ t T ζ} :
-  WtSub Δ Γ ζ → ⟪ (Γ ▻▻ Δ) ⊢ t : T ⟫ → ⟪ Γ ⊢ t[beta (dom Δ) ζ] : T ⟫.
-Proof. intros; eapply typing_sub; eauto with ws. Qed.
+(* Lemma typing_beta {Γ Δ t T ζ} : *)
+(*   WtSub Δ Γ ζ → ⟪ (Γ ▻▻ Δ) ⊢ t : T ⟫ → ⟪ Γ ⊢ t[beta (dom Δ) ζ] : T ⟫. *)
+(* Proof. intros; eapply typing_sub; eauto with ws. Qed. *)
 
-Lemma typing_subst0 {Γ t T t' T'} :
-  ⟪ Γ ⊢ t' : T' ⟫ → ⟪ Γ ▻ T' ⊢ t : T ⟫ → ⟪ Γ ⊢ subst0 t' t : T ⟫.
-Proof. intros; eapply typing_sub; eauto with ws. Qed.
+(* Lemma typing_beta1 {Γ t T t' T'} : *)
+(*   ⟪ Γ ⊢ t' : T' ⟫ → ⟪ Γ ▻ T' ⊢ t : T ⟫ → ⟪ Γ ⊢ t[beta1 t'] : T ⟫. *)
+(* Proof. intros; eapply typing_sub; eauto with ws. Qed. *)
 
 (*************************************************************************)
 
@@ -327,8 +322,6 @@ Ltac crushTypingMatchH2 :=
       ] => eapply typing_ren
     | [ |- ⟪ _ ⊢ @ap Tm Tm vrTm _ ?ζ ?t : _ ⟫
       ] => eapply typing_sub
-    | [ |- ⟪ _ ⊢ subst0 _ _ : _ ⟫
-      ] => eapply typing_subst0
     | [ |- WtSub (_ ▻ _) _ (beta _ _)
       ] => eapply wtSub_beta
     | [ |- WtSub (_ ▻ _) _ (beta1 _)

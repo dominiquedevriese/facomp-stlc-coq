@@ -1,4 +1,4 @@
-Require Import Db.Inst.
+Require Export Db.Inst.
 Require Export Stlc.SpecSyntax.
 
 Instance vrTm : Vr Tm := {| vr := var |}.
@@ -38,9 +38,6 @@ Module TmKit <: Kit.
 
   End Weakening.
 
-  Hint Rewrite (up_liftSub Tm) : infrastructure.
-  Hint Rewrite (up_comp_lift Tm) : infrastructure.
-
   Section ApCompTm.
 
     Variable Y Z: Type.
@@ -63,15 +60,30 @@ Module TmKit <: Kit.
 
   Section Instantiation.
 
-    Global Instance inst_ap_liftSub: LemApLiftSub Tm := {}.
-    Proof. induction x; crushStlc. Qed.
+    Variable Y: Type.
+    Context {vrY: Vr Y}.
+    Context {wkY: Wk Y}.
+    Context {liftY: Lift Y Tm}.
+
+    Hint Rewrite (up_liftSub Y) : infrastructure.
+    Hint Rewrite (up_comp_lift Tm) : infrastructure.
+    Hint Rewrite (lift_vr' Y Tm) : infrastructure.
+
+    Global Instance inst_ap_liftSub: LemApLiftSub Tm Y := {}.
+    Proof. induction t; crushStlc. Qed.
 
     Lemma inst_ap_ixComp (t: Tm) :
       ∀ (ξ: Sub Ix) (ζ: Sub Tm), t[ξ][ζ] = t[⌈ξ⌉ >=> ζ].
     Proof. induction t; crushStlc. Qed.
+
   End Instantiation.
 
 End TmKit.
 
 Module InstTm := Inst TmKit.
 Export InstTm.
+
+(* TODO(SK): For some reason these don't in Inst *)
+Hint Rewrite (up_liftSub Tm) : infrastructure.
+Hint Rewrite (liftSub_wkm Tm) : infrastructure.
+Hint Rewrite (liftSub_wkms Tm) : infrastructure.

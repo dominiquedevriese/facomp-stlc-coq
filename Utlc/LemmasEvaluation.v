@@ -35,13 +35,10 @@ Section SubstEval.
     induction r; crushUtlc; eauto with eval; unfold not in *.
     - constructor; destruct C; crushUtlc.
     - constructor; destruct t₁; crushUtlc.
-    - eapply eval_beta'; crushUtlc.
     - constructor; destruct t₁; crushUtlc.
     - constructor; destruct t; crushUtlc.
     - constructor; destruct t; crushUtlc.
     - constructor; destruct t; crushUtlc.
-    - eapply eval_case_inl'; crushUtlc.
-    - eapply eval_case_inr'; crushUtlc.
   Qed.
 
 End SubstEval.

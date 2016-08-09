@@ -1,4 +1,4 @@
-Require Import Db.Inst.
+Require Export Db.Inst.
 Require Export Utlc.SpecSyntax.
 
 Instance vrUTm : Vr UTm := {| vr := var |}.
@@ -38,9 +38,6 @@ Module UTmKit <: Kit.
 
   End Weakening.
 
-  Hint Rewrite (up_liftSub UTm) : infrastructure.
-  Hint Rewrite (up_comp_lift UTm) : infrastructure.
-
   Section ApCompUTm.
 
     Variable Y Z: Type.
@@ -63,20 +60,36 @@ Module UTmKit <: Kit.
 
   Section Instantiation.
 
-    Global Instance inst_ap_liftSub: LemApLiftSub UTm := {}.
-    Proof. induction x; crushUtlc. Qed.
+    Variable Y: Type.
+    Context {vrY: Vr Y}.
+    Context {wkY: Wk Y}.
+    Context {liftY: Lift Y UTm}.
+
+    Hint Rewrite (up_liftSub Y) : infrastructure.
+    Hint Rewrite (up_comp_lift UTm) : infrastructure.
+    Hint Rewrite (lift_vr' Y UTm) : infrastructure.
+
+    Global Instance inst_ap_liftSub: LemApLiftSub UTm Y := {}.
+    Proof. induction t; crushUtlc. Qed.
 
     Lemma inst_ap_ixComp (t: UTm) :
       ∀ (ξ: Sub Ix) (ζ: Sub UTm), t[ξ][ζ] = t[⌈ξ⌉ >=> ζ].
     Proof. induction t; crushUtlc. Qed.
+
   End Instantiation.
 
 End UTmKit.
 
 Module InstUTm := Inst UTmKit.
-(* O.o Instances and rewrite rules are visible simply by creating
-   the module on the previous line. *)
-(* Export InstUTm. *)
+(* Instances and rewrite rules are visible simply by creating the module on the
+   previous line, but we export the contents anyway so that the implicits have
+   shorter names in unambiguous contexts. *)
+Export InstUTm.
+
+(* TODO(SK): For some reason these don't in Inst. *)
+Hint Rewrite (up_liftSub UTm) : infrastructure.
+Hint Rewrite (liftSub_wkm UTm) : infrastructure.
+Hint Rewrite (liftSub_wkms UTm) : infrastructure.
 
 Section ApplicationPCtx.
 
