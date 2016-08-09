@@ -19,4 +19,7 @@ Utlc/LemmasScoping.v
 Utlc/SpecEvaluation.v
 Utlc/SpecScoping.v
 Utlc/SpecSyntax.v
+Utlc/Fix.v
+Compiler/Erase.v
+Compiler/ProtectConfine.v
 UVal/UVal.v

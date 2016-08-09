@@ -268,6 +268,8 @@ End Unused.
 
 Create HintDb ws.
 
+Hint Constructors wsIx : ws.
+
 Ltac crushRewriteH :=
   autorewrite with infrastructure in *.
 Ltac crushRewrite2H :=

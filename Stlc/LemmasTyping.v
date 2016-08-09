@@ -69,10 +69,12 @@ Ltac crush :=
   try discriminate;
   eauto with ws.
 
-(* Lemma getEvar_wsIx Γ i T : *)
-(*   ⟪ i : T ∈ Γ ⟫ → dom Γ ∋ i. *)
-(* Proof. induction 1; crush. Qed. *)
-(* Hint Resolve getEvar_wsIx : ws. *)
+Lemma getEvar_wsIx Γ i T :
+  ⟪ i : T ∈ Γ ⟫ → dom Γ ∋ i.
+Proof. 
+  induction 1; crush. 
+Qed.
+Hint Resolve getEvar_wsIx : ws.
 
 (* Lemma wsIx_getEvar {Γ i} (wi: dom Γ ∋ i) : *)
 (*   ∀ (P: Prop), (∀ T, ⟪ i : T ∈ Γ ⟫ → P) → P. *)
