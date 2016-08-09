@@ -20,13 +20,16 @@ Module Type Kit.
   Parameter inst_ap: ∀ Y {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift Y TM}, Ap TM Y.
 
   Parameter inst_ap_inj: LemApInj TM Ix.
-  Parameter inst_ap_vr: ∀ Y {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift Y TM}, LemApVr TM Y.
+  Parameter inst_ap_vr:
+    ∀ Y {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift Y TM}, LemApVr TM Y.
   Parameter inst_ap_comp:
     ∀ Y Z {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift Y TM} {vrZ: Vr Z} {wkZ: Wk Z}
       {liftZ: Lift Z TM} {apYZ: Ap Y Z} {apLiftYZTM: LemApLift Y Z TM}
       {compUpYZ: LemCompUp Y Z}, LemApComp TM Y Z.
-  Parameter inst_ap_liftSub: LemApLiftSub TM.
-  Parameter inst_ap_ixComp: ∀ (t: TM) (ξ: Sub Ix) (ζ: Sub TM), t[ξ][ζ] = t[⌈ξ⌉ >=> ζ].
+  Parameter inst_ap_liftSub:
+    ∀ Y {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift Y TM}, LemApLiftSub TM Y.
+  Parameter inst_ap_ixComp:
+    ∀ (t: TM) (ξ: Sub Ix) (ζ: Sub TM), t[ξ][ζ] = t[⌈ξ⌉ >=> ζ].
 
 End Kit.
 
@@ -71,14 +74,33 @@ Module Inst (kit: Kit).
 
   (* Automatically populate the infrastructure database for type TM with lemmas
      for which the rewrite direction is certain. *)
-  Hint Rewrite (apply_beta1_comm TM) : infrastructure.
-  Hint Rewrite (ap_comp' TM TM TM) : infrastructure.
-  Hint Rewrite (wkm_beta_cancel TM) : infrastructure.
-  Hint Rewrite (wkm_beta_cancel' TM) : infrastructure.
-  Hint Rewrite (wkm_beta_cancel'' TM) : infrastructure.
-  Hint Rewrite (wkms_beta_cancel TM) : infrastructure.
-  Hint Rewrite (wkms_beta_cancel' TM) : infrastructure.
-  Hint Rewrite (wkms_beta_cancel'' TM) : infrastructure.
-  Hint Rewrite (beta1_comm TM) : infrastructure.
+  Hint Rewrite (apply_wkm_comm TM Ix) : infrastructure.
+  Hint Rewrite (apply_wkm_beta1_cancel TM TM) : infrastructure.
+  Hint Rewrite (apply_beta1_comm TM TM) : infrastructure.
+
+  Hint Rewrite (apply_wkm_up_comm TM Ix) : infrastructure.
+  Hint Rewrite (apply_wkm_beta1_up_cancel TM TM) : infrastructure.
+  Hint Rewrite (apply_beta1_up_comm TM TM) : infrastructure.
+
+  Hint Rewrite (apply_wkm_up2_comm TM Ix) : infrastructure.
+  Hint Rewrite (apply_wkm_beta1_up2_cancel TM TM) : infrastructure.
+  Hint Rewrite (apply_beta1_up2_comm TM TM) : infrastructure.
+
+  Hint Rewrite (apply_wkm_ups_comm TM Ix) : infrastructure.
+  Hint Rewrite (apply_wkm_beta1_ups_cancel TM TM) : infrastructure.
+  Hint Rewrite (apply_beta1_ups_comm TM TM) : infrastructure.
+
+  Hint Rewrite (ap_liftSub' TM TM) : infrastructure.
+  (* Hint Rewrite (up_liftSub TM) : infrastructure. *)
+  (* Hint Rewrite (liftSub_wkm TM) : infrastructure. *)
+  (* Hint Rewrite (liftSub_wkms TM) : infrastructure. *)
+
+  Hint Rewrite (up_wk TM) : infrastructure.
+  Hint Rewrite (wk_ap TM) : infrastructure.
+
+  (* Set Printing  Implicit. *)
+  (* Unset Printing Notations. *)
+  (* Print Rewrite HintDb infrastructure. *)
+
 
 End Inst.

@@ -209,7 +209,50 @@ Section Indices.
   Proof. apply vr_inj. reflexivity. Defined.
   (* Global Instance sbIx: Subst Ix. *)
 
+  (* The concrete weakening function 'wk' should be considered as an
+     implementation detail and the user code should only ever see the abstract
+     weakening morphism 'wkm'. Especially on indices the function constantly
+     pops up during simplifications and often even reduces to an application of
+     the successor constructor 'S'. To avoid this we capture the essentials of
+     the 'wk' on indices in the following lemmas and make the 'Wk Ix' instance
+     opaque to prevent simplification.
+
+     The first two lemmas encode the reduction behaviour of snoc and up in the
+     successor case. The remaining lemmas replace occurrences of 'wk' in
+     contexts a substitution is expected by occurrences of the abstract
+     weakening 'wkm'.
+
+     In the case of an "unsnoc" operation -- such as in the definition of
+     beta -- the successor constructor should be used instead of 'wk'.
+   *)
+
+  Lemma snoc_wk (X: Type) (ζ: Sub X) (x: X) (i : Ix) :
+    snoc ζ x (wk i) = ζ i.
+  Proof. reflexivity. Qed.
+
+  Lemma up_wk (X: Type) {vrX: Vr X} {wkX: Wk X} (ζ: Sub X) (i : Ix) :
+    (up ζ) (wk i) = wk (ζ i).
+  Proof. reflexivity. Qed.
+
+  Lemma wk_up : wk↑ = wkm↑.
+  Proof. reflexivity. Qed.
+
+  Lemma wk_ups (δ: Dom) : wk ↑⋆ δ = wkm ↑⋆ δ.
+  Proof. reflexivity. Qed.
+
+  Lemma wk_ap (X: Type) {apX: Ap X Ix} (x: X) : x[wk] = x[wkm].
+  Proof. reflexivity. Qed.
+
+  Lemma wk_liftSub (X: Type) {vrX: Vr X} : ⌈wk⌉ = ⌈wkm⌉.
+  Proof. reflexivity. Qed.
+
+  Global Opaque wkIx.
+
 End Indices.
+
+Hint Rewrite snoc_wk : infrastructure.
+Hint Rewrite wk_up : infrastructure.
+Hint Rewrite wk_ups : infrastructure.
 
 (** ** Beta substitution *)
 Section Beta.
@@ -223,20 +266,15 @@ Section Beta.
      and (δ = dom Δ) then (beta δ ζ: Γ ,Δ => Γ).
   *)
   Fixpoint beta (δ: Dom) (ζ: Sub X) {struct δ} : Sub X :=
-    fun i =>
-      match δ with
-        | O   => vr i
-        | S δ => match i with
-                   | O   => ζ O
-                   | S i => beta δ (wk >-> ζ) i
-                 end
-      end.
-  Global Arguments beta !δ ζ i /.
+    match δ with
+      | O   => idm X
+      | S δ => snoc (beta δ (S >-> ζ)) (ζ 0)
+    end.
+  Global Arguments beta !δ ζ i/.
 
   Definition beta1 : X → Sub X :=
     fun x => beta 1 (idm X · x).
-  Definition subst0 {Y} {apYX: Ap Y X} : X → Y → Y :=
-    fun x => ap (beta1 x).
+  Global Arguments beta1 x i/.
 
 End Beta.
 

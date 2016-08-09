@@ -14,6 +14,8 @@ Section Application.
     ap_inj: ∀ (m: Sub Y), Inj m → Inj (ap m).
   Class LemApComp {apXZ: Ap X Z} {apYZ: Ap Y Z} : Prop :=
     ap_comp: ∀ (x: X) (ξ: Sub Y) (ζ: Sub Z), x[ξ][ζ] = x[ξ >=> ζ].
+  Class LemApLiftSub {apXIx: Ap X Ix} : Prop :=
+    ap_liftSub: ∀ (t: X) (ξ: Sub Ix), t[⌈ξ⌉] = t[ξ].
 
   Context {vrX: Vr X}.
 
@@ -38,6 +40,7 @@ Arguments ap_vr {_ _ _ _ _ _ _} ξ i.
 Arguments ap_lift {_ _ _ _ _ _ _ _ _ _} ζ x.
 Arguments ap_wk {_ _ _ _ _ _ _ _} x.
 Arguments comp_up {_ _ _ _ _ _ _ _} ξ ζ.
+Arguments ap_liftSub {_ _ _ _ _ _} t ξ.
 
 Lemma ap_wks {X Y} {vrX: Vr X} {wkX: Wk X} {vrY: Vr Y} {wkY: Wk Y}
   {apXY: Ap X Y} {apWkXY: LemApWk X Y} {apYY: Ap Y Y}
@@ -53,14 +56,15 @@ Proof.
     reflexivity.
 Qed.
 
-Definition ap_id'   := @ap_id.
-Definition ap_comp' := @ap_comp.
-Definition ap_vr'   := @ap_vr.
-Definition ap_lift' := @ap_lift.
-Definition ap_wk'   := @ap_wk.
-Definition ap_wks'  := @ap_wks.
-Definition comp_up' := @comp_up.
-Definition lift_vr' := @lift_vr.
+Definition ap_id'      := @ap_id.
+Definition ap_comp'    := @ap_comp.
+Definition ap_vr'      := @ap_vr.
+Definition ap_lift'    := @ap_lift.
+Definition ap_wk'      := @ap_wk.
+Definition ap_wks'     := @ap_wks.
+Definition comp_up'    := @comp_up.
+Definition lift_vr'    := @lift_vr.
+Definition ap_liftSub' := @ap_liftSub.
 
 Arguments ap_id _ _ {_ _} x.
 Arguments ap_comp' _ _ _ {_ _ _ _ _ _} x ξ ζ.
@@ -70,16 +74,13 @@ Arguments ap_wk' _ _ {_ _ _ _ _ _} x.
 Arguments ap_wks' _ _ {_ _ _ _ _ _ _ _ _} δ x.
 Arguments comp_up' _ _ {_ _ _ _ _ _} ξ ζ.
 Arguments lift_vr' _ _ {_ _ _} i.
+Arguments ap_liftSub' _ _ {_ _ _ _} t ξ.
 
 Section Indices.
 
-  Class LemApLiftSub X {vrX: Vr X} {apXIx: Ap X Ix} {apXX: Ap X X}: Prop :=
-    ap_liftSub:
-      ∀ (x: X) (ξ: Sub Ix), x[⌈ξ⌉] = x[ξ].
-
   Global Instance compUpIx: LemCompUp Ix Ix := {}.
   Proof. intros; extensionality i; destruct i; reflexivity. Qed.
-  Global Instance apLiftSubIx: LemApLiftSub Ix := {}.
+  Global Instance apLiftSubIx: LemApLiftSub Ix Ix := {}.
   Proof. reflexivity. Qed.
   Global Instance apVrIx: LemApVr Ix Ix := {}.
   Proof. reflexivity. Qed.
@@ -111,13 +112,13 @@ Section Lemmas.
     destruct x, y; cbn in *; auto; discriminate.
   Qed.
 
-  Variable X : Type.
-  Context {vrX: Vr X}.
-  Context {wkX: Wk X}.
-
   (* The following lemmas have more generic versions, but we stick to the
      specialized Ix versions to make proof search easier. *)
   Section Indices.
+
+    Variable X : Type.
+    Context {vrX: Vr X}.
+    Context {wkX: Wk X}.
 
     Hint Rewrite (wk_vr' X): infrastructure.
 
@@ -136,8 +137,14 @@ Section Lemmas.
 
     (* The weakening substitution is just the lifted
        weakening renaming. *)
-    Lemma wkm_lift_wk : @wkm X _ _ = ⌈@wkm Ix _ _⌉.
+    Lemma liftSub_wkm : @wkm X _ _ = ⌈@wkm Ix _ _⌉.
     Proof. extensionality i; crushDb. Qed.
+
+    Lemma liftSub_wkms (δ: Dom) : @wkms X _ _ δ = ⌈@wkms Ix _ _ δ⌉.
+    Proof.
+      induction δ; crushDb.
+      rewrite IHδ; extensionality i; crushDb.
+    Qed.
 
     Context {apX : Ap X X}.
     Context {apVrX: LemApVr X X}.
@@ -153,6 +160,9 @@ Section Lemmas.
 
   Section Weakening.
 
+    Variable X : Type.
+    Context {vrX: Vr X}.
+    Context {wkX: Wk X}.
     Context {apX : Ap X X}.
     Context {apWkX: LemApWk X X}.
     Hint Rewrite (wk_vr' X): infrastructure.
@@ -180,6 +190,11 @@ Section Lemmas.
     Lemma up_def (ζ: Sub X) :
       ζ ↑ = (ζ >=> wkm) · vr 0.
     Proof. extensionality i; destruct i; crushDb. Qed.
+
+    Lemma apply_up_wk (ξ: Sub X) (i: Ix) :
+      (ξ↑) (wk i) = wk (ξ i).
+    Proof. reflexivity. Qed.
+    Hint Rewrite apply_up_wk : infrastructure.
 
     Lemma apply_ups_wks (ξ: Sub X) (δ: Dom) (i: Ix) :
       (ξ ↑⋆ δ) (wks δ i) = wks δ (ξ i).
@@ -213,6 +228,9 @@ Section Lemmas.
 
   Section Application.
 
+    Variable X : Type.
+    Context {vrX: Vr X}.
+    Context {wkX: Wk X}.
     Context {apX : Ap X X}.
 
     Section Het.
@@ -292,6 +310,9 @@ Section Lemmas.
 
   Section BetaInteraction.
 
+    Variable X : Type.
+    Context {vrX: Vr X}.
+    Context {wkX: Wk X}.
     Context {apX : Ap X X}.
     Context {apWkX: LemApWk X X}.
     Context {apVrX: LemApVr X X}.
@@ -300,8 +321,16 @@ Section Lemmas.
     Hint Rewrite (wk_vr' X): infrastructure.
     Hint Rewrite apply_wk_ap: infrastructure2.
     Hint Rewrite (comp_id_right X): infrastructure.
-    Hint Rewrite (ap_comp): infrastructure.
+    Hint Rewrite (ap_comp' X X X): infrastructure.
     Hint Rewrite (apply_wkms): infrastructure2.
+    Hint Rewrite (ap_id' X X) : infrastructure.
+    Hint Rewrite (snoc_wk X) : infrastructure.
+    Hint Rewrite (up_wk X) : infrastructure.
+
+    Lemma apply_beta_wks (δ: Dom) :
+      ∀ (ξ: Sub X) i, beta δ ξ (wks δ i) = vr i.
+    Proof. induction δ; crushDb. Qed.
+    Hint Rewrite apply_beta_wks : infrastructure.
 
     Lemma beta_comm δ (ζ₁ ζ₂: Sub X) :
       beta δ ζ₁  >=> ζ₂  =
@@ -314,64 +343,26 @@ Section Lemmas.
       f_equal; extensionality j; crushDb.
     Qed.
 
-    Lemma beta1_comm x (ζ: Sub X) :
-      beta1 x >=> ζ  =
-      (ζ ↑)   >=> beta1 x[ζ].
-    Proof. apply (beta_comm 1). Qed.
-    Hint Rewrite beta1_comm: infrastructure.
-
-    Lemma apply_beta1_comm x₁ x₂ (ζ: Sub X) :
-      x₂[beta1 x₁][ζ] = x₂[ζ↑][beta1 x₁[ζ]].
-    Proof. crushDb. Qed.
-    Hint Rewrite apply_beta1_comm: infrastructure.
-
-    Lemma subst0_comm x₁ x₂ (ζ: Sub X) :
-      (subst0 x₁ x₂)[ζ] =
-      subst0 x₁[ζ] x₂[ζ↑].
-    Proof. unfold subst0; crushDb. Qed.
-    (* Hint Rewrite subst0_comm: infrastructure. *)
-
-    Lemma apply_beta_wks (δ: Dom) :
-      ∀ (ξ: Sub X) i, beta δ ξ (wks δ i) = vr i.
-    Proof. induction δ; crushDb. Qed.
-    Hint Rewrite apply_beta_wks: infrastructure2.
-
-    Lemma wkm_beta_cancel (ξ: Sub X) :
-      wkm >=> beta 1 ξ = idm X.
-    Proof. extensionality i; crushDb. Qed.
-    (* Hint Rewrite wkms_beta_cancel: infrastructure. *)
-
     Lemma wkms_beta_cancel δ (ξ: Sub X) :
       wkms δ >=> beta δ ξ = idm X.
     Proof. extensionality i; crushDb. Qed.
-    (* Hint Rewrite wkms_beta_cancel: infrastructure. *)
 
-    Context {compUpX: LemCompUp X X}.
+    Lemma beta1_comm (x : X) (ζ: Sub X) :
+      beta1 x >=> ζ  =
+      (ζ ↑)   >=> beta1 x[ζ].
+    Proof. apply (beta_comm 1). Qed.
 
-    Lemma wkm_beta_cancel' (ξ: Sub X) :
-      wkm↑ >=> (beta 1 ξ)↑ = idm X.
-    Proof. rewrite <- comp_up, wkm_beta_cancel; apply up_idm. Qed.
-    (* Hint Rewrite wkms_beta_cancel: infrastructure. *)
-
-    Lemma wkm_beta_cancel'' k (ξ: Sub X) :
-      wkm ↑⋆ k >=> (beta 1 ξ) ↑⋆ k = idm X.
-    Proof. rewrite <- comp_ups, wkm_beta_cancel; apply ups_idm. Qed.
-    (* Hint Rewrite wkms_beta_cancel: infrastructure. *)
-
-    Lemma wkms_beta_cancel' δ (ξ: Sub X) :
-      (wkms δ)↑ >=> (beta δ ξ)↑ = idm X.
-    Proof. rewrite <- comp_up, wkms_beta_cancel; apply up_idm. Qed.
-    (* Hint Rewrite wkms_beta_cancel: infrastructure. *)
-
-    Lemma wkms_beta_cancel'' δ k (ξ: Sub X) :
-      (wkms δ ↑⋆ k) >=> (beta δ ξ ↑⋆ k) = idm X.
-    Proof. rewrite <- comp_ups, wkms_beta_cancel; apply ups_idm. Qed.
-    (* Hint Rewrite wkms_beta_cancel: infrastructure. *)
+    Lemma wkm_beta1_cancel (x: X) :
+      wkm >=> beta1 x = idm X.
+    Proof. apply (wkms_beta_cancel 1). Qed.
 
   End BetaInteraction.
 
   Section Misc.
 
+    Variable X : Type.
+    Context {vrX: Vr X}.
+    Context {wkX: Wk X}.
     Context {apX: Ap X X}.
     Context {apVrX: LemApVr X X}.
     Hint Rewrite (ap_vr' X X): infrastructure.
@@ -386,5 +377,100 @@ Section Lemmas.
     (* Hint Rewrite snoc_eta_red: infrastructure. *)
 
   End Misc.
+
+  (* This subsection contains pointful variables of the pointfree lemmas of the
+     previous subsection. These are intended to be user-facing. The Db.Inst
+     module populates the infrastructure database with these lemmas and some
+     others such that it results in a terminating rewrite system (hopefully). *)
+  Section Pointful.
+
+    Variable T X: Type.
+    Context {vrX: Vr X}.
+    Context {wkX: Wk X}.
+    Context {apTIx: Ap T Ix}.
+    Context {apTX: Ap T X}.
+    Context {apXX: Ap X X}.
+    Context {apLiftSub: LemApLiftSub T X}.
+    Context {apCompTX: LemApComp T X X}.
+    Context {apVrX: LemApVr X X}.
+    Context {apWkX: LemApWk X X}.
+    Context {apCompX: LemApComp X X X}.
+    Context {apXIx: Ap X Ix}.
+    Context {compUpX: LemCompUp X X}.
+
+    Hint Rewrite (ap_comp' T X X): infrastructure.
+    Hint Rewrite (ap_id' T X) : infrastructure.
+    Hint Rewrite up_idm : infrastructure.
+    Hint Rewrite ups_idm : infrastructure.
+
+    Hint Rewrite (wkm_comm X) : infrastructure.
+    Hint Rewrite (wkms_beta_cancel X): infrastructure.
+    Hint Rewrite (beta1_comm X): infrastructure.
+    Hint Rewrite (wkm_beta1_cancel X): infrastructure.
+
+    (* Extraordinarily rewrite in the opposite direction. *)
+    Hint Rewrite <- ap_liftSub : infrastructure.
+    Hint Rewrite <- (liftSub_wkm X) : infrastructure.
+    Hint Rewrite <- comp_up : infrastructure.
+    Hint Rewrite <- comp_ups : infrastructure.
+    Hint Rewrite <- (up_liftSub X) : infrastructure.
+    Hint Rewrite <- (ups_liftSub X) : infrastructure.
+
+    Lemma apply_wkm_comm (t: T) (ξ: Sub X) :
+      t[ξ][@wkm Ix _ _] =
+      t[@wkm Ix _ _][ξ↑].
+    Proof. crushDb. Qed.
+
+    Lemma apply_wkm_beta1_cancel (t: T) (x: X) :
+      t[@wkm Ix _ _][beta1 x] = t.
+    Proof. crushDb. Qed.
+
+    Lemma apply_beta1_comm (t: T) (x: X) (ζ: Sub X) :
+      t[beta1 x][ζ] = t[ζ↑][beta1 x[ζ]].
+    Proof. crushDb. Qed.
+
+    (* 1 up variant *)
+    Lemma apply_wkm_up_comm (t: T) (ξ: Sub X) :
+      t[ξ↑][(@wkm Ix _ _)↑] =
+      t[(@wkm Ix _ _)↑][ξ↑↑].
+    Proof. crushDb. Qed.
+
+    Lemma apply_wkm_beta1_up_cancel (t: T) (x: X) :
+      t[(@wkm Ix _ _)↑][(beta1 x)↑] = t.
+    Proof. crushDb. Qed.
+
+    Lemma apply_beta1_up_comm (t: T) (x: X) (ζ: Sub X) :
+      t[(beta1 x)↑][ζ↑] = t[ζ↑↑][(beta1 x[ζ])↑].
+    Proof. crushDb. Qed.
+
+    (* 2 ups variant *)
+    Lemma apply_wkm_up2_comm (t: T) (ξ: Sub X) :
+      t[ξ↑↑][(@wkm Ix _ _)↑↑] =
+      t[(@wkm Ix _ _)↑↑][ξ↑↑↑].
+    Proof. crushDb. Qed.
+
+    Lemma apply_wkm_beta1_up2_cancel (t: T) (x: X) :
+      t[(@wkm Ix _ _)↑↑][(beta1 x)↑↑] = t.
+    Proof. crushDb. Qed.
+
+    Lemma apply_beta1_up2_comm (t: T) (x: X) (ζ: Sub X) :
+      t[(beta1 x)↑↑][ζ↑↑] = t[ζ↑↑↑][(beta1 x[ζ])↑↑].
+    Proof. crushDb. Qed.
+
+    (* δ ups variant *)
+    Lemma apply_wkm_ups_comm (δ: Dom) (t: T) (ξ: Sub X) :
+      t[ξ ↑⋆ δ][@wkm Ix _ _ ↑⋆ δ] =
+      t[@wkm Ix _ _ ↑⋆ δ][ξ↑ ↑⋆ δ].
+    Proof. crushDb. Qed.
+
+    Lemma apply_wkm_beta1_ups_cancel (δ: Dom) (t: T) (x: X) :
+      t[@wkm Ix _ _ ↑⋆ δ][beta1 x ↑⋆ δ] = t.
+    Proof. crushDb. Qed.
+
+    Lemma apply_beta1_ups_comm (δ: Dom) (t: T) (x: X) (ζ: Sub X) :
+      t[beta1 x ↑⋆ δ][ζ ↑⋆ δ] = t[ζ↑ ↑⋆ δ][beta1 x[ζ] ↑⋆ δ].
+    Proof. crushDb. Qed.
+
+  End Pointful.
 
 End Lemmas.

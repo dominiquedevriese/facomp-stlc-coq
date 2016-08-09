@@ -43,7 +43,7 @@ Inductive eval : Tm → Tm → Prop :=
       t --> t' → ECtx C → pctx_app t C --> pctx_app t' C
   | eval_beta {τ₁ t₁ t₂} :
       Value t₂ →
-      app (abs τ₁ t₁) t₂ --> subst0 t₂ t₁
+      app (abs τ₁ t₁) t₂ --> t₁[beta1 t₂]
   | eval_ite_true {t₁ t₂} :
       ite true t₁ t₂ --> t₁
   | eval_ite_false {t₁ t₂} :
@@ -56,16 +56,16 @@ Inductive eval : Tm → Tm → Prop :=
       proj₂ (pair t₁ t₂) --> t₂
   | eval_case_inl {t t₁ t₂} :
       Value t →
-      caseof (inl t) t₁ t₂ --> subst0 t t₁
+      caseof (inl t) t₁ t₂ --> t₁[beta1 t]
   | eval_case_inr {t t₁ t₂} :
       Value t →
-      caseof (inr t) t₁ t₂ --> subst0 t t₂
+      caseof (inr t) t₁ t₂ --> t₂[beta1 t]
   | eval_seq_next {t₁ t₂} :
       Value t₁ →
       seq t₁ t₂ --> t₂
   | eval_fix {τ₁ τ₂ t} :
       fixt τ₁ τ₂ (abs (τ₁ ⇒ τ₂) t) -->
-      subst0 (abs τ₁ (app (fixt τ₁ τ₂ (abs (τ₁ ⇒ τ₂) t[wkm↑])) (var 0))) t
+      t[beta1 (abs τ₁ (app (fixt τ₁ τ₂ (abs (τ₁ ⇒ τ₂) t[wkm↑])) (var 0)))]
 where "t₁ --> t₂" := (eval t₁ t₂).
 
 Inductive Terminating (t: Tm) : Prop :=
