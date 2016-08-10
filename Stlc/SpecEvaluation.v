@@ -37,35 +37,39 @@ Fixpoint ECtx (C: PCtx) : Prop :=
     | pseq₂ _ _ => False
   end.
 
-Reserved Notation "t₁ --> t₂" (at level 80).
-Inductive eval : Tm → Tm → Prop :=
-  | eval_ctx C {t t'} :
-      t --> t' → ECtx C → pctx_app t C --> pctx_app t' C
+Reserved Notation "t₁ -->₀ t₂" (at level 80).
+Inductive eval₀ : Tm → Tm → Prop :=
   | eval_beta {τ₁ t₁ t₂} :
       Value t₂ →
-      app (abs τ₁ t₁) t₂ --> t₁[beta1 t₂]
+      app (abs τ₁ t₁) t₂ -->₀ t₁[beta1 t₂]
   | eval_ite_true {t₁ t₂} :
-      ite true t₁ t₂ --> t₁
+      ite true t₁ t₂ -->₀ t₁
   | eval_ite_false {t₁ t₂} :
-      ite false t₁ t₂ --> t₂
+      ite false t₁ t₂ -->₀ t₂
   | eval_proj₁ {t₁ t₂} :
       Value t₁ → Value t₂ →
-      proj₁ (pair t₁ t₂) --> t₁
+      proj₁ (pair t₁ t₂) -->₀ t₁
   | eval_proj₂ {t₁ t₂} :
       Value t₁ → Value t₂ →
-      proj₂ (pair t₁ t₂) --> t₂
+      proj₂ (pair t₁ t₂) -->₀ t₂
   | eval_case_inl {t t₁ t₂} :
       Value t →
-      caseof (inl t) t₁ t₂ --> t₁[beta1 t]
+      caseof (inl t) t₁ t₂ -->₀ t₁[beta1 t]
   | eval_case_inr {t t₁ t₂} :
       Value t →
-      caseof (inr t) t₁ t₂ --> t₂[beta1 t]
+      caseof (inr t) t₁ t₂ -->₀ t₂[beta1 t]
   | eval_seq_next {t₁ t₂} :
       Value t₁ →
-      seq t₁ t₂ --> t₂
+      seq t₁ t₂ -->₀ t₂
   | eval_fix {τ₁ τ₂ t} :
-      fixt τ₁ τ₂ (abs (τ₁ ⇒ τ₂) t) -->
+      fixt τ₁ τ₂ (abs (τ₁ ⇒ τ₂) t) -->₀
       t[beta1 (abs τ₁ (app (fixt τ₁ τ₂ (abs (τ₁ ⇒ τ₂) t[wkm↑])) (var 0)))]
+where "t₁ -->₀ t₂" := (eval₀ t₁ t₂).
+
+Reserved Notation "t₁ --> t₂" (at level 80).
+Inductive eval : Tm → Tm → Prop :=
+| eval_ctx₀ C {t t'} :
+    t -->₀ t' → ECtx C → pctx_app t C --> pctx_app t' C
 where "t₁ --> t₂" := (eval t₁ t₂).
 
 Inductive Terminating (t: Tm) : Prop :=
@@ -81,5 +85,7 @@ Notation "t₁ -->* t₂" := (clos_refl_trans_1n Tm eval t₁ t₂) (at level 80
 Notation "t₁ -->+ t₂" := (clos_trans_1n Tm eval t₁ t₂) (at level 80).
 
 Hint Constructors eval : eval.
+Hint Constructors eval₀ : eval.
 Hint Constructors clos_refl_trans_1n : eval.
 Hint Constructors clos_trans_1n : eval.
+Hint Constructors ECtx : eval.
