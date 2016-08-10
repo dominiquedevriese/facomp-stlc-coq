@@ -3,6 +3,7 @@ Require Import Stlc.SpecSyntax.
 Require Import Stlc.SpecEvaluation.
 Require Import Stlc.SpecTyping.
 Require Import Utlc.SpecSyntax.
+Require Import Utlc.SpecEvaluation.
 Require Import Utlc.Inst.
 Require Import UVal.UVal.
 
@@ -13,6 +14,7 @@ Require Import Omega.
 Module S := Stlc.SpecSyntax.
 Module SE := Stlc.SpecEvaluation.
 Module U := Utlc.SpecSyntax.
+Module UE := Utlc.SpecEvaluation.
 
 Definition OfTypeStlc (τ : PTy) (t : S.Tm) : Prop :=
   ⟪ empty ⊢ t : repEmul τ ⟫.
@@ -41,8 +43,8 @@ Definition PCRel := PTy -> S.PCtx -> U.PCtx -> Prop.
 
 Definition Obs (d : Direction) (w : World) (ts : S.Tm) (tu : U.UTm) :=
   match d with
-    | dir_lt => SE.TerminatingN ts w → True
-    | dir_gt => True → SE.Terminating ts
+    | dir_lt => SE.TerminatingN ts w → UE.Terminating tu
+    | dir_gt => UE.TerminatingN tu w → SE.Terminating ts
   end. 
 
 Definition contrel'

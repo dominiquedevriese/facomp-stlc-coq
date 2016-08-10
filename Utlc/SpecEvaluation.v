@@ -37,71 +37,75 @@ Fixpoint ECtx (C: PCtx) : Prop :=
     | pseq₂ _ _ => False
   end.
 
-Reserved Notation "t₁ --> t₂" (at level 80).
-Inductive eval : UTm → UTm → Prop :=
-  | eval_ctx C {t t'} :
-      t --> t' → ECtx C → pctx_app t C --> pctx_app t' C
-  | eval_ctx_wrong C :
-      C ≠ phole →
-      pctx_app wrong C --> wrong
+Reserved Notation "t₁ -->₀ t₂" (at level 80).
+Inductive eval₀ : UTm → UTm → Prop :=
   | eval_beta_wrong {t₁ t₂} :
       Value t₁ → Value t₂ →
       (∀ t,  t₁ ≠ abs t) →
-      app t₁ t₂ --> wrong
+      app t₁ t₂ -->₀ wrong
   | eval_beta {t₁ t₂} :
       Value t₂ →
-      app (abs t₁) t₂ --> t₁[beta1 t₂]
+      app (abs t₁) t₂ -->₀ t₁[beta1 t₂]
   | eval_ite_wrong {t₁ t₂ t₃} :
       Value t₁ → t₁ ≠ true  → t₁ ≠ false →
-      ite t₁ t₂ t₃ --> wrong
+      ite t₁ t₂ t₃ -->₀ wrong
   | eval_ite_true {t₁ t₂} :
-      ite true t₁ t₂ --> t₁
+      ite true t₁ t₂ -->₀ t₁
   | eval_ite_false {t₁ t₂} :
-      ite false t₁ t₂ --> t₂
+      ite false t₁ t₂ -->₀ t₂
   | eval_proj₁_wrong {t} :
       Value t →
       (∀ t₁ t₂, t ≠ pair t₁ t₂) →
-      proj₁ t --> wrong
+      proj₁ t -->₀ wrong
   | eval_proj₁ {t₁ t₂} :
       Value t₁ → Value t₂ →
-      proj₁ (pair t₁ t₂) --> t₁
+      proj₁ (pair t₁ t₂) -->₀ t₁
   | eval_proj₂_wrong {t} :
       Value t →
       (∀ t₁ t₂, t ≠ pair t₁ t₂) →
-      proj₂ t --> wrong
+      proj₂ t -->₀ wrong
   | eval_proj₂ {t₁ t₂} :
       Value t₁ → Value t₂ →
-      proj₂ (pair t₁ t₂) --> t₂
+      proj₂ (pair t₁ t₂) -->₀ t₂
   | eval_case_wrong {t t₁ t₂} :
       Value t →
       (∀ t', t ≠ inl t') →
       (∀ t', t ≠ inr t') →
-      caseof t t₁ t₂ --> wrong
+      caseof t t₁ t₂ -->₀ wrong
   | eval_case_inl {t t₁ t₂} :
       Value t →
-      caseof (inl t) t₁ t₂ --> t₁[beta1 t]
+      caseof (inl t) t₁ t₂ -->₀ t₁[beta1 t]
   | eval_case_inr {t t₁ t₂} :
       Value t →
-      caseof (inr t) t₁ t₂ --> t₂[beta1 t]
+      caseof (inr t) t₁ t₂ -->₀ t₂[beta1 t]
   | eval_seq_next {t₁ t₂} :
       Value t₁ →
-      seq t₁ t₂ --> t₂
+      seq t₁ t₂ -->₀ t₂
+where "t₁ -->₀ t₂" := (eval₀ t₁ t₂).
+
+Reserved Notation "t₁ --> t₂" (at level 80).
+Inductive eval : UTm → UTm → Prop :=
+  | eval_ctx₀ C {t t'} :
+      t -->₀ t' → ECtx C → pctx_app t C --> pctx_app t' C
+  | eval_ctx_wrong₀ C :
+      ECtx C → C ≠ phole →
+      pctx_app wrong C --> wrong
 where "t₁ --> t₂" := (eval t₁ t₂).
 
 Lemma eval_beta' {t₁ t₂ t'} :
   Value t₂ → t' = t₁[beta1 t₂] →
   app (abs t₁) t₂ --> t'.
-Proof. intros; subst; constructor; auto. Qed.
+Proof. intros; subst; refine (eval_ctx₀ phole _ _); constructor; auto. Qed.
 
 Lemma eval_case_inl' {t t₁ t₂ t'} :
   Value t → t' = t₁[beta1 t] →
   caseof (inl t) t₁ t₂ --> t'.
-Proof. intros; subst; constructor; auto. Qed.
+Proof. intros; subst; refine (eval_ctx₀ phole _ _); constructor; auto. Qed.
 
 Lemma eval_case_inr' {t t₁ t₂ t'} :
   Value t → t' = t₂[beta1 t] →
   caseof (inr t) t₁ t₂ --> t'.
-Proof. intros; subst; constructor; auto. Qed.
+Proof. intros; subst; refine (eval_ctx₀ phole _ _); constructor; auto. Qed.
 
 Inductive Terminating (t: UTm) : Prop :=
   | TerminatingI : (∀ t', t --> t' → Terminating t') → Terminating t.
@@ -115,6 +119,15 @@ Notation "t ⇑" := (not (Terminating t)) (at level 8, format "t ⇑").
 Notation "t₁ -->* t₂" := (clos_refl_trans_1n UTm eval t₁ t₂) (at level 80).
 Notation "t₁ -->+ t₂" := (clos_trans_1n UTm eval t₁ t₂) (at level 80).
 
+Hint Constructors eval₀ : eval.
 Hint Constructors eval : eval.
 Hint Constructors clos_refl_trans_1n : eval.
 Hint Constructors clos_trans_1n : eval.
+
+Definition normal (t : UTm) := not (exists t', t --> t').
+
+(* Terminates in maximum n steps *)
+Inductive TerminatingN (t: UTm) : nat -> Prop :=
+  | TerminatingIV : forall n, Value t -> TerminatingN t n
+  | TerminatingIS : forall n, (∀ t', t --> t' → TerminatingN t' n) → TerminatingN t (S n).
+Notation "t ⇓_ n" := (TerminatingN t n) (at level 8, format "t ⇓_ n").

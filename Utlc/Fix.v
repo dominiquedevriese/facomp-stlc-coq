@@ -26,7 +26,7 @@ Proof.
   - split.
     + unfold ufix₁.
       apply eval_beta'; crushUtlc.
-    + apply eval_beta; constructor.
+    + apply eval_beta'; constructor.
 Qed.
 
 Lemma ufix_ws (γ : Dom) :
