@@ -20,8 +20,8 @@ Proof.
   cut (stlcOmega ty --> stlcOmegaHelp ty ∧ stlcOmegaHelp ty --> stlcOmega ty).
   - destruct 1. eauto with eval.
   - unfold stlcOmega, stlcOmegaHelp; split.
-    + apply (eval_ctx (papp₁ phole unit)); constructor.
-    + repeat constructor.
+    + apply (eval_ctx₀ (papp₁ phole unit)); constructor.
+    + apply (eval_ctx₀ phole); repeat constructor.
 Qed.
 
 Lemma stlcOmega_div {ty} : (stlcOmega ty)⇑.

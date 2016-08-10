@@ -88,4 +88,3 @@ Hint Constructors eval : eval.
 Hint Constructors eval₀ : eval.
 Hint Constructors clos_refl_trans_1n : eval.
 Hint Constructors clos_trans_1n : eval.
-Hint Constructors ECtx : eval.

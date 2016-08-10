@@ -47,6 +47,7 @@ Ltac progressH :=
   end.
 
 Hint Constructors eval : pctx.
+Hint Constructors eval₀ : pctx.
 Hint Extern 20 (Value _) => cbn : pctx.
 Hint Extern 20 (ECtx _) => cbn : pctx.
 
@@ -54,7 +55,7 @@ Lemma local_progress {t U} (wt: ⟪ empty ⊢ t : U ⟫) :
   Value t ∨
   ∃ C t₀ t₀',
     t = pctx_app t₀ C ∧
-    t₀ --> t₀' ∧
+    t₀ -->₀ t₀' ∧
     ECtx C.
 Proof.
   depind wt;
@@ -82,12 +83,19 @@ Proof.
     eauto using Typing.
 Qed.
 
-Lemma preservation {t t'} (r: t --> t') :
+Lemma preservation₀ {t t'} (r : t -->₀ t') :
   ∀ {Γ τ}, ⟪ Γ ⊢ t : τ ⟫ → ⟪ Γ ⊢ t' : τ ⟫.
 Proof.
   induction r;
     eauto using context_replacement;
     crushTyping.
+Qed.
+
+Lemma preservation {t t'} (r: t --> t') :
+  ∀ {Γ τ}, ⟪ Γ ⊢ t : τ ⟫ → ⟪ Γ ⊢ t' : τ ⟫.
+Proof.
+  induction r.
+  eauto using context_replacement, preservation₀.
 Qed.
 
 Lemma termination_value {t τ} (wt: ⟪ empty ⊢ t : τ ⟫) :

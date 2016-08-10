@@ -82,147 +82,92 @@ Proof.
   refine (inversion_termination_evalcontext_help C t _ ec term eq_refl). 
 Qed.
 
-(* (* Termination and divergene *) *)
-(* Lemma inversion_termination_app₁ {t₁ t₂} : *)
-(*   (app t₁ t₂)⇓ → t₁⇓. *)
-(* Proof. *)
-(*   refine (inversion_termination_evalcontext (papp₁ phole t₂) _ _). *)
-(*   constructor. *)
-(* Qed. *)
+(* Termination and divergene *)
+Lemma inversion_termination_app₁ {t₁ t₂} :
+  (app t₁ t₂)⇓ → t₁⇓.
+Proof.
+  refine (inversion_termination_evalcontext (papp₁ phole _) _ _).
+  simpl; eauto.
+Qed.
 
-(* Lemma inversion_termination_app₂ {t₁ t₂} : *)
-(*   Value t₁ → (app t₁ t₂)⇓ → t₂⇓. *)
-(* Proof. *)
-(*   intros v₁ nr. *)
-(*   depind nr. *)
-(*   constructor; intros. *)
-(*   eapply H0; eauto. *)
-(*   eapply (eval_ctx (papp₂ t₁ phole)); simpl; eauto. *)
-(* Qed. *)
+Lemma inversion_termination_app₂ {t₁ t₂} :
+  Value t₁ → (app t₁ t₂)⇓ → t₂⇓.
+Proof.
+  intros v.
+  refine (inversion_termination_evalcontext (papp₂ _ phole) _ _).
+  simpl; eauto.
+Qed.
 
-(* (* Lemma inversion_termination_app₂' {t₁ τ₁ t₂} : *) *)
-(* (*   ⟪ empty ⊢ t₁ : τ₁ ⟫ → (app t₁ t₂)⇓ → t₂⇓. *) *)
-(* (* Proof. *) *)
-(* (*   intros wt₁ nr. *) *)
-(* (*   destruct (termination_value wt₁) as (t₁' & ? & ?). *) *)
-(* (*   eapply (inversion_termination_app₁ nr). *) *)
-(* (*   eapply inversion_termination_app₂; eauto. *) *)
-(* (*   assert (app t₁ t₂ -->* app t₁' t₂) *) *)
-(* (*     by (eapply (evalstar_ctx (papp₁ phole t₂)); simpl; auto). *) *)
-(* (*   eapply (termination_closed_under_evalstar H1); auto. *) *)
-(* (* Qed. *) *)
+Lemma inversion_termination_ite₁ {t₁ t₂ t₃} :
+  (ite t₁ t₂ t₃)⇓ → t₁⇓.
+Proof.
+  refine (inversion_termination_evalcontext (pite₁ phole _ _) _ _).
+  simpl; eauto.
+Qed.
 
-(* Lemma inversion_termination_ite₁ {t₁ t₂ t₃} : *)
-(*   (ite t₁ t₂ t₃)⇓ → t₁⇓. *)
-(* Proof. *)
-(*   intro nr. depind nr. *)
-(*   constructor; intros. *)
-(*   eapply H0; eauto. *)
-(*   eapply (eval_ctx (pite₁ phole t₂ t₃)); simpl; eauto. *)
-(* Qed. *)
+Lemma inversion_termination_pair₁ {t₁ t₂} :
+  (pair t₁ t₂)⇓ → t₁⇓.
+Proof.
+  refine (inversion_termination_evalcontext (ppair₁ phole _) _ _).
+  simpl; eauto.
+Qed.
 
-(* Lemma inversion_termination_pair₁ {t₁ t₂} : *)
-(*   (pair t₁ t₂)⇓ → t₁⇓. *)
-(* Proof. *)
-(*   intro nr. depind nr. *)
-(*   constructor; intros. *)
-(*   eapply H0; eauto. *)
-(*   eapply (eval_ctx (ppair₁ phole t₂)); simpl; eauto. *)
-(* Qed. *)
+Lemma inversion_termination_pair₂ {t₁ t₂} :
+  Value t₁ → (pair t₁ t₂)⇓ → t₂⇓.
+Proof.
+  intros v₁.
+  refine (inversion_termination_evalcontext (ppair₂ _ phole) _ _).
+  simpl; eauto.
+Qed.
 
-(* Lemma inversion_termination_pair₂ {t₁ t₂} : *)
-(*   Value t₁ → (pair t₁ t₂)⇓ → t₂⇓. *)
-(* Proof. *)
-(*   intros v₁ nr. *)
-(*   depind nr. *)
-(*   constructor; intros. *)
-(*   eapply H0; eauto. *)
-(*   eapply (eval_ctx (ppair₂ t₁ phole)); simpl; eauto. *)
-(* Qed. *)
+Lemma inversion_termination_proj₁ {t} :
+  (proj₁ t)⇓ → t⇓.
+Proof.
+  refine (inversion_termination_evalcontext (pproj₁ phole) _ _).
+  simpl; eauto.
+Qed.
 
-(* Lemma inversion_termination_proj₁ {t} : *)
-(*   (proj₁ t)⇓ → t⇓. *)
-(* Proof. *)
-(*   intro nr. depind nr. *)
-(*   constructor; intros. *)
-(*   eapply H0; eauto. *)
-(*   eapply (eval_ctx (pproj₁ phole)); simpl; eauto. *)
-(* Qed. *)
+Lemma inversion_termination_proj₂ {t} :
+  (proj₂ t)⇓ → t⇓.
+Proof.
+  refine (inversion_termination_evalcontext (pproj₂ phole) _ _).
+  simpl; eauto.
+Qed.
 
-(* Lemma inversion_termination_proj₂ {t} : *)
-(*   (proj₂ t)⇓ → t⇓. *)
-(* Proof. *)
-(*   intro nr. depind nr. *)
-(*   constructor; intros. *)
-(*   eapply H0; eauto. *)
-(*   eapply (eval_ctx (pproj₂ phole)); simpl; eauto. *)
-(* Qed. *)
+Lemma inversion_termination_inl {t} :
+  (inl t)⇓ → t⇓.
+Proof.
+  refine (inversion_termination_evalcontext (pinl phole) _ _).
+  simpl; eauto.
+Qed.
 
-(* Lemma inversion_termination_inl {t} : *)
-(*   (inl t)⇓ → t⇓. *)
-(* Proof. *)
-(*   intro nr. depind nr. *)
-(*   constructor; intros. *)
-(*   eapply H0; eauto. *)
-(*   eapply (eval_ctx (pinl phole)); simpl; eauto. *)
-(* Qed. *)
+Lemma inversion_termination_inr {t} :
+  (inr t)⇓ → t⇓.
+Proof.
+  refine (inversion_termination_evalcontext (pinr phole) _ _).
+  simpl; eauto.
+Qed.
 
-(* Lemma inversion_termination_inr {t} : *)
-(*   (inr t)⇓ → t⇓. *)
-(* Proof. *)
-(*   intro nr. depind nr. *)
-(*   constructor; intros. *)
-(*   eapply H0; eauto. *)
-(*   eapply (eval_ctx (pinr phole)); simpl; eauto. *)
-(* Qed. *)
+Lemma inversion_termination_caseof₁ {t₁ t₂ t₃} :
+  (caseof t₁ t₂ t₃)⇓ → t₁⇓.
+Proof.
+  refine (inversion_termination_evalcontext (pcaseof₁ phole _ _) _ _).
+  simpl; eauto.
+Qed.
 
-(* Lemma inversion_termination_caseof₁ {t₁ t₂ t₃} : *)
-(*   (caseof t₁ t₂ t₃)⇓ → t₁⇓. *)
-(* Proof. *)
-(*   intro nr. depind nr. *)
-(*   constructor; intros. *)
-(*   eapply H0; eauto. *)
-(*   eapply (eval_ctx (pcaseof₁ phole t₂ t₃)); simpl; eauto. *)
-(* Qed. *)
+Lemma inversion_termination_seq₁ {t₁ t₂} :
+  (seq t₁ t₂)⇓ → t₁⇓.
+Proof.
+  refine (inversion_termination_evalcontext (pseq₁ phole _) _ _).
+  simpl; eauto.
+Qed.
 
-(* Lemma inversion_termination_seq₁ {t₁ t₂} : *)
-(*   (seq t₁ t₂)⇓ → t₁⇓. *)
-(* Proof. *)
-(*   intro nr. depind nr. *)
-(*   constructor; intros. *)
-(*   eapply H0; eauto. *)
-(*   eapply (eval_ctx (pseq₁ phole t₂)); simpl; eauto. *)
-(* Qed. *)
-
-(* Lemma inversion_termination_fixt {τ₁ τ₂ t} : *)
-(*   (fixt τ₁ τ₂ t)⇓ → t⇓. *)
-(* Proof. *)
-(*   intro nr. depind nr. *)
-(*   constructor; intros. *)
-(*   eapply H0; eauto. *)
-(*   eapply (eval_ctx (pfixt τ₁ τ₂ phole)); simpl; eauto. *)
-(* Qed. *)
-
-(* Lemma inversion_termination_evalcontext : *)
-(*   ∀ C t, ECtx C → Terminating (pctx_app t C) → Terminating t. *)
-(* Proof. *)
-(*   induction C; crushStlc; destruct_conjs; *)
-(*   try match goal with *)
-(*         | [ H: False |- _ ] => destruct H *)
-(*       end. *)
-(*   - eauto using inversion_termination_app₁. *)
-(*   - eauto using inversion_termination_app₂. *)
-(*   - eauto using inversion_termination_ite₁. *)
-(*   - eauto using inversion_termination_pair₁. *)
-(*   - eauto using inversion_termination_pair₂. *)
-(*   - eauto using inversion_termination_proj₁. *)
-(*   - eauto using inversion_termination_proj₂. *)
-(*   - eauto using inversion_termination_inl. *)
-(*   - eauto using inversion_termination_inr. *)
-(*   - eauto using inversion_termination_caseof₁. *)
-(*   - eauto using inversion_termination_seq₁. *)
-(*   - eauto using inversion_termination_fixt. *)
-(* Qed. *)
+Lemma inversion_termination_fixt {τ₁ τ₂ t} : 
+  (fixt τ₁ τ₂ t)⇓ → t⇓. 
+Proof. 
+  refine (inversion_termination_evalcontext (pfixt _ _ phole) _ _).
+  simpl; eauto.
+Qed. 
 
 Lemma termination_closed_under_evalplus {t t'} :
   t -->+ t' → t⇓ → t'⇓.
