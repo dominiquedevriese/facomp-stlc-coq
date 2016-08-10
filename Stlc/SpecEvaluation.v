@@ -88,3 +88,11 @@ Hint Constructors eval : eval.
 Hint Constructors eval₀ : eval.
 Hint Constructors clos_refl_trans_1n : eval.
 Hint Constructors clos_trans_1n : eval.
+
+Definition normal (t : Tm) := not (exists t', t --> t').
+
+(* Terminates in maximum n steps *)
+Inductive TerminatingN (t: Tm) : nat -> Prop :=
+  | TerminatingIV : forall n, Value t -> TerminatingN t n
+  | TerminatingIS : forall n, (∀ t', t --> t' → TerminatingN t' n) → TerminatingN t (S n).
+Notation "t ⇓_ n" := (TerminatingN t n) (at level 8, format "t ⇓_ n").

@@ -1,5 +1,6 @@
 Require Export LogRel.PseudoType.
 Require Import Stlc.SpecSyntax.
+Require Import Stlc.SpecEvaluation.
 Require Import Stlc.SpecTyping.
 Require Import Utlc.SpecSyntax.
 Require Import Utlc.Inst.
@@ -10,6 +11,7 @@ Require Import Coq.Arith.Wf_nat.
 Require Import Omega.
 
 Module S := Stlc.SpecSyntax.
+Module SE := Stlc.SpecEvaluation.
 Module U := Utlc.SpecSyntax.
 
 Definition OfTypeStlc (τ : PTy) (t : S.Tm) : Prop :=
@@ -39,8 +41,8 @@ Definition PCRel := PTy -> S.PCtx -> U.PCtx -> Prop.
 
 Definition Obs (d : Direction) (w : World) (ts : S.Tm) (tu : U.UTm) :=
   match d with
-    | dir_lt => True
-    | dir_gt => True
+    | dir_lt => SE.TerminatingN ts w → True
+    | dir_gt => True → SE.Terminating ts
   end. 
 
 Definition contrel'

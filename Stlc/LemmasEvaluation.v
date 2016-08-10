@@ -212,3 +212,43 @@ Qed.
 Lemma cycles_dont_terminate {t} :
   t -->+ t → t⇑.
 Proof. induction 2 using Terminating_ind'; eauto. Qed.
+
+Lemma values_are_normal {t : Tm} : Value t -> normal t.
+Proof.
+  intros  vt.
+  induction t; simpl in vt; try match goal with [ H : False |- _ ] => destruct H end; try eauto; intro et'; destruct et' as [t' et'];
+  depind et'; induction C; crushStlc;
+  repeat try match goal with 
+      | [ H : abs _ _ -->₀ _ |- _] => depind H
+      | [ H : unit -->₀ _ |- _] => depind H
+      | [ H : true -->₀ _ |- _] => depind H
+      | [ H : false -->₀ _ |- _] => depind H
+      | [ H : pair _ _ -->₀ _ |- _] => depind H
+      | [ H : inl _ -->₀ _ |- _] => depind H
+      | [ H : inr _ -->₀ _ |- _] => depind H
+      | [ H : pair _ _ = pair _ _ |- _] => inversion H; clear H; subst
+      | [ H : inl _ = inl _ |- _] => inversion H; clear H; subst
+      | [ H : inr _ = inr _ |- _] => inversion H; clear H; subst
+      | [ H : _ ∧ _ |- _] => destruct_conjs
+  end.
+  - apply IHt1; [assumption| exists (pctx_app t' C); eauto with eval].
+  - apply IHt2; [assumption| exists (pctx_app t' C); eauto with eval].
+  - apply IHt; [assumption| exists (pctx_app t' C); eauto with eval].
+  - apply IHt; [assumption| exists (pctx_app t' C); eauto with eval].
+Qed.
+
+Lemma TerminatingDN (t: Tm) n (m: t ⇓_ (S n)) :
+  ∀ t', t --> t' → TerminatingN t' n.
+Proof. 
+  depind m; intros t' e'; eauto using values_are_normal.
+  exfalso.
+  refine (values_are_normal H _); exists t'; auto.
+Qed.
+
+
+Lemma TerminatingN_Terminating {t : Tm} {n} : t ⇓_ n -> t ⇓.
+Proof.
+  induction 1; constructor; try assumption.
+  intros t' e'. exfalso. refine (values_are_normal H _).
+  exists t'. auto.
+Qed.
