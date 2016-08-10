@@ -11,11 +11,11 @@ Stlc/Inst.v
 Stlc/LemmasEvaluation.v
 Stlc/LemmasProgramContext.v
 Stlc/LemmasTyping.v
-Stlc/Omega.v
 Stlc/SpecEquivalent.v
 Stlc/SpecEvaluation.v
 Stlc/SpecSyntax.v
 Stlc/SpecTyping.v
+Stlc/StlcOmega.v
 Stlc/TypeSafety.v
 UVal/UVal.v
 Utlc/Fix.v
