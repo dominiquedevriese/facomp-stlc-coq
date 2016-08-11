@@ -181,7 +181,21 @@ Ltac crushStlcSyntaxMatchH :=
     | [ H: S _ = S _             |- _ ] => apply eq_add_S in H
     | [ H: tarr _ _  = tarr _ _  |- _ ] => inversion H; clear H
     | [ H: tprod _ _ = tprod _ _ |- _ ] => inversion H; clear H
-    | [ H: tsum _ _ = tsum _ _   |- _ ] => inversion H; clear H
+    | [ H: tsum _ _  = tsum _ _  |- _ ] => inversion H; clear H
+
+    | [ H: var _        = var _        |- _ ] => inversion H; clear H
+    | [ H: abs _ _      = abs _ _      |- _ ] => inversion H; clear H
+    | [ H: app _ _      = app _ _      |- _ ] => inversion H; clear H
+    | [ H: pair _ _     = pair _ _     |- _ ] => inversion H; clear H
+    | [ H: ite _ _ _    = ite _ _ _    |- _ ] => inversion H; clear H
+    | [ H: proj₁ _      = proj₁ _      |- _ ] => inversion H; clear H
+    | [ H: proj₂ _      = proj₂ _      |- _ ] => inversion H; clear H
+    | [ H: inl _        = inl _        |- _ ] => inversion H; clear H
+    | [ H: inr _        = inr _        |- _ ] => inversion H; clear H
+    | [ H: caseof _ _ _ = caseof _ _ _ |- _ ] => inversion H; clear H
+    | [ H: seq _ _      = seq _ _      |- _ ] => inversion H; clear H
+    | [ H: fixt _ _ _   = fixt _ _ _   |- _ ] => inversion H; clear H
+
     | [ |- S _          = S _          ] => f_equal
     | [ |- var _        = var _        ] => f_equal
     | [ |- abs _ _      = abs _ _      ] => f_equal
@@ -202,14 +216,3 @@ Ltac crushStlcSyntaxMatchH :=
     | [ |- context[apTm ?ξ ?t] ] =>
       change (apTm ξ t) with t[ξ]
   end.
-
-Ltac crushStlc :=
-  intros;
-  repeat
-    (cbn in *;
-     crushRewriteH;
-     repeat crushDbMatchH;
-     repeat crushStlcSyntaxMatchH;
-     try discriminate;
-     try subst);
-  eauto.

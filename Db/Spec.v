@@ -156,7 +156,6 @@ Section Lift.
 
   Lemma liftXX_id (x: X) : lift x = x.
   Proof. reflexivity. Qed.
-  Global Opaque liftXX.
 
   Context {Y: Type}.
   Context {vrY: Vr Y}.
@@ -224,35 +223,33 @@ Section Indices.
 
      In the case of an "unsnoc" operation -- such as in the definition of
      beta -- the successor constructor should be used instead of 'wk'.
+
+     UPDATE: autorewrites replaced by a tactic
    *)
 
-  Lemma snoc_wk (X: Type) (ζ: Sub X) (x: X) (i : Ix) :
-    snoc ζ x (wk i) = ζ i.
-  Proof. reflexivity. Qed.
+  (* Lemma snoc_wk {X: Type} (ζ: Sub X) (x: X) (i : Ix) : *)
+  (*   snoc ζ x (wk i) = ζ i. *)
+  (* Proof. reflexivity. Qed. *)
 
-  Lemma up_wk (X: Type) {vrX: Vr X} {wkX: Wk X} (ζ: Sub X) (i : Ix) :
-    (up ζ) (wk i) = wk (ζ i).
-  Proof. reflexivity. Qed.
+  (* Lemma up_wk {X: Type} {vrX: Vr X} {wkX: Wk X} (ζ: Sub X) (i : Ix) : *)
+  (*   (up ζ) (wk i) = wk (ζ i). *)
+  (* Proof. reflexivity. Qed. *)
 
-  Lemma wk_up : wk↑ = wkm↑.
-  Proof. reflexivity. Qed.
+  (* Lemma wk_up : wk↑ = wkm↑. *)
+  (* Proof. reflexivity. Qed. *)
 
-  Lemma wk_ups (δ: Dom) : wk ↑⋆ δ = wkm ↑⋆ δ.
-  Proof. reflexivity. Qed.
+  (* Lemma wk_ups (δ: Dom) : wk ↑⋆ δ = wkm ↑⋆ δ. *)
+  (* Proof. reflexivity. Qed. *)
 
-  Lemma wk_ap (X: Type) {apX: Ap X Ix} (x: X) : x[wk] = x[wkm].
-  Proof. reflexivity. Qed.
+  (* Lemma wk_ap {X: Type} {apX: Ap X Ix} (x: X) : x[wk] = x[wkm]. *)
+  (* Proof. reflexivity. Qed. *)
 
-  Lemma wk_liftSub (X: Type) {vrX: Vr X} : ⌈wk⌉ = ⌈wkm⌉.
-  Proof. reflexivity. Qed.
+  (* Lemma wk_liftSub (X: Type) {vrX: Vr X} : ⌈wk⌉ = ⌈wkm⌉. *)
+  (* Proof. reflexivity. Qed. *)
 
   Global Opaque wkIx.
 
 End Indices.
-
-Hint Rewrite snoc_wk : infrastructure.
-Hint Rewrite wk_up : infrastructure.
-Hint Rewrite wk_ups : infrastructure.
 
 (** ** Beta substitution *)
 Section Beta.
@@ -270,7 +267,7 @@ Section Beta.
       | O   => idm X
       | S δ => snoc (beta δ (S >-> ζ)) (ζ 0)
     end.
-  Global Arguments beta !δ ζ i/.
+  Global Arguments beta !δ ζ / i.
 
   Definition beta1 : X → Sub X :=
     fun x => beta 1 (idm X · x).
@@ -288,52 +285,120 @@ Definition WsSub {X} {wsX: Ws X} (γ δ: Dom) (ξ: Sub X) : Prop :=
 Notation "⟨ ξ : γ => δ ⟩" := (WsSub γ δ ξ)
  (at level 0, ξ at level 99, γ at level 99, δ at level 99).
 
-Section Unused.
+Section BasicLemmas.
 
   Class WsVr (X: Type) {wsX: Ws X} {vrX: Vr X} :=
-    {wsVr: ∀ (δ: Dom) (i: Ix), δ ∋ i → ⟨ δ ⊢ (vr (X := X) i) ⟩}.
+    {wsVr: ∀ (δ: Dom) (i: Ix), δ ∋ i → ⟨ δ ⊢ (vr (X := X) i) ⟩;
+     wsiVr: ∀ (δ: Dom) (i: Ix), ⟨ δ ⊢ (vr (X := X) i) ⟩ → δ ∋ i
+    }.
   Class WsWk (X: Type) {wsX: Ws X} {vrX: Vr X} {wkX: Wk X} :=
-    {wsWk: ∀ (δ: Dom) (x: X), ⟨ δ ⊢ x ⟩ → ⟨ S δ ⊢ wk x ⟩}.
-  Class WsiWk (X: Type) {wsX: Ws X} {vrX: Vr X} {wkX: Wk X} :=
-    {wsiWk: ∀ (δ: Dom) (x: X), ⟨ S δ ⊢ wk x ⟩ → ⟨ δ ⊢ x ⟩}.
+    {wsWk: ∀ (δ: Dom) (x: X), ⟨ δ ⊢ x ⟩ → ⟨ S δ ⊢ wk x ⟩;
+     wsiWk: ∀ (δ: Dom) (x: X), ⟨ S δ ⊢ wk x ⟩ → ⟨ δ ⊢ x ⟩
+    }.
   Class WsAp (X Y: Type) {vrY: Vr Y} {ap: Ap X Y} {wsX: Ws X} {wsY: Ws Y} :=
     {wsAp: ∀ {ξ γ δ x}, ⟨ ξ : γ => δ ⟩ → ⟨ γ ⊢ x ⟩ → ⟨ δ ⊢ x[ξ] ⟩}.
   Class WsLift (X Y: Type) {vrX: Vr X} {vrY: Vr Y} {liftXY: Lift X Y} {wsX: Ws X} {wsY: Ws Y} :=
-    {wsTm: ∀ (δ: Dom) (x: X), ⟨ δ ⊢ x ⟩ → ⟨ δ ⊢ lift x ⟩}.
+    {wsLift: ∀ (δ: Dom) (x: X), ⟨ δ ⊢ x ⟩ → ⟨ δ ⊢ lift x ⟩}.
 
-End Unused.
+End BasicLemmas.
 
+Section AdvancedLemmas.
+
+  Variable X Y Z: Type.
+  Context {vrY: Vr Y}.
+  Context {apXY: Ap X Y}.
+  Context {vrZ: Vr Z}.
+
+  Class LemApInj : Prop :=
+    ap_inj: ∀ (m: Sub Y), Inj m → Inj (ap m).
+  Class LemApComp {apXZ: Ap X Z} {apYZ: Ap Y Z} : Prop :=
+    ap_comp: ∀ (x: X) (ξ: Sub Y) (ζ: Sub Z), x[ξ][ζ] = x[ξ >=> ζ].
+  Class LemApLiftSub {apXIx: Ap X Ix} : Prop :=
+    ap_liftSub: ∀ (t: X) (ξ: Sub Ix), t[⌈ξ⌉] = t[ξ].
+
+  Context {vrX: Vr X}.
+
+  Class LemApVr {liftYX: Lift Y X} : Prop :=
+    ap_vr: ∀ (ξ: Sub Y) (i: Ix), (vr i)[ξ] = lift (ξ i).
+  Class LemApLift {liftXZ: Lift X Z} {apZY: Ap Z Y}: Prop :=
+    ap_lift: ∀ (ζ: Sub Y) (x: X), (lift x)[ζ] = lift x[ζ].
+
+  Context {wkX: Wk X}.
+  Context {wkY: Wk Y}.
+
+  Class LemApWk : Prop :=
+    ap_wk: ∀ (x: X), @wk X _ _ x = x[@wkm Y _ _].
+  Class LemCompUp : Prop :=
+    comp_up: ∀ (ξ : Sub X) (ζ : Sub Y), (ξ >=> ζ)↑ = (ξ↑) >=> (ζ↑).
+
+End AdvancedLemmas.
+
+Arguments ap_inj {_ _ _ _ _ m} _ [_ _] _.
+Arguments ap_comp {_ _ _ _ _ _ _ _ _} x ξ ζ.
+Arguments ap_vr {_ _ _ _ _ _ _} ξ i.
+Arguments ap_lift {_ _ _ _ _ _ _ _ _ _} ζ x.
+Arguments ap_wk {_ _ _ _ _ _ _ _} x.
+Arguments comp_up {_ _ _ _ _ _ _ _} ξ ζ.
+Arguments ap_liftSub {_ _ _ _ _ _} t ξ.
+
+Section IndexInstances.
+
+  Global Instance compUpIx: LemCompUp Ix Ix := {}.
+  Proof. intros; extensionality i; destruct i; reflexivity. Qed.
+  Global Instance apLiftSubIx: LemApLiftSub Ix Ix := {}.
+  Proof. reflexivity. Qed.
+  Global Instance apVrIx: LemApVr Ix Ix := {}.
+  Proof. reflexivity. Qed.
+  Global Instance wkApIxIx: LemApWk Ix Ix := {}.
+  Proof. reflexivity. Qed.
+  Global Instance apCompIxIxIx: LemApComp Ix Ix Ix := {}.
+  Proof. reflexivity. Qed.
+
+End IndexInstances.
+
+Arguments liftXX_id _ {_} _.
+
+Instance wkT {T} {vrT: Vr T}
+  {apT: ∀ {Y} {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift Y T}, Ap T Y}
+  {apVrT: ∀ {Y} {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift Y T}, LemApVr T Y}
+  {apTIxInj: LemApInj T Ix} : Wk T :=
+  {| wk := ap wk;
+     wk_inj := ap_inj wk_inj;
+     wk_vr := ap_vr wk
+  |}.
 
 Create HintDb ws.
-
 Hint Constructors wsIx : ws.
 
-Ltac crushRewriteH :=
-  autorewrite with infrastructure in *.
-Ltac crushRewrite2H :=
-  autorewrite with infrastructure2 in *.
-
-Ltac crushDbMatchH :=
+Ltac crushDbSyntaxMatchH :=
   match goal with
-    | [ H: S _                  = S _                  |- _ ] => apply eq_add_S in H
-    | [ H: @vr ?X ?vrX _        = @vr ?X ?vrX _        |- _ ] => eapply vr_inj in H; eauto
-    | [ H: @wk ?X ?vrX ?wkX _   = @wk ?X ?vrX ?wkX _   |- _ ] => eapply wk_inj in H; eauto
-    | [ H: @lift ?X ?Y ?liftX _ = @lift ?X ?Y ?liftX _ |- _ ] => eapply lift_inj in H; eauto
+    | [H: False   |- _] => elim H
+    | [H: True    |- _] => clear H
+    | [H: _ ∧ _   |- _] => destruct H
 
-    | [ |- S _                  = S _                  ] => f_equal
-    | [ |- @vr ?X ?vrX _        = @vr ?X ?vrX _        ] => apply (f_equal (@vr X vrX))
-    | [ |- @wk ?X ?vrX ?wkX _   = @wk ?X ?vrX ?wkX _   ] => apply (f_equal (@wk X vrX wkX))
-    | [ |- @lift ?X ?Y ?liftX _ = @lift ?X ?Y ?liftX _ ] => apply (f_equal (@lift X Y liftX))
-  end.
+    | [H: ?x                   = ?x                   |- _] => clear H
+    | [H: ?x                   ≠ ?x                   |- _] => elim H; reflexivity
+    | [H: S _                  = S _                  |- _] => apply eq_add_S in H
+    | [H: @vr ?X ?vrX _        = @vr ?X ?vrX _        |- _] => eapply vr_inj in H; eauto with typeclass_instances
+    | [H: @wk ?X ?vrX ?wkX _   = @wk ?X ?vrX ?wkX _   |- _] => eapply wk_inj in H; eauto with typeclass_instances
+    | [H: @lift ?X ?Y ?liftX _ = @lift ?X ?Y ?liftX _ |- _] => eapply lift_inj in H; eauto with typeclass_instances
 
-Ltac crushDb :=
-  intros;
-  repeat
-    (repeat
-       (crushRewriteH;
-        repeat crushDbMatchH;
-        cbn in *
-       );
-     try discriminate; eauto;
-     crushRewrite2H
-    ).
+    | [|- ?x                   = ?x                   ] => reflexivity
+    | [|- S _                  = S _                  ] => f_equal
+    | [|- @vr ?X ?vrX _        = @vr ?X ?vrX _        ] => apply (f_equal (@vr X vrX))
+    | [|- @wk ?X ?vrX ?wkX _   = @wk ?X ?vrX ?wkX _   ] => apply (f_equal (@wk X vrX wkX))
+    | [|- @lift ?X ?Y ?liftX _ = @lift ?X ?Y ?liftX _ ] => apply (f_equal (@lift X Y liftX))
+
+    (* | |- context[@lift _ _ _ _ liftXX ?x      ] => change (@lift _ _ _ _ liftXX x) with x *)
+    | |- context[@vr Ix vrIx ?i               ] => change (@vr Ix vrIx i) with i
+    | |- context[(?ζ · ?x) (wk ?i)            ] => change ((ζ · _) (wk i)) with (ζ i)
+    | |- context[?ζ↑ (wk ?i)                  ] => change (ζ↑ (wk i)) with (wk (ζ i))
+    | |- context[wk↑                          ] => change wk↑ with (@wkm Ix _ _)↑
+    | |- context[wk ↑⋆ ?δ                     ] => change (wk ↑⋆ δ) with (@wkm Ix _ _ ↑⋆ δ)
+    | |- context[?x[wk]                       ] => change x[wk] with x[@wkm Ix _ _]
+    | |- context[⌈wk⌉                         ] => change ⌈wk⌉ with ⌈@wkm Ix _ _⌉
+    | |- context[wk (vr ?i)                   ] => change (wk (vr i)) with (vr (wk i))
+    | |- context[@wk _ _ ?wkX (vr ?i)         ] => rewrite (@wk_vr _ _ wkX i)
+    | |- context[@ap _ _ _ ?apXY (idm _) ?x   ] => rewrite (@ap_id _ _ _ apXY x)
+    | |- context[@lift _ _ _ _ ?liftXY (vr ?i)] => rewrite (@lift_vr _ _ _ _ liftXY i)
+    end.

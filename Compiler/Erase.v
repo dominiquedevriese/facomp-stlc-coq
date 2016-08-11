@@ -59,14 +59,14 @@ Proof.
   apply UF.ufix_ws.
 Qed.
 
-Ltac apply_erase_scope :=
+Hint Extern 4 ⟨ _ ⊢ erase ?t ⟩ =>
   match goal with
-      [ H : ⟪ _ ⊢ ?t : _ ⟫ |- ⟨ _ ⊢ erase ?t ⟩ ] => refine (erase_scope _ _ _ H)
+      [ H : ⟪ _ ⊢ ?t : _ ⟫ |- _ ] => refine (erase_scope _ _ _ H)
   end.
 
 Lemma erase_pctx_scope (C : SS.PCtx) (Γ₀ Γ : SS.Env) (τ₀ τ : SS.Ty) :
   ⟪ ⊢ C : Γ₀ , τ₀ → Γ , τ ⟫ → ⟨ ⊢ erase_pctx C : dom Γ₀ → dom Γ ⟩.
 Proof.
-  intro wt; induction wt; crushUtlcScoping; try apply_erase_scope.
+  intro wt; induction wt; crushUtlcScoping.
   apply UF.ufix_ws.
 Qed.

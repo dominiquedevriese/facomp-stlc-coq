@@ -98,3 +98,59 @@ Inductive WsPCtx (γ₀: Dom) (γ: Dom) : PCtx → Prop :=
       ⟨ γ ⊢ t₂ ⟩ →
       ⟨ ⊢ pseq₁ C t₂ : γ₀ → γ ⟩
 where "⟨ ⊢ C : γ₀ → γ ⟩" := (WsPCtx γ₀ γ C).
+
+Ltac crushUtlcScopingMatchH :=
+  match goal with
+    | [ H: context[wsUTm ?γ ?t]  |- _ ] =>
+      change (wsUTm γ t) with ⟨ γ ⊢ t ⟩ in H
+    | [ H: ⟨ _ ⊢ var _         ⟩ |- _ ] => inversion H; clear H
+    | [ H: ⟨ _ ⊢ abs _ _       ⟩ |- _ ] => inversion H; clear H
+    | [ H: ⟨ _ ⊢ app _ _       ⟩ |- _ ] => inversion H; clear H
+    | [ H: ⟨ _ ⊢ unit          ⟩ |- _ ] => inversion H; clear H
+    | [ H: ⟨ _ ⊢ true          ⟩ |- _ ] => inversion H; clear H
+    | [ H: ⟨ _ ⊢ false         ⟩ |- _ ] => inversion H; clear H
+    | [ H: ⟨ _ ⊢ ite _ _ _     ⟩ |- _ ] => inversion H; clear H
+    | [ H: ⟨ _ ⊢ pair _ _      ⟩ |- _ ] => inversion H; clear H
+    | [ H: ⟨ _ ⊢ proj₁ _       ⟩ |- _ ] => inversion H; clear H
+    | [ H: ⟨ _ ⊢ proj₂ _       ⟩ |- _ ] => inversion H; clear H
+    | [ H: ⟨ _ ⊢ inl _         ⟩ |- _ ] => inversion H; clear H
+    | [ H: ⟨ _ ⊢ inr _         ⟩ |- _ ] => inversion H; clear H
+    | [ H: ⟨ _ ⊢ caseof _ _ _  ⟩ |- _ ] => inversion H; clear H
+    | [ H: ⟨ _ ⊢ seq _ _       ⟩ |- _ ] => inversion H; clear H
+
+    | [ |- context[wsUTm ?γ ?t] ] =>
+      change (wsUTm γ t) with ⟨ γ ⊢ t ⟩
+    | [ |- ⟨ _ ⊢ var _        ⟩ ] => econstructor
+    | [ |- ⟨ _ ⊢ abs _        ⟩ ] => econstructor
+    | [ |- ⟨ _ ⊢ app _ _      ⟩ ] => econstructor
+    | [ |- ⟨ _ ⊢ unit         ⟩ ] => econstructor
+    | [ |- ⟨ _ ⊢ true         ⟩ ] => econstructor
+    | [ |- ⟨ _ ⊢ false        ⟩ ] => econstructor
+    | [ |- ⟨ _ ⊢ ite _ _ _    ⟩ ] => econstructor
+    | [ |- ⟨ _ ⊢ pair _ _     ⟩ ] => econstructor
+    | [ |- ⟨ _ ⊢ proj₁ _      ⟩ ] => econstructor
+    | [ |- ⟨ _ ⊢ proj₂ _      ⟩ ] => econstructor
+    | [ |- ⟨ _ ⊢ inl _        ⟩ ] => econstructor
+    | [ |- ⟨ _ ⊢ inr _        ⟩ ] => econstructor
+    | [ |- ⟨ _ ⊢ caseof _ _ _ ⟩ ] => econstructor
+    | [ |- ⟨ _ ⊢ seq _ _      ⟩ ] => econstructor
+
+    | [ |- ⟨ ⊢ phole : _ → _        ⟩ ] => econstructor
+    | [ |- ⟨ ⊢ pabs _ : _ → _        ⟩ ] => econstructor
+    | [ |- ⟨ ⊢ papp₁ _ _ : _ → _     ⟩ ] => econstructor
+    | [ |- ⟨ ⊢ papp₂ _ _ : _ → _     ⟩ ] => econstructor
+    | [ |- ⟨ ⊢ pite₁ _ _ _  : _ → _  ⟩ ] => econstructor
+    | [ |- ⟨ ⊢ pite₂ _ _ _  : _ → _  ⟩ ] => econstructor
+    | [ |- ⟨ ⊢ pite₃ _ _ _  : _ → _  ⟩ ] => econstructor
+    | [ |- ⟨ ⊢ ppair₁ _ _ : _ → _    ⟩ ] => econstructor
+    | [ |- ⟨ ⊢ ppair₂ _ _ : _ → _    ⟩ ] => econstructor
+    | [ |- ⟨ ⊢ pproj₁ _ : _ → _     ⟩ ] => econstructor
+    | [ |- ⟨ ⊢ pproj₂ _ : _ → _     ⟩ ] => econstructor
+    | [ |- ⟨ ⊢ pinl _ : _ → _       ⟩ ] => econstructor
+    | [ |- ⟨ ⊢ pinr _ : _ → _       ⟩ ] => econstructor
+    | [ |- ⟨ ⊢ pcaseof₁ _ _ _ : _ → _⟩ ] => econstructor
+    | [ |- ⟨ ⊢ pcaseof₂ _ _ _ : _ → _⟩ ] => econstructor
+    | [ |- ⟨ ⊢ pcaseof₃ _ _ _ : _ → _⟩ ] => econstructor
+    | [ |- ⟨ ⊢ pseq₁ _ _ : _ → _     ⟩ ] => econstructor
+    | [ |- ⟨ ⊢ pseq₂ _ _ : _ → _     ⟩ ] => econstructor
+  end.

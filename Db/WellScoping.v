@@ -1,5 +1,4 @@
 Require Export Db.Spec.
-Require Export Db.Lemmas.
 
 Section WsSnoc.
 
@@ -45,9 +44,17 @@ Ltac crushScopingMatchH :=
     | [ H: 0 ∋ _                 |- _ ] => inversion H
     | [ H: S _    ∋ O            |- _ ] => clear H
     | [ H: S _ ∋ S _             |- _ ] => apply wsiS in H
-    | [ wsiWkX : @WsiWk ?X ?wsX ?vrX ?wkX,
-        H: @ws ?X ?wsX (S ?δ) (@wk ?X ?vrX ?wkX ?x) |- _
-      ] => apply (@wsiWk X wsX vrX wkX wsiWkX δ x) in H
+    | [ H: S _ ∋ wk _             |- _ ] => apply wsiS in H
+    | [ H: @ws ?X ?wsX (S ?δ) (@wk ?X ?vrX ?wkX ?x) |- _
+      ] => apply (@wsiWk X wsX vrX wkX _ δ x) in H
+    | [H: ∀ i, S _ ∋ i → _ |- _] =>
+      let HS := fresh in
+      let HO := fresh in
+      pose proof (fun i wi => H (S i) (wsS _ i wi)) as HS;
+      pose proof (H 0 (ws0 _)) as HO;
+      clear H; cbn in HS; cbn in HO
+    | [ H: ⟨ _ ⊢ vr _ ⟩ |- _ ] => eapply wsiVr in H
+
     | [ wi : S _ ∋ ?i
         |- context [match ?i with _ => _ end]
       ] => destruct i
@@ -56,16 +63,23 @@ Ltac crushScopingMatchH :=
       ] => destruct i
     | [ |- S _ ∋ 0               ] => apply ws0
     | [ |- S _ ∋ S _             ] => apply wsS
+    | [ |- S _ ∋ wk _             ] => apply wsS
     | [ |- WsSub _ _ (_ · _)     ] => eapply ws_snoc
+
+    | [ |- ⟨ S _ ⊢ wk _ ⟩ ] => eapply wsWk
+    | [ |- ⟨ _ ⊢ vr _ ⟩ ] => eapply wsVr
+    (* | [ |- ⟨ _ ⊢ _[_] ⟩ ] => eapply wsAp *)
   end.
 
-Ltac crush :=
-  intros;
+Local Ltac crush :=
+  cbn; intros;
   repeat
-    (cbn in *;
-     repeat crushRewriteH;
-     repeat crushScopingMatchH);
-  eauto with ws.
+    (cbn;
+     repeat crushScopingMatchH;
+     repeat crushDbSyntaxMatchH;
+     rewrite ?ap_vr in *);
+  eauto with typeclass_instances ws;
+  eauto with typeclass_instances wsi.
 
 (* Lemma wsIx_plus_dec {γ δ i} (wi: γ ∪ δ ∋ i) : *)
 (*   ∀ (P: Prop), *)
@@ -97,7 +111,6 @@ Ltac crush :=
 (* Proof. apply (wsiIx_wks 1). Qed. *)
 (* Hint Resolve wsiIx_wks : wsi. *)
 
-
 Section Stuff.
 
   Context {X: Type}.
@@ -107,18 +120,12 @@ Section Stuff.
   Context {wsVrX: WsVr X}.
   Context {wsWkX: WsWk X}.
 
-  Hint Resolve wsVr : ws.
-  Hint Resolve wsWk : ws.
-  Hint Resolve wsiWk : wsi.
-
   Lemma ws_wks (δ: Dom) :
     ∀ γ (x: X), ⟨ γ ⊢ x ⟩ → ⟨ γ ∪ δ ⊢ wks δ x ⟩.
   Proof. induction δ; crush. Qed.
-  Hint Resolve ws_wks : ws.
 
   Lemma wsSub_idm (γ: Dom) : ⟨ idm X : γ => γ ⟩.
   Proof. unfold WsSub, idm; crush. Qed.
-  Hint Resolve wsSub_idm : ws.
 
   Definition WsSubNatural (γ₁ γ₂: Dom) (ξ₁ ξ₂ : Sub X) : Prop :=
     ∀ (i: Ix), ⟨ γ₁ ⊢ ξ₁ i ⟩ → ⟨ γ₂ ⊢ ξ₂ i ⟩.
@@ -143,12 +150,11 @@ Section Stuff.
   Proof. unfold up, WsSub; crush. Qed.
   Hint Resolve wsSub_up : ws.
 
-  Lemma wsiSub_up {wsiWkX: WsiWk X} (γ₁ γ₂: Dom) (ξ: Sub X) :
+  Lemma wsiSub_up (γ₁ γ₂: Dom) (ξ: Sub X) :
     ⟨ ξ↑ : S γ₁ => S γ₂ ⟩ → ⟨ ξ : γ₁ => γ₂ ⟩.
   Proof.
     unfold WsSub; crush.
-    specialize (H (S i)); crush.
-    eauto using wsiWk with ws wsi.
+    eauto using wsiWk.
   Qed.
   Hint Resolve wsiSub_up : wsi.
 
@@ -157,20 +163,18 @@ Section Stuff.
   Proof. induction δ; crush. Qed.
   Hint Resolve wsSub_ups : ws.
 
-  Lemma wsiSub_ups {wsiWkX: WsiWk X} (γ₁ γ₂ δ: Dom) (ξ: Sub X) :
+  Lemma wsiSub_ups (γ₁ γ₂ δ: Dom) (ξ: Sub X) :
     WsSub (γ₁ ∪ δ) (γ₂ ∪ δ) (ξ ↑⋆ δ) → WsSub γ₁ γ₂ ξ.
-  Proof. induction δ; auto with wsi. Qed.
+  Proof. induction δ; crush. Qed.
   Hint Resolve wsiSub_ups : wsi.
 
   Lemma wsSub_closed (ξ: Sub X) (δ: Dom) : ⟨ ξ : 0 => δ ⟩.
-  Proof. unfold WsSub; inversion 1. Qed.
+  Proof. unfold WsSub; crush. Qed.
   Hint Resolve wsSub_closed : ws.
 
   Context {apX: Ap X X}.
   Context {apVrX: LemApVr X X}.
   Context {wsApX: WsAp X X}.
-
-  Hint Rewrite (ap_vr' X X) : infrastructure.
 
   Lemma wsSub_natural
     {f₁ f₂: Dom → Dom} {ξ₁ ξ₂: Sub X}
@@ -178,7 +182,11 @@ Section Stuff.
     ∀ (γ₁ γ₂ : Dom),
       ⟨ ⌈ξ⌉ >=> ξ₁ : γ₁ => f₁ γ₂ ⟩ →
       ⟨ ⌈ξ⌉ >=> ξ₂ : γ₁ => f₂ γ₂ ⟩.
-  Proof. eapply wsSub_natural'; unfold WsSubNatural in *; crush. Qed.
+  Proof.
+    eapply wsSub_natural'.
+    unfold WsSubNatural in *; crush.
+    rewrite ap_vr in H; crush.
+  Qed.
 
   Lemma wsSub_comp {γ₁ γ₂ γ₃: Dom} {ξ₁ ξ₂: Sub X} :
     WsSub γ₁ γ₂ ξ₁ → WsSub γ₂ γ₃ ξ₂ → WsSub γ₁ γ₃ (ξ₁ >=> ξ₂).
@@ -195,13 +203,13 @@ Section Stuff.
   Proof. unfold WsSub; induction δ; crush. Qed.
   Hint Resolve wsSub_beta : ws.
 
-  Lemma wsSubNatural_up {wsiWkX: WsiWk X} (γ₁ γ₂: Dom) (ξ₁ ξ₂: Sub X) :
+  Lemma wsSubNatural_up (γ₁ γ₂: Dom) (ξ₁ ξ₂: Sub X) :
     WsSubNatural γ₁ γ₂ ξ₁ ξ₂ →
     WsSubNatural (S γ₁) (S γ₂) (ξ₁ ↑) (ξ₂ ↑).
   Proof. intros H i; destruct i; crush. Qed.
   Hint Resolve wsSubNatural_up : ws.
 
-  Lemma wsSubNatural_ups {wsiWkX: WsiWk X} (δ: Dom) :
+  Lemma wsSubNatural_ups (δ: Dom) :
     ∀ (γ₁ γ₂: Dom) (f g: Sub X) (wfg: WsSubNatural γ₁ γ₂ f g),
       WsSubNatural (γ₁ ∪ δ) (γ₂ ∪ δ) (f ↑⋆ δ) (g ↑⋆ δ).
   Proof. induction δ; crush. Qed.

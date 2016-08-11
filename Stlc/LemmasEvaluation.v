@@ -3,6 +3,16 @@ Require Export Stlc.SpecSyntax.
 Require Export Stlc.SpecEvaluation.
 Require Export Coq.Program.Tactics.
 
+Local Ltac crush :=
+  intros; cbn in * |-;
+  repeat
+    (cbn;
+     repeat crushStlcSyntaxMatchH;
+     repeat crushDbSyntaxMatchH;
+     subst*);
+  try discriminate;
+  eauto with eval.
+
 (* ** Evaluation contexts *)
 Lemma ectx_cat (C₁ C₂: PCtx) :
   ECtx C₁ → ECtx C₂ → ECtx (pctx_cat C₁ C₂).
@@ -13,7 +23,7 @@ Qed.
 Lemma pctx_cat_app (t : Tm) (C₁ C₂ : PCtx) :
   pctx_app t (pctx_cat C₁ C₂) = pctx_app (pctx_app t C₁) C₂.
 Proof.
-  induction C₂; crushStlc.
+  induction C₂; crush.
 Qed.
 
 Lemma eval_ctx C t t' (eC : ECtx C) :
@@ -62,24 +72,12 @@ Lemma inversion_evalStar {t t'} :
   t -->* t' → t = t' ∨ (t -->+ t').
 Proof. inversion 1; eauto using evalPlusStarToPlus with eval. Qed.
 
-Lemma inversion_termination_evalcontext_help :
-  ∀ C t t', ECtx C → Terminating t' -> t' = pctx_app t C → Terminating t.
+Lemma inversion_termination_evalcontext C t (ec: ECtx C) :
+  Terminating (pctx_app t C) → Terminating t.
 Proof.
-  intros C t t' ecC term.
-  revert t.
-  depind term.
-  intros t0 eq.
-  constructor; intros t0' e.
-  subst.
-  assert (e' : pctx_app t0 C --> pctx_app t0' C) by (apply eval_ctx; assumption).
-  refine (H0 _ e' _ eq_refl).
-Qed.
-
-Lemma inversion_termination_evalcontext :
-  ∀ C t, ECtx C → Terminating (pctx_app t C) → Terminating t.
-Proof.
-  intros C t ec term.
-  refine (inversion_termination_evalcontext_help C t _ ec term eq_refl). 
+  intro term; depind term.
+  constructor.
+  eauto using eval_ctx.
 Qed.
 
 (* Termination and divergene *)
@@ -213,28 +211,15 @@ Lemma cycles_dont_terminate {t} :
   t -->+ t → t⇑.
 Proof. induction 2 using Terminating_ind'; eauto. Qed.
 
+Definition normal' (t : Tm) := ∀ t', ¬ (t --> t').
+Lemma values_are_normal' {t : Tm} : Value t -> normal' t.
+Proof. induction 2 using eval_ind'; crush. Qed.
+
 Lemma values_are_normal {t : Tm} : Value t -> normal t.
 Proof.
-  intros  vt.
-  induction t; simpl in vt; try match goal with [ H : False |- _ ] => destruct H end; try eauto; intro et'; destruct et' as [t' et'];
-  depind et'; induction C; crushStlc;
-  repeat try match goal with 
-      | [ H : abs _ _ -->₀ _ |- _] => depind H
-      | [ H : unit -->₀ _ |- _] => depind H
-      | [ H : true -->₀ _ |- _] => depind H
-      | [ H : false -->₀ _ |- _] => depind H
-      | [ H : pair _ _ -->₀ _ |- _] => depind H
-      | [ H : inl _ -->₀ _ |- _] => depind H
-      | [ H : inr _ -->₀ _ |- _] => depind H
-      | [ H : pair _ _ = pair _ _ |- _] => inversion H; clear H; subst
-      | [ H : inl _ = inl _ |- _] => inversion H; clear H; subst
-      | [ H : inr _ = inr _ |- _] => inversion H; clear H; subst
-      | [ H : _ ∧ _ |- _] => destruct_conjs
-  end.
-  - apply IHt1; [assumption| exists (pctx_app t' C); eauto with eval].
-  - apply IHt2; [assumption| exists (pctx_app t' C); eauto with eval].
-  - apply IHt; [assumption| exists (pctx_app t' C); eauto with eval].
-  - apply IHt; [assumption| exists (pctx_app t' C); eauto with eval].
+  generalize @values_are_normal'.
+  unfold normal, normal', not.
+  intros ? ? (); eauto.
 Qed.
 
 Lemma TerminatingDN (t: Tm) n (m: t ⇓_ (S n)) :

@@ -4,6 +4,20 @@ Require Import Utlc.SpecScoping.
 Require Import Utlc.LemmasScoping.
 Require Import Utlc.Inst.
 Require Import Db.Lemmas.
+Require Import Db.WellScoping.
+
+Local Ltac crush :=
+  intros; cbn in * |-;
+  repeat
+    (cbn;
+     repeat crushUtlcSyntaxMatchH;
+     repeat crushDbSyntaxMatchH;
+     repeat crushDbLemmasRewriteH;
+     rewrite <- ?ap_liftSub, <- ?up_liftSub;
+     repeat crushUtlcScopingMatchH;
+     repeat crushScopingMatchH
+    );
+  auto.
 
 Definition ufix₁ (f : UTm) : UTm :=
   let t : UTm := abs (app f[wkm] (abs (app (app (var 1) (var 1)) (var 0))))
@@ -15,7 +29,7 @@ Definition ufix : UTm :=
 Lemma ufix_eval₁ {f} (valf: Value f) : app ufix f --> ufix₁ f.
 Proof.
   unfold ufix, ufix₁.
-  apply eval_beta'; crushUtlc.
+  apply eval_beta'; crush.
 Qed.
 
 Lemma ufix₁_eval {t} : ufix₁ (abs t) -->+ t[beta1 (abs (app (ufix₁ (abs t[wkm↑])) (var 0)))].
@@ -25,7 +39,7 @@ Proof.
   - destruct 1. eauto with eval.
   - split.
     + unfold ufix₁.
-      apply eval_beta'; crushUtlc.
+      apply eval_beta'; crush.
     + apply eval_beta'; constructor.
 Qed.
 
@@ -33,5 +47,5 @@ Lemma ufix_ws (γ : Dom) :
   ⟨ γ ⊢ ufix ⟩.
 Proof.
   unfold ufix, ufix₁.
-  crushUtlcScoping.
+  crush.
 Qed.
