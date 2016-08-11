@@ -189,9 +189,6 @@ Fixpoint depthlPCtx (C: PCtx) : Dom :=
 
 Ltac crushUtlcSyntaxMatchH :=
   match goal with
-    | [ H: False                        |- _ ] => destruct H
-    | [ H: _ ∧ _                        |- _ ] => destruct H
-    | [ H: S _          = S _           |- _ ] => apply eq_add_S in H
     | [ H: var _        = var _         |- _ ] => inversion H; clear H
     | [ H: abs _        = abs _         |- _ ] => inversion H; clear H
     | [ H: app _ _      = app _ _       |- _ ] => inversion H; clear H
@@ -204,7 +201,11 @@ Ltac crushUtlcSyntaxMatchH :=
     | [ H: caseof _ _ _ = caseof _ _ _  |- _ ] => inversion H; clear H
     | [ H: seq _ _      = seq _ _       |- _ ] => inversion H; clear H
 
-    | [ |- S _            = S _            ] => f_equal
+    | [ H: context[apUTm ?ξ ?t]         |- _ ] =>
+      change (apUTm ξ t) with t[ξ] in H
+    | [ H: context[apPCtx ?ξ ?C]        |- _ ] =>
+      change (apPCtx ξ C) with C[ξ] in H
+
     | [ |- wrong          = wrong          ] => f_equal
     | [ |- var _          = var _          ] => f_equal
     | [ |- abs _          = abs _          ] => f_equal
@@ -242,14 +243,3 @@ Ltac crushUtlcSyntaxMatchH :=
     | [ |- context[apPCtx ?ξ ?C] ] =>
       change (apPCtx ξ C) with C[ξ]
   end.
-
-Ltac crushUtlc :=
-  intros;
-  repeat
-    (cbn in *;
-     crushRewriteH;
-     repeat crushDbMatchH;
-     repeat crushUtlcSyntaxMatchH;
-     try discriminate;
-     try subst);
-  eauto.

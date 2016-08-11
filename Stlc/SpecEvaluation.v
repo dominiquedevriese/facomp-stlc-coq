@@ -96,3 +96,58 @@ Inductive TerminatingN (t: Tm) : nat -> Prop :=
   | TerminatingIV : forall n, Value t -> TerminatingN t n
   | TerminatingIS : forall n, (∀ t', t --> t' → TerminatingN t' n) → TerminatingN t (S n).
 Notation "t ⇓_ n" := (TerminatingN t n) (at level 8, format "t ⇓_ n").
+
+(* Alternative induction principle without program contexts. *)
+Lemma eval_ind' (P: Tm → Tm → Prop) :
+  (∀ (τ₁ : Ty) (t₁ t₂ : Tm), Value t₂ → P (app (abs τ₁ t₁) t₂) t₁[beta1 t₂]) →
+  (∀ t₁ t₂ : Tm, P (ite true t₁ t₂) t₁) →
+  (∀ t₁ t₂ : Tm, P (ite false t₁ t₂) t₂) →
+  (∀ t₁ t₂ : Tm, Value t₁ → Value t₂ → P (proj₁ (pair t₁ t₂)) t₁) →
+  (∀ t₁ t₂ : Tm, Value t₁ → Value t₂ → P (proj₂ (pair t₁ t₂)) t₂) →
+  (∀ t t₁ t₂ : Tm, Value t → P (caseof (inl t) t₁ t₂) t₁[beta1 t]) →
+  (∀ t t₁ t₂ : Tm, Value t → P (caseof (inr t) t₁ t₂) t₂[beta1 t]) →
+  (∀ t₁ t₂ : Tm, Value t₁ → P (seq t₁ t₂) t₂) →
+  (∀ (τ₁ τ₂ : Ty) (t : Tm),
+     P (fixt τ₁ τ₂ (abs (τ₁ ⇒ τ₂) t))
+       t[beta1 (abs τ₁ (app (fixt τ₁ τ₂ (abs (τ₁ ⇒ τ₂) t[wkm↑])) (var 0)))]) →
+  (∀ t₁ t₁' t₂ : Tm, t₁ --> t₁' → P t₁ t₁' → P (app t₁ t₂) (app t₁' t₂)) →
+  (∀ t₁ t₂ t₂' : Tm, Value t₁ → t₂ --> t₂' → P t₂ t₂' → P (app t₁ t₂) (app t₁ t₂')) →
+  (∀ t₁ t₁' t₂ t₃ : Tm, t₁ --> t₁' → P t₁ t₁' → P (ite t₁ t₂ t₃) (ite t₁' t₂ t₃)) →
+  (∀ t₁ t₁' t₂ : Tm, t₁ --> t₁' → P t₁ t₁' → P (pair t₁ t₂) (pair t₁' t₂)) →
+  (∀ t₁ t₂ t₂' : Tm, Value t₁ → t₂ --> t₂' → P t₂ t₂' → P (pair t₁ t₂) (pair t₁ t₂')) →
+  (∀ t t' : Tm, t --> t' → P t t' → P (proj₁ t) (proj₁ t')) →
+  (∀ t t' : Tm, t --> t' → P t t' → P (proj₂ t) (proj₂ t')) →
+  (∀ t t' : Tm, t --> t' → P t t' → P (inl t) (inl t')) →
+  (∀ t t' : Tm, t --> t' → P t t' → P (inr t) (inr t')) →
+  (∀ t₁ t₁' t₂ t₃ : Tm, t₁ --> t₁' → P t₁ t₁' → P (caseof t₁ t₂ t₃) (caseof t₁' t₂ t₃)) →
+  (∀ t₁ t₁' t₂ : Tm, t₁ --> t₁' → P t₁ t₁' → P (seq t₁ t₂) (seq t₁' t₂)) →
+  (∀ (τ₁ τ₂ : Ty) (t₁ t₁' : Tm), t₁ --> t₁' → P t₁ t₁' → P (fixt τ₁ τ₂ t₁) (fixt τ₁ τ₂ t₁')) →
+  ∀ t t0 : Tm, t --> t0 → P t t0.
+Proof.
+  do 21 intro; induction 1 as [C ? ? r' ec].
+  revert ec t t' r'.
+  induction C; cbn in *; intuition.
+  induction r'; cbn in *; intuition.
+Qed.
+
+(* The in-between induction principle *)
+Lemma eval_ind'' (P: Tm → Tm → Prop) :
+  (∀ t t' : Tm, t -->₀ t' → P t t') →
+  (∀ t₁ t₁' t₂ : Tm, t₁ --> t₁' → P t₁ t₁' → P (app t₁ t₂) (app t₁' t₂)) →
+  (∀ t₁ t₂ t₂' : Tm, Value t₁ → t₂ --> t₂' → P t₂ t₂' → P (app t₁ t₂) (app t₁ t₂')) →
+  (∀ t₁ t₁' t₂ t₃ : Tm, t₁ --> t₁' → P t₁ t₁' → P (ite t₁ t₂ t₃) (ite t₁' t₂ t₃)) →
+  (∀ t₁ t₁' t₂ : Tm, t₁ --> t₁' → P t₁ t₁' → P (pair t₁ t₂) (pair t₁' t₂)) →
+  (∀ t₁ t₂ t₂' : Tm, Value t₁ → t₂ --> t₂' → P t₂ t₂' → P (pair t₁ t₂) (pair t₁ t₂')) →
+  (∀ t t' : Tm, t --> t' → P t t' → P (proj₁ t) (proj₁ t')) →
+  (∀ t t' : Tm, t --> t' → P t t' → P (proj₂ t) (proj₂ t')) →
+  (∀ t t' : Tm, t --> t' → P t t' → P (inl t) (inl t')) →
+  (∀ t t' : Tm, t --> t' → P t t' → P (inr t) (inr t')) →
+  (∀ t₁ t₁' t₂ t₃ : Tm, t₁ --> t₁' → P t₁ t₁' → P (caseof t₁ t₂ t₃) (caseof t₁' t₂ t₃)) →
+  (∀ t₁ t₁' t₂ : Tm, t₁ --> t₁' → P t₁ t₁' → P (seq t₁ t₂) (seq t₁' t₂)) →
+  (∀ (τ₁ τ₂ : Ty) (t₁ t₁' : Tm), t₁ --> t₁' → P t₁ t₁' → P (fixt τ₁ τ₂ t₁) (fixt τ₁ τ₂ t₁')) →
+  ∀ t t0 : Tm, t --> t0 → P t t0.
+Proof.
+  do 13 intro; induction 1.
+  induction C; cbn in *; intuition.
+Qed.
+

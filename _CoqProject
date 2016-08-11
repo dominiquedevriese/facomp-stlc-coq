@@ -4,6 +4,7 @@ Compiler/ProtectConfine.v
 Db/Inst.v
 Db/Lemmas.v
 Db/Spec.v
+Db/Tactics.v
 Db/WellScoping.v
 LogRel/LR.v
 LogRel/PseudoType.v

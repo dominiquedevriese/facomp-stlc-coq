@@ -3,6 +3,16 @@ Require Import Stlc.SpecTyping.
 Require Import Stlc.LemmasTyping.
 Require Import Stlc.LemmasProgramContext.
 
+Local Ltac crush :=
+  intros; cbn in * |-;
+  repeat
+    (cbn;
+     repeat crushStlcSyntaxMatchH;
+     repeat crushDbSyntaxMatchH;
+     subst*);
+  try discriminate;
+  eauto with eval.
+
 Lemma can_form_tarr {Γ t τ₁ τ₂}
   (v: Value t) (wt: ⟪ Γ ⊢ t : tarr τ₁ τ₂ ⟫) :
     ∃ t₂, t = abs τ₁ t₂.
@@ -78,9 +88,8 @@ Lemma context_replacement {Γ C t t' T}
     ⟪ Γ ⊢ pctx_app t C : T ⟫ →
     ⟪ Γ ⊢ pctx_app t' C : T ⟫.
 Proof.
-  intro wt; depind wt; induction C; cbn in *; subst;
-    try discriminate; try (inversion x; subst);
-    eauto using Typing.
+  intro wt; depind wt; induction C;
+    crush; eauto using Typing.
 Qed.
 
 Lemma preservation₀ {t t'} (r : t -->₀ t') :

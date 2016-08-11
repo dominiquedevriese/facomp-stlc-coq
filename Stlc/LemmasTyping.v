@@ -58,22 +58,19 @@ Ltac crushTypingMatchH :=
     | [ |- ⟪ _ ⊢ fixt _ _ _ : _ ⟫    ] => econstructor
   end.
 
-Ltac crush :=
-  intros;
+Local Ltac crush :=
+  intros; cbn in * |-;
   repeat
-    (cbn in *;
-     crushRewriteH;
-     repeat crushDbMatchH;
+    (cbn;
      repeat crushStlcSyntaxMatchH;
+     repeat crushDbSyntaxMatchH;
      repeat crushTypingMatchH);
   try discriminate;
   eauto with ws.
 
 Lemma getEvar_wsIx Γ i T :
   ⟪ i : T ∈ Γ ⟫ → dom Γ ∋ i.
-Proof. 
-  induction 1; crush. 
-Qed.
+Proof. induction 1; crush. Qed.
 Hint Resolve getEvar_wsIx : ws.
 
 (* Lemma wsIx_getEvar {Γ i} (wi: dom Γ ∋ i) : *)
@@ -228,11 +225,11 @@ Hint Resolve typing_ren : ws.
 (*************************************************************************)
 
 Lemma wtSub_closed ζ Δ : WtSub empty Δ ζ.
-Proof. unfold WtSub; intros. inversion H. Qed.
+Proof. inversion 1. Qed.
 Hint Resolve wtSub_closed : ws.
 
 Lemma wtSub_idm (Γ: Env) : WtSub Γ Γ (idm Tm).
-Proof. unfold WtSub, idm; auto using WtVar. Qed.
+Proof. unfold WtSub. crush. Qed.
 Hint Resolve wtSub_idm : ws.
 
 Lemma wtSub_snoc Γ₁ Γ₂ ζ t T :
@@ -274,13 +271,11 @@ Hint Resolve wtSub_ups : ws.
 Lemma typing_sub {Γ₁ t T} (wt: ⟪ Γ₁ ⊢ t : T ⟫) :
   ∀ Γ₂ ζ, WtSub Γ₁ Γ₂ ζ → ⟪ Γ₂ ⊢ t[ζ] : T ⟫.
 Proof. induction wt; crush. Qed.
+Hint Resolve typing_sub : ws.
 
 Lemma wtSub_comp {Γ₁ Γ₂ Γ₃ ζ₁ ζ₂} :
   WtSub Γ₁ Γ₂ ζ₁ → WtSub Γ₂ Γ₃ ζ₂ → WtSub Γ₁ Γ₃ (ζ₁ >=> ζ₂).
-Proof.
-  unfold WtSub, comp; intros.
-  eapply typing_sub; eauto.
-Qed.
+Proof. unfold WtSub, comp; eauto with ws. Qed.
 Hint Resolve wtSub_comp : ws.
 
 Lemma wtiTm_snoc Γ₁ Γ₂ ζ T t :
@@ -329,14 +324,14 @@ Ltac crushTypingMatchH2 :=
   end.
 
 Ltac crushTyping :=
-  intros;
+  intros; cbn in * |-;
   repeat
-    (cbn in *;
-     repeat crushRewriteH;
+    (cbn;
      repeat crushStlcSyntaxMatchH;
+     repeat crushDbSyntaxMatchH;
+     repeat crushDbLemmasMatchH;
      repeat crushTypingMatchH;
      repeat crushTypingMatchH2;
-     try discriminate;
      eauto with ws
     ).
 
