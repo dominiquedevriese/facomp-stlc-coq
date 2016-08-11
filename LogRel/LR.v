@@ -6,6 +6,7 @@ Require Import Utlc.SpecSyntax.
 Require Import Utlc.SpecEvaluation.
 Require Import Utlc.Inst.
 Require Import UVal.UVal.
+Require Import Coq.Program.Basics.
 
 
 Require Import Coq.Arith.Wf_nat.
@@ -110,3 +111,29 @@ Definition valrel' (d : Direction) (w : World) (τ : PTy)(t₁ : S.Tm) (t₂ : U
 Definition valrel (d : Direction) (τ : PTy) (w : World) (t₁ : S.Tm) (t₂ : U.UTm) : Prop :=
   valrel' d w τ t₁ t₂.
   
+Definition contrel
+           (d : Direction) (w : World) : PCRel :=
+  contrel' d w (fun w fw => valrel' d w).
+
+Definition termrel
+           (d : Direction) (w : World) : PTRel :=
+  termrel' d w (fun w fw => valrel' d w).
+
+Fixpoint envrel (d : Direction) (w : World) (Γ : PEnv) (γs : Sub S.Tm) (γu : Sub U.UTm) : Prop :=
+  match Γ with
+    | pempty => True
+    | pevar Γ' τ => valrel' d w τ (γs 0) (γu 0) ∧
+                    envrel d w Γ' (compose γs S) (compose γu S)
+  end.
+
+Definition OpenLRN (d : Direction) (n : nat) (Γ : PEnv) (ts : S.Tm) (tu : U.UTm) (τ : PTy) : Prop :=
+  ⟪ repEmulCtx Γ ⊢ ts : repEmul τ ⟫ ∧
+  forall w, w ≤ n -> forall γs γu, envrel d w Γ γs γu -> termrel d w τ ts tu.
+
+Definition OpenLR (d : Direction) (Γ : PEnv) (ts : S.Tm) (tu : U.UTm) (τ : PTy) : Prop :=
+  forall n, OpenLRN d n Γ ts tu τ.
+
+Definition OpenLRCtx (d : Direction) (Cs : S.PCtx) (Cu : U.PCtx) (Γ' : PEnv) (τ' : PTy) (Γ : PEnv) (τ : PTy) : Prop :=
+  ⟪ ⊢ Cs : repEmulCtx Γ' , repEmul τ' → repEmulCtx Γ' , repEmul τ ⟫ ∧
+  forall ts tu, OpenLR d Γ' ts tu τ' -> OpenLR d Γ (S.pctx_app ts Cs) (U.pctx_app tu Cu) τ.
+
