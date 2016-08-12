@@ -38,14 +38,15 @@ Inductive Direction : Set :=
 | dir_gt.
 
 Definition World := nat.
+Definition lev : World → nat := fun w => w.
 
 Definition PTRel := PTy -> S.Tm -> U.UTm -> Prop.
 Definition PCRel := PTy -> S.PCtx -> U.PCtx -> Prop.
 
 Definition Obs (d : Direction) (w : World) (ts : S.Tm) (tu : U.UTm) :=
   match d with
-    | dir_lt => SE.TerminatingN ts w → UE.Terminating tu
-    | dir_gt => UE.TerminatingN tu w → SE.Terminating ts
+    | dir_lt => SE.TerminatingN ts (lev w) → UE.Terminating tu
+    | dir_gt => UE.TerminatingN tu (lev w) → SE.Terminating ts
   end. 
 
 Definition contrel'
@@ -54,7 +55,7 @@ Definition contrel'
 
 Definition termrel'
            (d : Direction) (w : World) (vr' : forall w' : World, w' ≤ w -> PTRel) : PTRel :=
-  fun τ ts tu => forall w' (fw : w' ≤ w) Cs Cu, contrel' d w vr' τ Cs Cu -> Obs d w' (S.pctx_app ts Cs) (U.pctx_app tu Cu).
+  fun τ ts tu => forall Cs Cu, contrel' d w vr' τ Cs Cu -> Obs d w (S.pctx_app ts Cs) (U.pctx_app tu Cu).
 
 Lemma lt_le {w w' w''} (fw : w' < w) (fw' : w'' ≤ w') : w'' < w.
 Proof.

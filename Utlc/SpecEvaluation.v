@@ -198,3 +198,9 @@ Inductive TerminatingN (t: UTm) : nat -> Prop :=
   | TerminatingIV : forall n, Value t -> TerminatingN t n
   | TerminatingIS : forall n, (∀ t', t --> t' → TerminatingN t' n) → TerminatingN t (S n).
 Notation "t ⇓_ n" := (TerminatingN t n) (at level 8, format "t ⇓_ n").
+
+Inductive evaln (t : UTm) : UTm → nat → Prop :=
+| evaln_zero : evaln t t 0
+| evaln_step : forall t' t'' n, t --> t' → evaln t' t'' n → evaln t t'' (S n).
+
+

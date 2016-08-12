@@ -3,6 +3,8 @@ Require Export Stlc.SpecSyntax.
 Require Export Stlc.SpecEvaluation.
 Require Export Coq.Program.Tactics.
 
+Require Import Omega.
+
 Local Ltac crush :=
   intros; cbn in * |-;
   repeat
@@ -135,6 +137,18 @@ Proof.
   intros ? ? (); eauto.
 Qed.
 
+Ltac crushImpossibleEvals :=
+  match goal with
+          [ H : abs _ _ --> _ |- _ ] => exfalso; refine (values_are_normal' _ _ H); crush
+        | [ H : true --> _ |- _ ] => exfalso; refine (values_are_normal' _ _ H); crush
+        | [ H : false --> _ |- _ ] => exfalso; refine (values_are_normal' _ _ H); crush
+        | [ H : unit --> _ |- _ ] => exfalso; refine (values_are_normal' _ _ H); crush
+        | [ H : Value ?x, H' : ?x --> _ |- _ ] => exfalso; refine (values_are_normal' H _ H'); crush
+        | [ Hx : Value ?x, Hy : Value ?y,  H' : pair ?x ?y --> _ |- _ ] => exfalso; refine (values_are_normal' _ _ H'); crush
+        | [ Hx : Value ?x,  H' : inl ?x --> _ |- _ ] => exfalso; refine (values_are_normal' _ _ H'); crush
+        | [ Hx : Value ?x,  H' : inr ?x --> _ |- _ ] => exfalso; refine (values_are_normal' _ _ H'); crush
+  end.
+
 Lemma TerminatingDN (t: Tm) n (m: t ⇓_ (S n)) :
   ∀ t', t --> t' → TerminatingN t' n.
 Proof. 
@@ -149,4 +163,79 @@ Proof.
   induction 1; constructor; try assumption.
   intros t' e'. exfalso. refine (values_are_normal H _).
   exists t'. auto.
+Qed.
+
+Lemma determinacy' {t t' t'' t'''} : t --> t' → t'' --> t''' → t = t'' → t' = t'''.
+Proof.
+  intros e₁.
+  revert t'' t'''. 
+  induction e₁ using eval_ind';
+  induction 1 using eval_ind'; crush; try crushImpossibleEvals.
+Qed.
+
+Lemma determinacy {t t' t''} : t --> t' → t --> t'' → t' = t''.
+Proof.
+  eauto using determinacy'.
+Qed.
+
+Lemma termination_closed_under_antireduction {t t'} :
+  t --> t' → t'⇓ → t⇓.
+Proof.
+  intros e m. constructor. intros t'' e'.
+  rewrite <- (determinacy e e').
+  assumption.
+Qed.
+
+Lemma termination_closed_under_antireductionStar {t t'} :
+  t -->* t' → t'⇓ → t⇓.
+Proof.
+  intros e m. induction e. 
+  - assumption.
+  - eauto using termination_closed_under_antireduction.
+Qed.
+
+Lemma evaln_to_evalStar {t t' n} : evaln t t' n → t -->* t'.
+Proof.
+  induction 1; crush.
+Qed.
+
+Lemma S_le {n m} : S n ≤ m → exists m', m = S m' ∧ n ≤ m'.
+Proof.
+  destruct m.
+  - intros le; exfalso; omega. 
+  - intros le; exists m; omega.
+Qed.
+
+Lemma TerminatingN_lt {t n n'} :
+  TerminatingN t n → n ≤ n' → TerminatingN t n'.
+Proof.
+  intros term. revert n'.
+  induction term; [ constructor; auto | idtac].
+  intros n' le.
+  pose (en'' := S_le le).
+  destruct en''; destruct_conjs; subst.
+  apply TerminatingIS.
+  auto.
+Qed.
+
+Lemma TerminatingN_eval {t t' n} :
+  t --> t' → TerminatingN t' n ↔ TerminatingN t (S n).
+Proof.
+  intros e.
+  constructor; intros term.
+  - apply TerminatingIS.
+    intros t'' e'.
+    rewrite <- (determinacy e e').
+    assumption.
+  - depind term; try crushImpossibleEvals;
+    eauto.
+Qed.
+    
+Lemma TerminatingN_evaln {t t' n } n' :
+  evaln t t' n → TerminatingN t' n' ↔ TerminatingN t (n + n').
+Proof.
+  induction 1; constructor; auto; intro term;
+  change (S n + n') with (S (n + n')) in *;
+  [rewrite <- (TerminatingN_eval H) | rewrite <- (TerminatingN_eval H) in term];
+  apply IHevaln; auto.
 Qed.
