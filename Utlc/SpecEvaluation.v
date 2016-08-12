@@ -87,9 +87,6 @@ Reserved Notation "t₁ --> t₂" (at level 80).
 Inductive eval : UTm → UTm → Prop :=
   | eval_ctx₀ C {t t'} :
       t -->₀ t' → ECtx C → pctx_app t C --> pctx_app t' C
-  | eval_ctx_wrong₀ C :
-      ECtx C → C ≠ phole →
-      pctx_app wrong C --> wrong
 where "t₁ --> t₂" := (eval t₁ t₂).
 
 Section DerivedRules.
@@ -112,11 +109,70 @@ Section DerivedRules.
     caseof (inr t) t₁ t₂ --> t'.
   Proof. intros; apply eval_eval₀; subst; auto using eval₀. Qed.
 
+  Lemma eval_cong_app₁ {t₁ t₁' t₂} :
+    t₁ --> t₁' → app t₁ t₂ --> app t₁' t₂.
+  Proof. induction 1 as [C]; now apply (eval_ctx₀ (papp₁ C t₂)). Qed.
+
+  Lemma eval_cong_app₂ {t₁ t₂ t₂'} (vt₁ : Value t₁) :
+    t₂ --> t₂' → app t₁ t₂ --> app t₁ t₂'.
+  Proof. induction 1 as [C]; now apply (eval_ctx₀ (papp₂ _ C)). Qed.
+
+  Lemma eval_cong_ite₁ {t₁ t₁' t₂ t₃} :
+    t₁ --> t₁' → ite t₁ t₂ t₃ --> ite t₁' t₂ t₃.
+  Proof. induction 1 as [C]; now apply (eval_ctx₀ (pite₁ C _ _)). Qed.
+
+  Lemma eval_cong_pair₁ {t₁ t₁' t₂} :
+    t₁ --> t₁' → pair t₁ t₂ --> pair t₁' t₂.
+  Proof. induction 1 as [C]; now apply (eval_ctx₀ (ppair₁ C t₂)). Qed.
+
+  Lemma eval_cong_pair₂ {t₁ t₂ t₂'} (vt₁ : Value t₁) :
+    t₂ --> t₂' → pair t₁ t₂ --> pair t₁ t₂'.
+  Proof. induction 1 as [C]; now apply (eval_ctx₀ (ppair₂ _ C)). Qed.
+
+  Lemma eval_cong_proj₁ {t₁ t₁'} :
+    t₁ --> t₁' → proj₁ t₁ --> proj₁ t₁'.
+  Proof. induction 1 as [C]; now apply (eval_ctx₀ (pproj₁ C)). Qed.
+
+  Lemma eval_cong_proj₂ {t₁ t₁'} :
+    t₁ --> t₁' → proj₂ t₁ --> proj₂ t₁'.
+  Proof. induction 1 as [C]; now apply (eval_ctx₀ (pproj₂ C)). Qed.
+
+  Lemma eval_cong_inl {t₁ t₁'} :
+    t₁ --> t₁' → inl t₁ --> inl t₁'.
+  Proof. induction 1 as [C]; now apply (eval_ctx₀ (pinl C)). Qed.
+
+  Lemma eval_cong_inr {t₁ t₁'} :
+    t₁ --> t₁' → inr t₁ --> inr t₁'.
+  Proof. induction 1 as [C]; now apply (eval_ctx₀ (pinr C)). Qed.
+
+  Lemma eval_cong_caseof₁ {t₁ t₁' t₂ t₃} :
+    t₁ --> t₁' → caseof t₁ t₂ t₃ --> caseof t₁' t₂ t₃.
+  Proof. induction 1 as [C]; now apply (eval_ctx₀ (pcaseof₁ C _ _)). Qed.
+
+  Lemma eval_cong_seq₁ {t₁ t₁' t₂} :
+    t₁ --> t₁' → seq t₁ t₂ --> seq t₁' t₂.
+  Proof. induction 1 as [C]; now apply (eval_ctx₀ (pseq₁ C t₂)). Qed.
+
 End DerivedRules.
 
 Hint Resolve eval_beta' : eval.
 Hint Resolve eval_case_inl' : eval.
 Hint Resolve eval_case_inr' : eval.
+Hint Resolve eval_cong_app₁ : eval.
+Hint Resolve eval_cong_app₂ : eval.
+Hint Resolve eval_cong_ite₁ : eval.
+Hint Resolve eval_cong_pair₁ : eval.
+Hint Resolve eval_cong_pair₂ : eval.
+Hint Resolve eval_cong_proj₁ : eval.
+Hint Resolve eval_cong_proj₂ : eval.
+Hint Resolve eval_cong_inl : eval.
+Hint Resolve eval_cong_inr : eval.
+Hint Resolve eval_cong_caseof₁ : eval.
+Hint Resolve eval_cong_seq₁ : eval.
+
+Lemma eval_ctx C (eC: ECtx C) :
+  ∀ {t t'}, t --> t' → pctx_app t C --> pctx_app t' C.
+Proof. induction C; cbn in *; intuition. Qed.
 
 Inductive Terminating (t: UTm) : Prop :=
   | TerminatingI : (∀ t', t --> t' → Terminating t') → Terminating t.
