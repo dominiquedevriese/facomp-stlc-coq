@@ -92,20 +92,31 @@ Inductive eval : UTm → UTm → Prop :=
       pctx_app wrong C --> wrong
 where "t₁ --> t₂" := (eval t₁ t₂).
 
-Lemma eval_beta' {t₁ t₂ t'} :
-  Value t₂ → t' = t₁[beta1 t₂] →
-  app (abs t₁) t₂ --> t'.
-Proof. intros; subst; refine (eval_ctx₀ phole _ _); constructor; auto. Qed.
+Section DerivedRules.
 
-Lemma eval_case_inl' {t t₁ t₂ t'} :
-  Value t → t' = t₁[beta1 t] →
-  caseof (inl t) t₁ t₂ --> t'.
-Proof. intros; subst; refine (eval_ctx₀ phole _ _); constructor; auto. Qed.
+  Lemma eval_eval₀ {t t'} : t -->₀ t' -> t --> t'.
+  Proof. intro r; now apply (eval_ctx₀ phole r). Qed.
 
-Lemma eval_case_inr' {t t₁ t₂ t'} :
-  Value t → t' = t₂[beta1 t] →
-  caseof (inr t) t₁ t₂ --> t'.
-Proof. intros; subst; refine (eval_ctx₀ phole _ _); constructor; auto. Qed.
+  Lemma eval_beta' {t₁ t₂ t'} :
+    Value t₂ → t' = t₁[beta1 t₂] →
+    app (abs t₁) t₂ --> t'.
+  Proof. intros; apply eval_eval₀; subst; auto using eval₀. Qed.
+
+  Lemma eval_case_inl' {t t₁ t₂ t'} :
+    Value t → t' = t₁[beta1 t] →
+    caseof (inl t) t₁ t₂ --> t'.
+  Proof. intros; apply eval_eval₀; subst; auto using eval₀. Qed.
+
+  Lemma eval_case_inr' {t t₁ t₂ t'} :
+    Value t → t' = t₂[beta1 t] →
+    caseof (inr t) t₁ t₂ --> t'.
+  Proof. intros; apply eval_eval₀; subst; auto using eval₀. Qed.
+
+End DerivedRules.
+
+Hint Resolve eval_beta' : eval.
+Hint Resolve eval_case_inl' : eval.
+Hint Resolve eval_case_inr' : eval.
 
 Inductive Terminating (t: UTm) : Prop :=
   | TerminatingI : (∀ t', t --> t' → Terminating t') → Terminating t.
@@ -124,7 +135,7 @@ Hint Constructors eval : eval.
 Hint Constructors clos_refl_trans_1n : eval.
 Hint Constructors clos_trans_1n : eval.
 
-Definition normal (t : UTm) := not (exists t', t --> t').
+Definition normal (t : UTm) := ∀ t', ¬ (t --> t').
 
 (* Terminates in maximum n steps *)
 Inductive TerminatingN (t: UTm) : nat -> Prop :=
