@@ -77,7 +77,7 @@ Section Values.
 
   Lemma values_are_normal {t : UTm} : Value t → normal t.
   Proof.
-    intros vt; induction 1 as [? ? ? r'];
+    intros vt; induction 1 as [? ? ? r'|?];
       apply value_pctx_inversion in vt;
       eauto using values_are_eval₀_normal.
   Qed.
@@ -133,9 +133,10 @@ Section SubstEval.
   Lemma eval_closed_under_substitution {t1 t2} (r: t1 --> t2) (ζ: Sub UTm) :
     t1[ζ] --> t2[ζ].
   Proof.
-    induction r as [C t₁' t₂' e];
+    induction r as [C t₁' t₂' e|C];
     rewrite -> ?pctx_app_sub; constructor;
       auto using eval₀_closed_under_substitution.
+    destruct C; crush.
   Qed.
 
 End SubstEval.
