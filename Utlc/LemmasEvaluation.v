@@ -1,6 +1,7 @@
 Require Export Db.Lemmas.
 Require Export Utlc.SpecSyntax.
 Require Export Utlc.SpecEvaluation.
+Require Import Common.Common.
 
 Local Ltac crush :=
   intros;
@@ -35,6 +36,17 @@ Section EvaluationContexts.
     induction C₂; crush.
   Qed.
 
+  Lemma pctx_cat_assoc (C₁ C₂ C₃ : PCtx) :
+    pctx_cat (pctx_cat C₁ C₂) C₃ = pctx_cat C₁ (pctx_cat C₂ C₃).
+  Proof.
+    induction C₃; crush.
+  Qed.
+
+  Lemma pctx_cat_phole_leftzero C : pctx_cat phole C = C.
+  Proof.
+    induction C; crush.
+  Qed.
+  
   Lemma ectx_cat (C₁ C₂: PCtx) :
     ECtx C₁ → ECtx C₂ → ECtx (pctx_cat C₁ C₂).
   Proof. induction C₂; crush. Qed.
@@ -261,3 +273,56 @@ Section Determinacy.
   Qed.
 
 End Determinacy.
+
+Section Termination'.
+
+  Lemma termination_closed_under_antireduction {t t'} :
+    t --> t' → t' ⇓ → t ⇓.
+  Proof.
+    intros e term. constructor. intros t'' e'.
+    assert (t' = t'') by exact (determinacy e e').
+    subst; assumption.
+  Qed.
+
+  Lemma termination_closed_under_antireductionStar {t t'} :
+    t -->* t' → t' ⇓ → t ⇓.
+  Proof.
+    intros e term.
+    induction e; eauto using termination_closed_under_antireduction.
+  Qed.
+End Termination'.
+
+Section EvalN.
+  Lemma evaln_to_evalStar {t t' n} :
+    evaln t t' n → t -->* t'.
+  Proof.
+    induction 1; crush.
+  Qed.
+
+  Lemma TerminatingN_eval {t t' n } :
+    t --> t' → t' ⇓_ n ↔ t ⇓_ (S n).
+  Proof.
+    intros e. constructor.
+    - intros term. apply TerminatingIS. intros t'' e'.
+      replace t'' with t' by apply (determinacy e e').
+      assumption.
+    - intro term. refine (TerminatingDN _ _ term _ e).
+  Qed.
+
+  Lemma TerminatingN_evaln {t t' n } n' :
+    evaln t t' n → t' ⇓_ n' ↔ t ⇓_ (n + n').
+  Proof.
+    induction 1; eauto using iff_refl, iff_trans, TerminatingN_eval. 
+  Qed.
+
+  Lemma TerminatingN_lt {t n n'} :
+    TerminatingN t n → n ≤ n' → TerminatingN t n'.
+  Proof.
+    intros term. revert n'.
+    induction term; [ constructor; auto | idtac].
+    intros n' le.
+    destruct (S_le le); destruct_conjs; subst.
+    apply TerminatingIS.
+    auto.
+  Qed.
+End EvalN.

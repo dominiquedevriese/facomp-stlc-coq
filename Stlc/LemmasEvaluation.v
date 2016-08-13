@@ -49,7 +49,15 @@ Proof.
   induction 1; eauto using eval_ctx with eval.
 Qed.
 
-(* ** Transitive and transitive-reflexive closure *)
+Lemma evaln_ctx {C t t' n} :
+  ECtx C → evaln t t' n -> evaln (pctx_app t C) (pctx_app t' C) n.
+Proof.
+  intros ec.
+  induction 1; eauto using eval_ctx with eval.
+Qed.
+
+
+ (* ** Transitive and transitive-reflexive closure *)
 Lemma evalPlusToStar {t t'} : t -->+ t' -> t -->* t'.
 Proof. induction 1; eauto with eval. Qed.
 
