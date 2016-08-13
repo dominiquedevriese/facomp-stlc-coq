@@ -140,3 +140,124 @@ Section SubstEval.
   Qed.
 
 End SubstEval.
+
+Section Determinacy.
+
+  Lemma eval₀_determinacy {t₀ t₁ t₂} :
+    t₀ -->₀ t₁ → t₀ -->₀ t₂ → t₁ = t₂.
+  Proof.
+    induction 1; inversion 1; subst; trivial;
+    match goal with
+      | H: ?x ≠ ?x |- _ => elim (H eq_refl)
+      | H: ∀ _, _ ≠ _ |- _ => elim (H _ eq_refl)
+      | H: ∀ _ _, _ ≠ _ |- _ => elim (H _ _ eq_refl)
+    end.
+  Qed.
+
+  Ltac strengthenHyp :=
+    match goal with
+      (* Value inversion *)
+      | [H: _ ∧ _               |- _] => destruct H
+      | [H: False               |- _] => elim H
+      (* Mismatched disequality assupmtions of evaluation *)
+      | [H: ?x ≠ ?x             |- _] => elim H
+      | [H: ∀ _, _ ≠ _          |- _] => elim (H _ eq_refl)
+      | [H: ∀ _ _, _ ≠ _        |- _] => elim (H _ _ eq_refl)
+      (* Eval₀ normal form reduction *)
+      | [H: wrong        -->₀ _ |- _] => inversion H
+      | [H: var _        -->₀ _ |- _] => inversion H
+      | [H: abs _        -->₀ _ |- _] => inversion H
+      | [H: unit         -->₀ _ |- _] => inversion H
+      | [H: true         -->₀ _ |- _] => inversion H
+      | [H: false        -->₀ _ |- _] => inversion H
+      | [H: inl _        -->₀ _ |- _] => inversion H
+      | [H: inr _        -->₀ _ |- _] => inversion H
+      | [H: pair _ _     -->₀ _ |- _] => inversion H
+      | [V: Value ?t, H: ?t -->₀ _ |- _] =>
+        elim (values_are_eval₀_normal V H)
+      (* Value strengthening *)
+      | [V: Value (pctx_app _ ?C), E: ECtx ?C |- _] =>
+        apply (value_pctx_inversion E) in V; cbn in V
+      (* Strengthen with eval₀ determinacy. *)
+      | [H1: ?s -->₀ ?t, H2: ?s -->₀ ?u |- _] =>
+        pose proof (eval₀_determinacy H1 H2);
+          clear H2; subst t
+    end.
+
+  Ltac invertEval₀ :=
+    match goal with
+      | [H: app _ _      -->₀ _ |- _] => inversion H; clear H
+      | [H: proj₁ _      -->₀ _ |- _] => inversion H; clear H
+      | [H: proj₂ _      -->₀ _ |- _] => inversion H; clear H
+      | [H: ite _ _ _    -->₀ _ |- _] => inversion H; clear H
+      | [H: caseof _ _ _ -->₀ _ |- _] => inversion H; clear H
+      | [H: seq _ _      -->₀ _ |- _] => inversion H; clear H
+    end.
+
+  Ltac destructECtx :=
+    match goal with
+      | [E: ECtx ?C, H: pctx_app _ ?C = _ |- _] =>
+        is_var C; destruct C
+      | [E: ECtx ?C, H: _ = pctx_app _ ?C |- _] =>
+        is_var C; destruct C
+    end.
+
+  Ltac crush :=
+    repeat
+      (try discriminate;
+       repeat strengthenHyp;
+       repeat crushUtlcSyntaxMatchH;
+       cbn in *|-; subst*); eauto.
+
+  Lemma determinacy_help1 {t₁ t₁' t₂ t₂' t} (r₁: t₁ -->₀ t₁') (r₂: t₂ -->₀ t₂') :
+    ∀ {C₁ C₂}, ECtx C₁ → ECtx C₂ →
+      t = pctx_app t₁ C₁ →
+      t = pctx_app t₂ C₂ →
+      pctx_app t₁' C₁ = pctx_app t₂' C₂.
+  Proof.
+    Time induction t; intros;
+    (* First look at the decisions encoded in the evaluation contexts. Try as
+       fast as possible to get rid of cases where one context indicates that
+       the other is reducing a normal form. *)
+    destruct C₁; crush;
+    destruct C₂; crush;
+    (* Handle the cases where both contexts actually do the same thing. *)
+    cbn; f_equal; eauto;
+    (* Only inconsistent cases from here on. *)
+    exfalso;
+    (* One of the contexts is empty while the other one is non-empty. Take
+       a look at what the empty context is reducing. We got one layer of
+       datatype information from the non-empty context which we use to find
+       the reduction. *)
+    try invertEval₀; crush;
+    (* From the inversion of the reduction we learn that the non-empty context
+       must in fact be a normal-form which is impossible. Find the non-empty
+       context again and give it a final blow. *)
+    try destructECtx; crush.
+  Qed.
+
+  Lemma determinacy_help2 {t₁ t₁' t} (e₁: t₁ -->₀ t₁') :
+    ∀ {C₁ C₂},
+      t = pctx_app t₁ C₁ →
+      t = pctx_app wrong C₂ →
+      ECtx C₁ → ECtx C₂ →
+      False.
+  Proof.
+    induction t; intros; crush;
+    destruct C₂; crush;
+    destruct C₁; crush;
+    inversion e₁; crush;
+    destruct C₂; crush.
+  Qed.
+
+  Lemma determinacy {t t₁ t₂} :
+    t --> t₁ → t --> t₂ → t₁ = t₂.
+  Proof.
+    do 2 inversion 1.
+    - eapply determinacy_help1; eauto.
+    - exfalso; eapply determinacy_help2; eauto.
+    - exfalso; eapply determinacy_help2; eauto.
+    - reflexivity.
+  Qed.
+
+End Determinacy.
