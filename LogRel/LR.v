@@ -60,7 +60,7 @@ Definition contrel'
 
 Definition termrel'
            (d : Direction) (w : World) (vr' : forall w' : World, w' ≤ w -> PTRel) : PTRel :=
-  fun τ ts tu => forall Cs Cu, contrel' d w vr' τ Cs Cu -> Obs d w (S.pctx_app ts Cs) (U.pctx_app tu Cu).
+  fun τ ts tu => forall Cs Cu, S.ECtx Cs → U.ECtx Cu → contrel' d w vr' τ Cs Cu -> Obs d w (S.pctx_app ts Cs) (U.pctx_app tu Cu).
 
 Lemma lt_le {w w' w''} (fw : w' < w) (fw' : w'' ≤ w') : w'' < w.
 Proof.
