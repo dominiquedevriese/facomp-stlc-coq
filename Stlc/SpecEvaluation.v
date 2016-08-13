@@ -155,3 +155,5 @@ Inductive evaln (t : Tm) : Tm → nat → Prop :=
 | evaln_zero : evaln t t 0
 | evaln_step : forall t' t'' n, t --> t' → evaln t' t'' n → evaln t t'' (S n).
 
+
+Hint Constructors evaln : eval.

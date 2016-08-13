@@ -39,19 +39,13 @@ Qed.
 Lemma evalstar_ctx C t t' (eC: ECtx C) :
   t -->* t' → pctx_app t C -->* pctx_app t' C.
 Proof. 
-  induction 1 as [|t t'' t' e1 es IHes].
-  - eauto with eval. 
-  - enough (pctx_app t C --> pctx_app t'' C) by eauto with eval.
-    apply eval_ctx; assumption.
+  induction 1; eauto using eval_ctx with eval.
 Qed.
 
 Lemma evalplus_ctx C t t' (eC: ECtx C) :
   t -->+ t' → pctx_app t C -->+ pctx_app t' C.
 Proof. 
-  induction 1 as [t t' e1|t t'' t' e1 es IHes];
-  [enough (pctx_app t C --> pctx_app t' C) by eauto with eval|
-   enough (pctx_app t C --> pctx_app t'' C) by eauto with eval];
-  apply eval_ctx; assumption.
+  induction 1; eauto using eval_ctx with eval.
 Qed.
 
 (* ** Transitive and transitive-reflexive closure *)
