@@ -12,10 +12,15 @@ Require Import Coq.Program.Basics.
 Require Import Coq.Arith.Wf_nat.
 Require Import Omega.
 
-Module S := Stlc.SpecSyntax.
-Module SE := Stlc.SpecEvaluation.
-Module U := Utlc.SpecSyntax.
-Module UE := Utlc.SpecEvaluation.
+Module S.
+   Include Stlc.SpecSyntax.
+   Include Stlc.SpecEvaluation.
+End S.
+
+Module U.
+   Include Utlc.SpecSyntax.
+   Include Utlc.SpecEvaluation.
+End U.
 
 Definition OfTypeStlc (τ : PTy) (t : S.Tm) : Prop :=
   ⟪ empty ⊢ t : repEmul τ ⟫.
@@ -45,9 +50,9 @@ Definition PCRel := PTy -> S.PCtx -> U.PCtx -> Prop.
 
 Definition Obs (d : Direction) (w : World) (ts : S.Tm) (tu : U.UTm) :=
   match d with
-    | dir_lt => SE.TerminatingN ts (lev w) → UE.Terminating tu
-    | dir_gt => UE.TerminatingN tu (lev w) → SE.Terminating ts
-  end. 
+    | dir_lt => S.TerminatingN ts (lev w) → U.Terminating tu
+    | dir_gt => U.TerminatingN tu (lev w) → S.Terminating ts
+  end.
 
 Definition contrel'
            (d : Direction) (w : World) (vr' : forall w' : World, w' ≤ w -> PTRel) : PCRel :=
