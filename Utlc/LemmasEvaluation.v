@@ -215,7 +215,7 @@ Section Determinacy.
       t = pctx_app t₂ C₂ →
       pctx_app t₁' C₁ = pctx_app t₂' C₂.
   Proof.
-    Time induction t; intros;
+    induction t; intros;
     (* First look at the decisions encoded in the evaluation contexts. Try as
        fast as possible to get rid of cases where one context indicates that
        the other is reducing a normal form. *)

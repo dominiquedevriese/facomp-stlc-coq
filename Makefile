@@ -21,7 +21,7 @@ AUXS := $(join $(dir $(SRCS)), $(addprefix ., $(notdir $(SRCS:.v=.aux))))
 
 coq: Makefile.coq
 	$(E) "  MAKE Makefile.coq"
-	$(Q)$(MAKE) $(MFLAGS) -f Makefile.coq
+	$(Q)$(MAKE) $(MFLAGS) -f Makefile.coq quick
 
 Makefile.coq: Makefile $(VS)
 	$(E) "  COQ_MAKEFILE Makefile.coq"
