@@ -2,6 +2,7 @@ Require Export Db.Lemmas.
 Require Export Stlc.SpecSyntax.
 Require Export Stlc.SpecEvaluation.
 Require Export Coq.Program.Tactics.
+Require Import Common.Common.
 
 Require Import Omega.
 
@@ -193,21 +194,13 @@ Proof.
   induction 1; crush.
 Qed.
 
-Lemma S_le {n m} : S n ≤ m → exists m', m = S m' ∧ n ≤ m'.
-Proof.
-  destruct m.
-  - intros le; exfalso; omega. 
-  - intros le; exists m; omega.
-Qed.
-
 Lemma TerminatingN_lt {t n n'} :
   TerminatingN t n → n ≤ n' → TerminatingN t n'.
 Proof.
   intros term. revert n'.
   induction term; [ constructor; auto | idtac].
   intros n' le.
-  pose (en'' := S_le le).
-  destruct en''; destruct_conjs; subst.
+  destruct (S_le le); destruct_conjs; subst.
   apply TerminatingIS.
   auto.
 Qed.
