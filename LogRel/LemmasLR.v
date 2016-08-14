@@ -85,4 +85,12 @@ Section ClosedLR.
     apply tr; auto. 
     refine (contrel_mono fw cr).
   Qed.
+
+  Lemma valrel_in_termrel {ts tu W d τ} :
+    valrel d W τ ts tu → termrel d W τ ts tu.
+  Proof.
+    intros vr Cs Cu eCs eCu contrel.
+    apply contrel; auto.
+  Qed.
+    
 End ClosedLR.

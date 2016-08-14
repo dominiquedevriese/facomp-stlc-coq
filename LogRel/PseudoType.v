@@ -17,6 +17,8 @@ Inductive PEnv : Set :=
 | pempty
 | pevar (Γ : PEnv) (τ : PTy).
 
+Notation "Γ p▻ T" := (pevar Γ T) (at level 55, left associativity).
+
 Fixpoint repEmul (τ : PTy) : Ty :=
   match τ with
     | ptarr τ₁ τ₂ => tarr (repEmul τ₁) (repEmul τ₂)

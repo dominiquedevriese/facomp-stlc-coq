@@ -119,7 +119,7 @@ Definition valrel' (d : Direction) (w : World) (τ : PTy)(t₁ : S.Tm) (t₂ : U
                   (fun w => forall (τ : PTy) (t₁ : S.Tm) (t₂ : U.UTm), Prop)
                   (valrel'' d) w τ t₁ t₂.
 
-Definition valrel (d : Direction) (τ : PTy) (w : World) (t₁ : S.Tm) (t₂ : U.UTm) : Prop :=
+Definition valrel (d : Direction) (w : World) (τ : PTy) (t₁ : S.Tm) (t₂ : U.UTm) : Prop :=
   valrel' d w τ t₁ t₂.
   
 Definition contrel
@@ -139,7 +139,7 @@ Fixpoint envrel (d : Direction) (w : World) (Γ : PEnv) (γs : Sub S.Tm) (γu : 
 
 Definition OpenLRN (d : Direction) (n : nat) (Γ : PEnv) (ts : S.Tm) (tu : U.UTm) (τ : PTy) : Prop :=
   ⟪ repEmulCtx Γ ⊢ ts : repEmul τ ⟫ ∧
-  forall w, w ≤ n -> forall γs γu, envrel d w Γ γs γu -> termrel d w τ ts tu.
+  forall w, lev w ≤ n -> forall γs γu, envrel d w Γ γs γu -> termrel d w τ (ts [ γs ]) (tu [ γu ]).
 
 Notation "⟪ Γ ⊩ ts ⟦ d , n ⟧ tu : τ ⟫" := (OpenLRN d n Γ ts tu τ)
   (at level 0, ts at level 98, 
