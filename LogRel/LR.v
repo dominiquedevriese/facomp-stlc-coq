@@ -77,7 +77,7 @@ Definition sum_rel (R₁ R₂ : S.Tm -> U.UTm -> Prop) : S.Tm -> U.UTm -> Prop :
     (exists ts' tu', ts = S.inl ts' ∧ tu = U.inl tu' ∧ R₁ ts' tu') ∨
     (exists ts' tu', ts = S.inr ts' ∧ tu = U.inr tu' ∧ R₂ ts' tu').
 
-Definition valrel'' 
+Definition valrel' 
            (d : Direction) (w : World) (ind : forall w' : World, w' < w -> PTRel) : PTRel := 
   fun τ ts tu =>
     OfType τ ts tu ∧
@@ -114,28 +114,55 @@ Definition valrel''
                        end
     end.
 
-Definition valrel' (d : Direction) (w : World) (τ : PTy)(t₁ : S.Tm) (t₂ : U.UTm) : Prop :=
-  well_founded_induction_type (well_founded_ltof World (fun w => w))
-                  (fun w => forall (τ : PTy) (t₁ : S.Tm) (t₂ : U.UTm), Prop)
-                  (valrel'' d) w τ t₁ t₂.
+Definition valrel (d : Direction) (w : World) (τ : PTy)(t₁ : S.Tm) (t₂ : U.UTm) : Prop :=
+  Fix (well_founded_ltof World (fun w => w))
+                  (fun w => PTRel)
+                  (valrel' d) w τ t₁ t₂.
 
-Definition valrel (d : Direction) (w : World) (τ : PTy) (t₁ : S.Tm) (t₂ : U.UTm) : Prop :=
-  valrel' d w τ t₁ t₂.
-  
+Lemma valrel_def_funext {d} :
+  forall w (ind₁ ind₂ : forall w', w' < w → PTRel),
+  (forall w' (fw : w' < w), ind₁ w' fw = ind₂ w' fw) →
+  valrel' d w ind₁ = valrel' d w ind₂.
+Proof.
+  intros ind₁ ind₂ hyp.
+  unfold valrel'.
+  (* Should we simply assume functional extensionality here? *)
+Admitted.
+
+Lemma valrel_fixp {d} :
+  forall w, valrel d w = valrel' d w (fun w _ => valrel d w).
+Proof.
+  unfold valrel. 
+  Check Fix_eq.
+  refine (Fix_eq (well_founded_ltof World (fun w => w)) (fun w => PTRel)
+                  (valrel' d) valrel_def_funext).
+Qed.
+
 Definition contrel
            (d : Direction) (w : World) : PCRel :=
-  contrel' d w (fun w fw => valrel' d w).
+  contrel' d w (fun w fw => valrel d w).
 
 Definition termrel
            (d : Direction) (w : World) : PTRel :=
-  termrel' d w (fun w fw => valrel' d w).
+  termrel' d w (fun w fw => valrel d w).
 
-Fixpoint envrel (d : Direction) (w : World) (Γ : PEnv) (γs : Sub S.Tm) (γu : Sub U.UTm) : Prop :=
-  match Γ with
-    | pempty => True
-    | pevar Γ' τ => valrel' d w τ (γs 0) (γu 0) ∧
-                    envrel d w Γ' (compose γs S) (compose γu S)
-  end.
+Lemma valrel_ptarr {d w τ₁ τ₂ tsb tub} : 
+  OfType (ptarr τ₁ τ₂) (S.abs (repEmul τ₁) tsb) (U.abs tub) →
+  (forall w' (fw : w' < w) ts' tu',
+     valrel d w' τ₁ ts' tu' →
+     termrel d w' τ₂ (tsb [beta1 ts']) (tub [beta1 tu'])) → 
+  valrel d w (ptarr τ₁ τ₂) (S.abs (repEmul τ₁) tsb) (U.abs tub).
+Proof.
+  intros ot hyp.
+  rewrite -> valrel_fixp.
+  unfold valrel'.
+  split; try assumption.
+  exists tsb. exists tub.
+  repeat split; auto.
+Qed.
+
+Definition envrel (d : Direction) (w : World) (Γ : PEnv) (γs : Sub S.Tm) (γu : Sub U.UTm) : Prop :=
+  forall i τ, ⟪ i : τ p∈ Γ ⟫ → valrel d w τ (γs i) (γu i).
 
 Definition OpenLRN (d : Direction) (n : nat) (Γ : PEnv) (ts : S.Tm) (tu : U.UTm) (τ : PTy) : Prop :=
   ⟪ repEmulCtx Γ ⊢ ts : repEmul τ ⟫ ∧

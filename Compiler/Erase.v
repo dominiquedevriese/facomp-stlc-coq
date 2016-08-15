@@ -7,6 +7,7 @@ Require Import Utlc.LemmasScoping.
 Require Import LogRel.PseudoType.
 Require Import LogRel.LR.
 Require Import LogRel.LemmasLR.
+Require Import Omega.
 Require Utlc.Fix.
 
 Module S.
@@ -79,34 +80,34 @@ Proof.
   apply U.ufix_ws.
 Qed.
 
-(* Domi: it would be more convenient to define envrel similar to WtSub using
-   something like GetEVar. Perhaps generalize GetEVar *)
-(* Lemma envrel_implies_WtSub {d W Γ γs γu} : *)
-(*   envrel d W Γ γs γu → WtSub (repEmulCtx Γ) empty γs. *)
-(* Proof. *)
-(*   Print WtSub. *)
-(*   intros envrel i τ vi_τ. *)
-(*   Print envrel. *)
+Lemma extend_envrel {d w Γ γs γu τ ts tu} :
+  valrel d w τ ts tu →
+  envrel d w Γ γs γu →
+  envrel d w (Γ p▻ τ) (γs↑ >=> beta1 ts) (γu↑ >=> beta1 tu).
+Admitted.
 
-
-(* Section CompatibilityLemmas. *)
-(*   Lemma compat_lambda {Γ τ' ts d n tu τ} : *)
-(*     ⟪ Γ p▻ τ' ⊩ ts ⟦ d , n ⟧ tu : τ ⟫ → *)
-(*     ⟪ Γ ⊩ (S.abs (repEmul τ') ts) ⟦ d , n ⟧ abs tu : ptarr τ' τ ⟫. *)
-(*   Proof. *)
-(*     intros lr. *)
-(*     unfold OpenLRN in *. *)
-(*     destruct_conjs. *)
-(*     split; crushTyping. *)
-(*     apply valrel_in_termrel. *)
-(*     unfold valrel, valrel'. *)
-(*     unfold well_founded_induction_type, Acc_rect. *)
-(*     unfold valrel'' in |- *. *)
-(*     simpl. *)
-(*     split. *)
-(*     -  unfold OfType, OfTypeStlc, OfTypeUtlc; split. *)
-(*        + replace (S.abs (repEmul τ') (ts [γs↑])) with ((S.abs (repEmul τ') ts) [γs]). *)
-(*          refine (S.typing_sub _ _ _ _); crushTyping. *)
-         
-
-(* End CompabilityLemmas. *)
+Section CompatibilityLemmas.
+  Lemma compat_lambda {Γ τ' ts d n tu τ} :
+    ⟪ Γ p▻ τ' ⊩ ts ⟦ d , n ⟧ tu : τ ⟫ →
+    ⟪ Γ ⊩ (S.abs (repEmul τ') ts) ⟦ d , n ⟧ abs tu : ptarr τ' τ ⟫.
+  Proof.
+    intros lr.
+    unfold OpenLRN in *.
+    destruct_conjs.
+    split; crushTyping.
+    apply valrel_in_termrel.
+    apply valrel_ptarr.
+    - unfold OfType, OfTypeStlc, OfTypeUtlc; split.
+       + change (S.abs (repEmul τ') (ts [γs↑])) with ((S.abs (repEmul τ') ts) [γs]).
+         refine (S.typing_sub _ _ _ _); crushTyping.
+         refine (envrel_implies_WtSub H2).
+       + exists (apUTm γu↑ tu); auto.
+    - intros w' fw ts' tu' vr'.
+      rewrite -> (ap_comp ts (γs↑) (beta1 ts')).
+      change (apUTm γu↑ tu) with (tu [γu↑]).
+      rewrite -> (ap_comp tu (γu↑) (beta1 tu')).
+      refine (H0 w' _ (γs↑ >=> beta1 ts') (γu↑ >=> beta1 tu') _).
+      + unfold lev in *. omega.
+      + eauto using extend_envrel, envrel_mono.
+  Qed.
+End CompabilityLemmas.

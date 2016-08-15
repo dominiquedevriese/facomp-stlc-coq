@@ -1,3 +1,4 @@
+Require Import LogRel.PseudoType.
 Require Import LogRel.LR.
 Require Import Stlc.SpecSyntax.
 Require Import Stlc.SpecEvaluation.
@@ -62,6 +63,74 @@ Section Obs.
 End Obs.
 
 Section ClosedLR.
+  Lemma valrel_implies_OfType {d W τ ts tu} :
+    valrel d W τ ts tu → OfType τ ts tu.
+  Proof.
+    rewrite -> valrel_fixp. unfold valrel'. intuition.
+  Qed.
+  
+  Lemma envrel_implies_WtSub {d W Γ γs γu} :
+    envrel d W Γ γs γu → WtSub (repEmulCtx Γ) empty γs.
+  Proof.
+    intros er i τ vi_τ.
+    destruct (getevar_repEmulCtx vi_τ) as [pτ [vi_pτ ?]].
+    assert (vr : valrel d W pτ (γs i) (γu i)) by refine (er _ _ vi_pτ).
+    destruct (valrel_implies_OfType vr) as [ots _].
+    unfold OfTypeStlc in ots.
+    subst. exact ots.
+  Qed.
+    
+  Lemma valrel_mono {d W τ ts tu W'} :
+    W' ≤ W → valrel d W τ ts tu → valrel d W' τ ts tu.
+  Proof.
+    rewrite -> ?valrel_fixp.
+    unfold valrel'.
+    revert ts tu W' W.
+    induction τ;
+    intros ts tu W' W fw vr;
+    destruct_conjs; split; subst; auto.
+    - (* ptarr _ _ *)
+      exists H0. exists H1.
+      repeat split; auto.
+      intros W'' fw' ts' tu' vr'.
+      apply H4; try omega; try assumption.
+    - (* ptprod *)
+      unfold prod_rel in *.
+      destruct H0 as [ts₁ [ts₂ [tu₁ [tu₂ [eqs [equ [vr1 vr2]]]]]]].
+      exists ts₁. exists ts₂. exists tu₁. exists tu₂.
+      split; intuition.
+    - (* ptsum *) 
+      unfold sum_rel in *.
+      destruct H0 as [[ts₁ [tu₁ [eqs [equ vr1]]]] | [ts₂ [tu₂ [eqs [equ vr2]]]]];
+      [left; exists ts₁; exists tu₁; intuition | right; exists ts₂; exists tu₂; intuition].
+    - (* pEmulDV n p *)
+      induction n; try assumption.
+      destruct H0 as [[eqs eqp]
+                     |[[ts' [eqs [eqs' equ']]]
+                      |[[ts' [eqs eqbools]]
+                       |[[ts' [eqs [ts₁ [ts₂ [tu₁ [tu₂ [eqs' [equ' hyp]]]]]]]]
+                        |[[ts' [eqs sumrel]]
+                         |[ts' [eqs [tsb [tub [eqs' [equ' hyp]]]]]]]]]]];
+        [ left
+        | right;left; exists S.unit
+        | right;right;left ; exists ts'
+        | right; right; right; left; exists ts'; unfold prod_rel; repeat split; intuition;
+          exists ts₁; exists ts₂; exists tu₁; exists tu₂
+        | right; right; right; right; left; exists ts'; split; try assumption; unfold sum_rel in *;
+          destruct sumrel as [[ts₁ [tu₁ [eqs' [equ' vr]]]]|[ts₂ [tu₂ [eqs' [equ' vr]]]]];
+          [left;exists ts₁; exists tu₁ | right; exists ts₂; exists tu₂]
+        | right; right; right; right; right; exists ts'; intuition; exists tsb; exists tub];
+        subst; intuition.
+  Qed.
+        
+  Lemma envrel_mono {d W Γ γs γu W'} :
+    W' ≤ W → envrel d W Γ γs γu → envrel d W' Γ γs γu.
+  Proof.
+    intros fw er i τ viτ.
+    refine (valrel_mono fw _).
+    apply er; auto.
+  Qed.
+    
   Lemma contrel_mono {d W τ Cs Cu W'} :
     W' ≤ W → contrel d W τ Cs Cu → contrel d W' τ Cs Cu.
   Proof.
