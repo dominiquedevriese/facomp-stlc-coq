@@ -23,7 +23,7 @@ Module U.
 End U.
 
 Definition OfTypeStlc (τ : PTy) (t : S.Tm) : Prop :=
-  ⟪ empty ⊢ t : repEmul τ ⟫.
+  S.Value t ∧ ⟪ empty ⊢ t : repEmul τ ⟫.
 
 Fixpoint OfTypeUtlc (τ : PTy) (t : U.UTm) : Prop :=
   match τ with
@@ -32,7 +32,7 @@ Fixpoint OfTypeUtlc (τ : PTy) (t : U.UTm) : Prop :=
     | ptbool => t = U.true ∨ t = U.false
     | ptprod τ₁ τ₂ => exists t₁ t₂, t = U.pair t₁ t₂ ∧ OfTypeUtlc τ₁ t₁ ∧ OfTypeUtlc τ₂ t₂
     | ptsum τ₁ τ₂ => (exists t₁, t = U.inl t₁ ∧ OfTypeUtlc τ₁ t₁) ∨ (exists t₂, t = U.inr t₂ ∧ OfTypeUtlc τ₂ t₂)
-    | pEmulDV n p => True
+    | pEmulDV n p => Value t
   end.
 
 Definition OfType (τ : PTy) (t₁ : S.Tm) (t₂ : U.UTm) : Prop :=
@@ -146,20 +146,20 @@ Definition termrel
            (d : Direction) (w : World) : PTRel :=
   termrel' d w (fun w fw => valrel d w).
 
-Lemma valrel_ptarr {d w τ₁ τ₂ tsb tub} : 
-  OfType (ptarr τ₁ τ₂) (S.abs (repEmul τ₁) tsb) (U.abs tub) →
-  (forall w' (fw : w' < w) ts' tu',
-     valrel d w' τ₁ ts' tu' →
-     termrel d w' τ₂ (tsb [beta1 ts']) (tub [beta1 tu'])) → 
-  valrel d w (ptarr τ₁ τ₂) (S.abs (repEmul τ₁) tsb) (U.abs tub).
-Proof.
-  intros ot hyp.
-  rewrite -> valrel_fixp.
-  unfold valrel'.
-  split; try assumption.
-  exists tsb. exists tub.
-  repeat split; auto.
-Qed.
+(* Lemma valrel_ptarr {d w τ₁ τ₂ tsb tub} :  *)
+(*   OfType (ptarr τ₁ τ₂) (S.abs (repEmul τ₁) tsb) (U.abs tub) → *)
+(*   (forall w' (fw : w' < w) ts' tu', *)
+(*      valrel d w' τ₁ ts' tu' → *)
+(*      termrel d w' τ₂ (tsb [beta1 ts']) (tub [beta1 tu'])) →  *)
+(*   valrel d w (ptarr τ₁ τ₂) (S.abs (repEmul τ₁) tsb) (U.abs tub). *)
+(* Proof. *)
+(*   intros ot hyp. *)
+(*   rewrite -> valrel_fixp. *)
+(*   unfold valrel'. *)
+(*   split; try assumption. *)
+(*   exists tsb. exists tub. *)
+(*   repeat split; auto. *)
+(* Qed. *)
 
 Definition envrel (d : Direction) (w : World) (Γ : PEnv) (γs : Sub S.Tm) (γu : Sub U.UTm) : Prop :=
   forall i τ, ⟪ i : τ p∈ Γ ⟫ → valrel d w τ (γs i) (γu i).
