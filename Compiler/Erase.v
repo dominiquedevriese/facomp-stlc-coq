@@ -110,4 +110,4 @@ Section CompatibilityLemmas.
       + unfold lev in *. omega.
       + eauto using extend_envrel, envrel_mono.
   Qed.
-End CompabilityLemmas.
+End CompatibilityLemmas.
