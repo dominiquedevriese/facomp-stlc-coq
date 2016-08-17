@@ -234,3 +234,20 @@ Proof.
   [rewrite <- (TerminatingN_eval H) | rewrite <- (TerminatingN_eval H) in term];
   apply IHevaln; auto.
 Qed.
+
+(* This should not hold. *)
+Lemma terminatingn_app_unit_unit :
+  TerminatingN (app unit unit) 1.
+Proof.
+  constructor 2; intros; exfalso.
+  cut (∀ t t', t --> t' → t = app unit unit → False); eauto.
+  clear.
+  induction 1 using eval_ind'; crush;
+    apply (@values_are_normal unit); crush.
+Qed.
+
+(* This should hold, but doesn't. *)
+Lemma terminatingN_value {t n} :
+  TerminatingN t n → ∃ v, t -->* v ∧ Value v.
+Abort.
+
