@@ -8,6 +8,7 @@ Require Import LogRel.PseudoType.
 Require Import LogRel.LR.
 Require Import LogRel.LemmasLR.
 Require Import Omega.
+Require Import Db.Lemmas.
 Require Utlc.Fix.
 
 Module S.
@@ -84,7 +85,19 @@ Lemma extend_envrel {d w Γ γs γu τ ts tu} :
   valrel d w τ ts tu →
   envrel d w Γ γs γu →
   envrel d w (Γ p▻ τ) (γs↑ >=> beta1 ts) (γu↑ >=> beta1 tu).
-Admitted.
+Proof.
+  intros vr er x τ' xτ'.
+  depind xτ'; intuition. 
+  replace ((γs↑ >=> beta1 ts) (S i)) with (γs i). 
+  replace ((γu↑ >=> beta1 tu) (S i)) with (γu i).
+  now refine (er _ _ xτ').
+  + cbn; rewrite <- ap_liftSub; 
+    rewrite -> liftSub_wkm;
+    rewrite -> apply_wkm_beta1_cancel; intuition.
+  + cbn; rewrite <- ap_liftSub; 
+    rewrite -> liftSub_wkm;
+    rewrite -> apply_wkm_beta1_cancel; intuition.
+Qed.
 
 Local Ltac crush :=
   repeat (repeat match goal with
@@ -95,11 +108,13 @@ Local Ltac crush :=
                 | [ |- termrel _ _ _ S.unit U.unit ] => apply valrel_in_termrel
                 | [ |- termrel _ _ _ S.false U.false ] => apply valrel_in_termrel
                 | [ |- termrel _ _ _ S.true U.true ] => apply valrel_in_termrel
-                | [ |- valrel _ _ _ _ _] => rewrite -> valrel_fixp; unfold valrel'; cbn
+                | [ |- valrel _ _ _ _ _] => rewrite -> valrel_fixp in |- *; unfold valrel' in |- *
                 | [ |- exists tsb tub, S.abs _ ?tsb' = S.abs _ tsb ∧ U.abs ?tub' = U.abs tub ∧ _] => exists tsb'; exists tub'; split; intuition
                 | [ |- exists t', U.abs ?t = U.abs t' ] => exists t; intuition
                 | [ |- S.ECtx (S.pctx_cat _ _) ] => apply S.ectx_cat
                 | [ |- U.ECtx (U.pctx_cat _ _) ] => apply U.ectx_cat
+                | [ H: exists tub', ?tu = U.abs tub' |- U.Value ?tu ] => destruct H as [? ?]; subst
+                | [ |- exists ts₁' ts₂' tu₁' tu₂', S.pair ?ts₁ ?ts₂ = LR.S.pair ts₁' ts₂' ∧ U.pair ?tu₁ ?tu₂ = LR.U.pair tu₁' tu₂' ∧ _ ] => exists ts₁; exists ts₂; exists tu₁; exists tu₂
               end;
           crushTyping;
           intuition).
@@ -110,9 +125,6 @@ Lemma OfTypeUtlc_implies_Value {τ tu} :
 Proof.
   revert tu; induction τ;
   intros tu ot; unfold OfTypeUtlc in ot; subst; crush; subst; crush.
-  - (* ptarr *)
-    destruct ot as [t' eq]; subst.
-    crush.
   - destruct ot as [tu₁ [tu₂ [equ [ot₁ ot₂]]]].
     subst; crush.
   - destruct H as [tu' [eq' ot']].
@@ -184,12 +196,33 @@ Section CompatibilityLemmas.
     unfold OfType, OfTypeStlc, OfTypeUtlc; split; crushTyping; intuition.
   Qed.
 
+  Lemma OfType_pair {τ₁ τ₂ ts₁ ts₂ tu₁ tu₂} :
+    OfType τ₁ ts₁ tu₁ →
+    OfType τ₂ ts₂ tu₂ →
+    OfType (ptprod τ₁ τ₂) (S.pair ts₁ ts₂) (U.pair tu₁ tu₂).
+  Proof.
+    intros ot₁ ot₂.
+    unfold OfType, OfTypeStlc in *.
+    unfold OfTypeUtlc; crush.
+  Qed.
+  
   Lemma valrel_pair {d w τ₁ τ₂ ts₁ ts₂ tu₁ tu₂} :
     valrel d w τ₁ ts₁ tu₁ →
     valrel d w τ₂ ts₂ tu₂ →
     valrel d w (ptprod τ₁ τ₂) (S.pair ts₁ ts₂) (U.pair tu₁ tu₂).
   Proof.
-  Admitted.
+    intros vr₁ vr₂.
+    crush;
+      try match goal with 
+          [ |- OfType (ptprod _ _) (S.pair _ _) (U.pair _ _)] => apply OfType_pair
+      end; unfold prod_rel in |- *; crush.
+    - unfold valrel' in vr₁, vr₂; destruct_conjs; crush.
+    - unfold valrel' in vr₁, vr₂; destruct_conjs; crush.
+    - refine (valrel_mono _ vr₁).
+      omega.
+    - refine (valrel_mono _ vr₂).
+      omega.
+  Qed.
 
   Lemma termrel_pair {d w τ₁ τ₂ ts₁ ts₂ tu₁ tu₂} :
     termrel d w τ₁ ts₁ tu₁ →
