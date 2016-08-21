@@ -224,27 +224,37 @@ Section CompatibilityLemmas.
       omega.
   Qed.
 
+  Lemma termrel_ectx {d w τ₁ τ₂ ts Cs tu Cu} (eCs : S.ECtx Cs) (eCu : U.ECtx Cu) :
+    termrel d w τ₁ ts tu →
+    (forall w' (fw' : w' ≤ w) vs vu, valrel d w' τ₁ vs vu → termrel d w' τ₂ (S.pctx_app vs Cs) (U.pctx_app vu Cu)) →
+    termrel d w τ₂ (S.pctx_app ts Cs) (U.pctx_app tu Cu).
+  Proof.
+    intros tr cr Cs' Cu' eCs' eCu' cr'.
+    rewrite <- S.pctx_cat_app.
+    rewrite <- U.pctx_cat_app.
+    refine (tr (S.pctx_cat Cs Cs') (U.pctx_cat Cu Cu') _ _ _); crush.
+    intros w' fw' vs vu vr.
+    destruct (valrel_implies_Value vr) as [vvs vvu].
+    rewrite -> S.pctx_cat_app.
+    rewrite -> U.pctx_cat_app.
+    refine (cr w' fw' vs vu vr Cs' Cu' eCs' eCu' _).
+    refine (contrel_mono fw' cr').
+  Qed.
+
   Lemma termrel_pair {d w τ₁ τ₂ ts₁ ts₂ tu₁ tu₂} :
     termrel d w τ₁ ts₁ tu₁ →
     (forall w', w' ≤ w → termrel d w' τ₂ ts₂ tu₂) →
     termrel d w (ptprod τ₁ τ₂) (S.pair ts₁ ts₂) (U.pair tu₁ tu₂).
   Proof.
-    intros tr₁ tr₂ Cs Cu eCs eCu cr.
-    replace (S.pctx_app (S.pair ts₁ ts₂) Cs) with (S.pctx_app ts₁ (S.pctx_cat (S.ppair₁ S.phole ts₂) Cs)) by apply S.pctx_cat_app.
-    replace (U.pctx_app (U.pair tu₁ tu₂) Cu) with (U.pctx_app tu₁ (U.pctx_cat (U.ppair₁ U.phole tu₂) Cu)) by apply U.pctx_cat_app.
-    refine (tr₁ (S.pctx_cat (S.ppair₁ S.phole ts₂) Cs) (U.pctx_cat (U.ppair₁ U.phole tu₂) Cu) _ _ _); crush.
-    intros w' fw' vs₁ vu₁ vr₁.
-    destruct (valrel_implies_Value vr₁) as [vvs₁ vvu₁].
-    replace (S.pctx_app vs₁ (S.pctx_cat (S.ppair₁ S.phole ts₂) Cs)) with (S.pctx_app ts₂ (S.pctx_cat (S.ppair₂ vs₁ S.phole) Cs)) by (rewrite -> ?S.pctx_cat_app; auto).
-    replace (U.pctx_app vu₁ (U.pctx_cat (U.ppair₁ U.phole tu₂) Cu)) with (U.pctx_app tu₂ (U.pctx_cat (U.ppair₂ vu₁ U.phole) Cu)) by (rewrite -> ?U.pctx_cat_app; auto).
-    refine (tr₂ w' _ (S.pctx_cat (S.ppair₂ vs₁ S.phole) Cs) (U.pctx_cat (U.ppair₂ vu₁ U.phole) Cu) _ _ _); crush.
-    intros w'' fw'' vs₂ vu₂ vr₂.
-    destruct (valrel_implies_Value vr₂) as [vvs₂ vvu₂].
-    replace (S.pctx_app vs₂ (S.pctx_cat (S.ppair₂ vs₁ S.phole) Cs)) with (S.pctx_app (S.pair vs₁ vs₂) Cs) by (symmetry; apply S.pctx_cat_app).
-    replace (U.pctx_app vu₂ (U.pctx_cat (U.ppair₂ vu₁ U.phole) Cu)) with (U.pctx_app (U.pair vu₁ vu₂) Cu) by (symmetry; apply U.pctx_cat_app).
-    refine (cr w'' _ (S.pair vs₁ vs₂) (U.pair vu₁ vu₂) _).
-    - omega.
-    - apply valrel_pair; eauto using valrel_mono.
+    intros tr₁ tr₂.
+    change (S.pair _ _) with (S.pctx_app ts₁ (S.ppair₁ S.phole ts₂)).
+    change (U.pair _ _) with (U.pctx_app tu₁ (U.ppair₁ U.phole tu₂)).
+    refine (termrel_ectx _ _ tr₁ _); crush.
+    destruct (valrel_implies_Value H) as [vvs₂ vvu₂].
+    change (S.pair _ _) with (S.pctx_app ts₂ (S.ppair₂ vs S.phole)).
+    change (U.pair _ _) with (U.pctx_app tu₂ (U.ppair₂ vu U.phole)).
+    refine (termrel_ectx _ _ (tr₂ w' fw')  _); crush.
+    eauto using valrel_in_termrel, valrel_mono, valrel_pair.
   Qed. 
 
   Lemma compat_pair {Γ d n ts₁ tu₁ τ₁ ts₂ tu₂ τ₂} :
