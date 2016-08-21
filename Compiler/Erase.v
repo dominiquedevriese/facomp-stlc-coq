@@ -81,24 +81,6 @@ Proof.
   apply U.ufix_ws.
 Qed.
 
-Lemma extend_envrel {d w Γ γs γu τ ts tu} :
-  valrel d w τ ts tu →
-  envrel d w Γ γs γu →
-  envrel d w (Γ p▻ τ) (γs↑ >=> beta1 ts) (γu↑ >=> beta1 tu).
-Proof.
-  intros vr er x τ' xτ'.
-  depind xτ'; intuition. 
-  replace ((γs↑ >=> beta1 ts) (S i)) with (γs i). 
-  replace ((γu↑ >=> beta1 tu) (S i)) with (γu i).
-  now refine (er _ _ xτ').
-  + cbn; rewrite <- ap_liftSub; 
-    rewrite -> liftSub_wkm;
-    rewrite -> apply_wkm_beta1_cancel; intuition.
-  + cbn; rewrite <- ap_liftSub; 
-    rewrite -> liftSub_wkm;
-    rewrite -> apply_wkm_beta1_cancel; intuition.
-Qed.
-
 Local Ltac crush :=
   repeat (repeat match goal with
                   [ |- _ ∧ _ ] => split
@@ -118,39 +100,6 @@ Local Ltac crush :=
               end;
           crushTyping;
           intuition).
-
-Lemma OfTypeUtlc_implies_Value {τ tu} :
-  OfTypeUtlc τ tu →
-  U.Value tu.
-Proof.
-  revert tu; induction τ;
-  intros tu ot; unfold OfTypeUtlc in ot; subst; crush; subst; crush.
-  - destruct ot as [tu₁ [tu₂ [equ [ot₁ ot₂]]]].
-    subst; crush.
-  - destruct H as [tu' [eq' ot']].
-    subst; crush.
-  - destruct H as [tu' [eq' ot']].
-    subst; crush.
-Qed. 
-
-Lemma OfType_implies_Value {τ ts tu} :
-  OfType τ ts tu →
-  S.Value ts ∧ U.Value tu.
-Proof.
-  unfold OfType, OfTypeStlc, OfTypeUtlc.
-  intros ot; destruct_conjs;
-  eauto using OfTypeUtlc_implies_Value.
-Qed.
-
-Lemma valrel_implies_Value {d w τ ts tu} :
-  valrel d w τ ts tu →
-  S.Value ts ∧ U.Value tu.
-Proof.
-  intros vr.
-  rewrite -> valrel_fixp in vr.
-  destruct vr as [ot _].
-  exact (OfType_implies_Value ot).
-Qed.
 
 Section CompatibilityLemmas.
   Lemma compat_lambda {Γ τ' ts d n tu τ} :
@@ -222,23 +171,6 @@ Section CompatibilityLemmas.
       omega.
     - refine (valrel_mono _ vr₂).
       omega.
-  Qed.
-
-  Lemma termrel_ectx {d w τ₁ τ₂ ts Cs tu Cu} (eCs : S.ECtx Cs) (eCu : U.ECtx Cu) :
-    termrel d w τ₁ ts tu →
-    (forall w' (fw' : w' ≤ w) vs vu, valrel d w' τ₁ vs vu → termrel d w' τ₂ (S.pctx_app vs Cs) (U.pctx_app vu Cu)) →
-    termrel d w τ₂ (S.pctx_app ts Cs) (U.pctx_app tu Cu).
-  Proof.
-    intros tr cr Cs' Cu' eCs' eCu' cr'.
-    rewrite <- S.pctx_cat_app.
-    rewrite <- U.pctx_cat_app.
-    refine (tr (S.pctx_cat Cs Cs') (U.pctx_cat Cu Cu') _ _ _); crush.
-    intros w' fw' vs vu vr.
-    destruct (valrel_implies_Value vr) as [vvs vvu].
-    rewrite -> S.pctx_cat_app.
-    rewrite -> U.pctx_cat_app.
-    refine (cr w' fw' vs vu vr Cs' Cu' eCs' eCu' _).
-    refine (contrel_mono fw' cr').
   Qed.
 
   Lemma termrel_pair {d w τ₁ τ₂ ts₁ ts₂ tu₁ tu₂} :
