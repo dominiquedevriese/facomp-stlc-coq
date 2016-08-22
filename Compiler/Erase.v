@@ -90,16 +90,27 @@ Local Ltac crush :=
                 | [ |- termrel _ _ _ S.unit U.unit ] => apply valrel_in_termrel
                 | [ |- termrel _ _ _ S.false U.false ] => apply valrel_in_termrel
                 | [ |- termrel _ _ _ S.true U.true ] => apply valrel_in_termrel
+                | [ H : valrel ?d ?w ?τ ?ts ?tu |- valrel ?d ?w' ?τ ?ts ?tu ] => refine (valrel_mono _ H); try omega
                 | [ |- valrel _ _ _ _ _] => rewrite -> valrel_fixp in |- *; unfold valrel' in |- *
                 | [ |- exists tsb tub, S.abs _ ?tsb' = S.abs _ tsb ∧ U.abs ?tub' = U.abs tub ∧ _] => exists tsb'; exists tub'; split; intuition
                 | [ |- exists t', U.abs ?t = U.abs t' ] => exists t; intuition
                 | [ |- S.ECtx (S.pctx_cat _ _) ] => apply S.ectx_cat
                 | [ |- U.ECtx (U.pctx_cat _ _) ] => apply U.ectx_cat
                 | [ H: exists tub', ?tu = U.abs tub' |- U.Value ?tu ] => destruct H as [? ?]; subst
-                | [ |- exists ts₁' ts₂' tu₁' tu₂', S.pair ?ts₁ ?ts₂ = LR.S.pair ts₁' ts₂' ∧ U.pair ?tu₁ ?tu₂ = LR.U.pair tu₁' tu₂' ∧ _ ] => exists ts₁; exists ts₂; exists tu₁; exists tu₂
+                | [ |- exists ts₁' ts₂' tu₁' tu₂', S.pair ?ts₁ ?ts₂ = S.pair ts₁' ts₂' ∧ U.pair ?tu₁ ?tu₂ = LR.U.pair tu₁' tu₂' ∧ _ ] => exists ts₁; exists ts₂; exists tu₁; exists tu₂
+                | [ |- (exists ts₁' tu₁', S.inl ?ts₁ = LR.S.inl ts₁' ∧ U.inl ?tu₁ = LR.U.inl tu₁' ∧ _) ∨ _ ] => left; exists ts₁; exists tu₁
+                | [ |- _ ∨ (exists ts₁' tu₁', S.inr ?ts₁ = LR.S.inr ts₁' ∧ U.inr ?tu₁ = LR.U.inr tu₁' ∧ _) ] => right; exists ts₁; exists tu₁
+                | [ |- sum_rel _ _ _ _ ] => unfold sum_rel
+                | [ |- prod_rel _ _ _ _ ] => unfold prod_rel
               end;
           crushTyping;
-          intuition).
+          intuition);
+  repeat match goal with
+           | [ H : valrel' ?d ?w _ ?τ ?ts ?tu |- _ ] => change _ with (valrel d w τ ts tu) in H
+           | [ |- valrel' ?d ?w _ ?τ ?ts ?tu ] => change _ with (valrel d w τ ts tu)
+           | [ H : valrel ?d ?w ?τ ?ts ?tu |- valrel ?d ?w' ?τ ?ts ?tu ] => refine (valrel_mono _ H); try omega
+           | [ H : valrel _ _ ?τ ?ts ?tu |- OfType ?τ ?ts ?tu ] => refine (valrel_implies_OfType H)
+         end.
 
 Section CompatibilityLemmas.
   Lemma compat_lambda {Γ τ' ts d n tu τ} :
@@ -164,13 +175,7 @@ Section CompatibilityLemmas.
     crush;
       try match goal with 
           [ |- OfType (ptprod _ _) (S.pair _ _) (U.pair _ _)] => apply OfType_pair
-      end; unfold prod_rel in |- *; crush.
-    - unfold valrel' in vr₁, vr₂; destruct_conjs; crush.
-    - unfold valrel' in vr₁, vr₂; destruct_conjs; crush.
-    - refine (valrel_mono _ vr₁).
-      omega.
-    - refine (valrel_mono _ vr₂).
-      omega.
+      end; crush.
   Qed.
 
   Lemma termrel_pair {d w τ₁ τ₂ ts₁ ts₂ tu₁ tu₂} :
@@ -252,6 +257,66 @@ Section CompatibilityLemmas.
     refine (H1 w' _ _ _ _). 
     - unfold lev in *. omega.
     - eauto using envrel_mono.
+  Qed.
+
+  Lemma OfType_inl {τ₁ τ₂ ts tu} :
+    OfType τ₁ ts tu →
+    OfType (ptsum τ₁ τ₂) (S.inl ts) (U.inl tu).
+  Proof.
+    unfold OfType.
+    destruct 1 as [ots otu].
+    split; unfold OfTypeStlc in *; crush.
+  Qed.
+  
+  Lemma termrel_inl {d w τ₁ τ₂ ts tu} :
+    termrel d w τ₁ ts tu →
+    termrel d w (ptsum τ₁ τ₂) (S.inl ts) (U.inl tu).
+  Proof.
+    intros tr.
+    change (S.inl ts) with (S.pctx_app ts (S.pinl S.phole)).
+    change (U.inl tu) with (U.pctx_app tu (U.pinl U.phole)).
+    refine (termrel_ectx _ _ tr _); crush.
+    apply valrel_in_termrel;
+    crush; 
+    eauto using OfType_inl, valrel_implies_OfType.
+  Qed.
+    
+  Lemma compat_inl {Γ d n ts tu τ₁ τ₂} :
+    ⟪ Γ ⊩ ts ⟦ d , n ⟧ tu : τ₁ ⟫ →
+    ⟪ Γ ⊩ S.inl ts ⟦ d , n ⟧ U.inl tu : ptsum τ₁ τ₂ ⟫.
+  Proof.
+    crush.
+    refine (termrel_inl _); crush.
+  Qed.
+
+  Lemma OfType_inr {τ₁ τ₂ ts tu} :
+    OfType τ₂ ts tu →
+    OfType (ptsum τ₁ τ₂) (S.inr ts) (U.inr tu).
+  Proof.
+    unfold OfType.
+    destruct 1 as [ots otu].
+    split; unfold OfTypeStlc in *; crush.
+  Qed.
+  
+  Lemma termrel_inr {d w τ₁ τ₂ ts tu} :
+    termrel d w τ₂ ts tu →
+    termrel d w (ptsum τ₁ τ₂) (S.inr ts) (U.inr tu).
+  Proof.
+    intros tr.
+    change (S.inr ts) with (S.pctx_app ts (S.pinr S.phole)).
+    change (U.inr tu) with (U.pctx_app tu (U.pinr U.phole)).
+    refine (termrel_ectx _ _ tr _); crush.
+    apply valrel_in_termrel;
+    crush; 
+    eauto using OfType_inr, valrel_implies_OfType.
+  Qed.
+    
+  Lemma compat_inr {Γ d n ts tu τ₁ τ₂} :
+    ⟪ Γ ⊩ ts ⟦ d , n ⟧ tu : τ₂ ⟫ →
+    ⟪ Γ ⊩ S.inr ts ⟦ d , n ⟧ U.inr tu : ptsum τ₁ τ₂ ⟫.
+  Proof.
+    crush.
+    refine (termrel_inr _); crush.
   Qed.
 
 End CompatibilityLemmas.
