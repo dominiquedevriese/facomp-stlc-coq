@@ -1,3 +1,4 @@
+Require Import Common.Common.
 Require Import LogRel.PseudoType.
 Require Import LogRel.LR.
 Require Import Stlc.SpecSyntax.
@@ -24,16 +25,89 @@ Module U.
 End U.
 
 Section Obs.
+  Lemma obs_zero {d ts tu} : Obs d 0 ts tu.
+  Proof.
+    destruct d; simpl; intuition.
+  Qed.
+
   Lemma obs_mono {d W' W ts tu} :
     lev W' ≤ lev W →
     Obs d W ts tu →
     Obs d W' ts tu.
   Proof.
     intros fw obs.
-    destruct d; simpl in *; 
+    destruct d; destruct W'; 
+    simpl in *; intuition; 
+    destruct (S_le fw) as [W'' [eq fw']];
+    replace (lev W) with (S W'') in *; simpl in *;
     eauto using S.TerminatingN_lt, U.TerminatingN_lt.
   Qed.
   
+  Lemma S_TerminatingN_xor_evaln {t t' n} :
+    S.TerminatingN t n → S.evaln t t' (S n) → False.
+  Proof.
+    induction 1 as [?|? ? ? indHyp];
+    inversion 1 as [|? ? ? e es]; subst.
+    - refine (S.values_are_normal _ _); eauto.
+    - refine (indHyp _ e es).
+  Qed.
+
+  Lemma S_ObserveTerminatingN_xor_evaln {t t' n} :
+    S.evaln t t' n → False ↔ Observe n (S.TerminatingN t).
+  Proof.
+    destruct n; simpl in *; intuition; eauto using S_TerminatingN_xor_evaln.
+  Qed.
+
+  Lemma S_Observe_TerminatingN_evaln {t t' n } n' :
+    S.evaln t t' n → Observe n' (S.TerminatingN t') ↔ Observe (n + n') (S.TerminatingN t).
+  Proof.
+    destruct n'; 
+    try replace (n + 0) with n by omega;
+    try replace (n + S n') with (S n + n') by omega;
+    simpl in *; eauto using S.TerminatingN_evaln, S_ObserveTerminatingN_xor_evaln.
+  Qed.    
+
+  Lemma S_Observe_TerminatingN_lt {t n n'} :
+    n ≤ n' → Observe n (S.TerminatingN t) → Observe n' (S.TerminatingN t).
+  Proof.
+    intros ineq obs.
+    destruct n; simpl; intuition.
+    destruct (S_le ineq) as [n'' [eq ineq']]; subst; simpl in *.
+    eauto using S.TerminatingN_lt.
+  Qed.
+    
+
+  Lemma U_TerminatingN_xor_evaln {t t' n} :
+    U.TerminatingN t n → U.evaln t t' (S n) → False.
+  Proof.
+    induction 1 as [?|? ? ? indHyp];
+    inversion 1 as [|? ? ? e es]; subst.
+    - refine (U.values_are_normal _ _); eauto.
+    - refine (indHyp _ e es).
+  Qed.
+
+  Lemma U_ObserveTerminatingN_xor_evaln {t t' n} :
+    U.evaln t t' n → False ↔ Observe n (U.TerminatingN t).
+  Proof.
+    destruct n; simpl in *; intuition; eauto using U_TerminatingN_xor_evaln.
+  Qed.
+
+  Lemma U_Observe_TerminatingN_evaln {t t' n } n' :
+    U.evaln t t' n → Observe n' (U.TerminatingN t') ↔ Observe (n + n') (U.TerminatingN t).
+  Proof.
+    destruct n'; try replace (n + 0) with n by omega; try replace (n + S n') with (S n + n') by omega;
+    simpl in *; eauto using U.TerminatingN_evaln, U_ObserveTerminatingN_xor_evaln.
+  Qed.    
+
+  Lemma U_Observe_TerminatingN_lt {t n n'} :
+    n ≤ n' → Observe n (U.TerminatingN t) → Observe n' (U.TerminatingN t).
+  Proof.
+    intros ineq obs.
+    destruct n; simpl; intuition.
+    destruct (S_le ineq) as [n'' [eq ineq']]; subst; simpl; simpl in obs.
+    eauto using U.TerminatingN_lt.
+  Qed.
+
   Lemma obs_antired {ts ts' tu tu' W' W d i j} :
     S.evaln ts ts' i →
     U.evaln tu tu' j →
@@ -43,20 +117,24 @@ Section Obs.
     Obs d W ts tu.
   Proof.
     intros es eu fw sge obs.
-    destruct d; unfold Obs in *; intros ttsw.
+    destruct d; destruct W; simpl; simpl in obs; intuition.
     - cut (tu'⇓).
       + refine (U.termination_closed_under_antireductionStar _).
         eauto using evaln_to_evalStar.
       + apply obs; clear obs.
-        rewrite -> (S.TerminatingN_evaln (lev W') es).
-        refine (S.TerminatingN_lt ttsw _).
+        rewrite -> (S_Observe_TerminatingN_evaln (lev W') es).
+        assert (obs : Observe (S W) (S.TerminatingN ts)) by (simpl; intuition).
+        refine (S_Observe_TerminatingN_lt _ obs).
+        unfold lev in *.
         enough (min i j ≤ i) by omega.
         auto using le_min_l.
     - refine (S.termination_closed_under_antireductionStar _ _).
       + refine (S.evaln_to_evalStar es).
-      + apply obs.
-        rewrite -> (U.TerminatingN_evaln (lev W') eu).
-        refine (U.TerminatingN_lt ttsw _).
+      + apply obs; clear obs.
+        assert (obs : Observe (S W) (U.TerminatingN tu)) by (simpl; intuition).
+        rewrite -> (U_Observe_TerminatingN_evaln (lev W') eu).
+        refine (U_Observe_TerminatingN_lt _ obs).
+        unfold lev in *.
         enough (min i j ≤ j) by omega.
         auto using le_min_r.
   Qed.
@@ -139,7 +217,12 @@ Section ClosedLR.
     apply cr; try omega; auto.
   Qed.
   
-  Lemma termrel_antired (ts ts' : S.Tm) (tu tu' : U.UTm) (W' W : World) d τ i j :
+  Lemma termrel_zero {d τ ts tu} : termrel d 0 τ ts tu.
+  Proof.
+    intros Cs Cu cr eCs eCu. eauto using obs_zero.
+  Qed.
+
+  Lemma termrel_antired {ts ts' tu tu' W d τ i j} W' :
     S.evaln ts ts' i →
     (forall C, ECtx C → U.evaln (U.pctx_app tu C) (U.pctx_app tu' C) j) →
     W' ≤ W →

@@ -48,10 +48,17 @@ Definition lev : World → nat := fun w => w.
 Definition PTRel := PTy -> S.Tm -> U.UTm -> Prop.
 Definition PCRel := PTy -> S.PCtx -> U.PCtx -> Prop.
 
+(* Intuitively: observing termination takes a step in addition to the actual evaluation steps *)
+Definition Observe (n : nat) (T : nat -> Prop) : Prop :=
+  match n with 
+      | 0 => False
+      | S n' => T n'
+  end.
+
 Definition Obs (d : Direction) (w : World) (ts : S.Tm) (tu : U.UTm) :=
   match d with
-    | dir_lt => S.TerminatingN ts (lev w) → U.Terminating tu
-    | dir_gt => U.TerminatingN tu (lev w) → S.Terminating ts
+    | dir_lt => Observe (lev w) (S.TerminatingN ts) → U.Terminating tu
+    | dir_gt => Observe (lev w) (U.TerminatingN tu)  → S.Terminating ts
   end.
 
 Definition contrel'

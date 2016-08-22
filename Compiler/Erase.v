@@ -201,5 +201,57 @@ Section CompatibilityLemmas.
     - eauto using envrel_mono.
   Qed.
  
+  Lemma valrel_app {d w τ₁ τ₂ vs₁ vs₂ vu₁ vu₂} :
+    valrel d w (ptarr τ₁ τ₂) vs₁ vu₁ →
+    valrel d w τ₁ vs₂ vu₂ →
+    termrel d w τ₂ (S.app vs₁ vs₂) (U.app vu₁ vu₂).
+  Proof.
+    intros vr₁ vr₂.
+    rewrite -> valrel_fixp in vr₁.
+    destruct vr₁ as [ot [tsb [tub [eq₁ [eq₂ bodyrel]]]]]; subst.
+    destruct (valrel_implies_Value vr₂) as [vvs₂ vvu₂].
+    assert (es : S.eval (S.app (S.abs (repEmul τ₁) tsb) vs₂) (tsb [beta1 vs₂])) by
+        (refine (S.eval_ctx₀ S.phole _ I); refine (S.eval_beta vvs₂)).
+    assert (es1 : S.evaln (S.app (S.abs (repEmul τ₁) tsb) vs₂) (tsb [beta1 vs₂]) 1) by 
+        (eauto using S.evaln; omega).
+    assert (eu : forall Cu, U.ECtx Cu → U.eval (U.pctx_app (U.app (U.abs tub) vu₂) Cu) (U.pctx_app (tub [beta1 vu₂]) Cu)) by
+        (intros Cu eCu; refine (U.eval_ctx₀ Cu _ eCu); refine (U.eval_beta vvu₂)).
+    assert (eu1 : forall Cu, U.ECtx Cu → U.evaln (U.pctx_app (U.app (U.abs tub) vu₂) Cu) (U.pctx_app (tub [beta1 vu₂]) Cu) 1) by 
+        (eauto using U.evaln; omega).
+    destruct w; try apply termrel_zero.
+    refine (termrel_antired w es1 eu1 _ _ _); unfold lev in *; simpl; try omega.
+    eapply bodyrel; try omega; eauto using valrel_mono.
+  Qed.    
+    
+
+  Lemma termrel_app {d w τ₁ τ₂ ts₁ ts₂ tu₁ tu₂} :
+    termrel d w (ptarr τ₁ τ₂) ts₁ tu₁ →
+    (forall w', w' ≤ w → termrel d w' τ₁ ts₂ tu₂) →
+    termrel d w τ₂ (S.app ts₁ ts₂) (U.app tu₁ tu₂).
+  Proof.
+    intros tr₁ tr₂.
+    change (S.app _ _) with (S.pctx_app ts₁ (S.papp₁ S.phole ts₂)).
+    change (U.app _ _) with (U.pctx_app tu₁ (U.papp₁ U.phole tu₂)).
+    refine (termrel_ectx _ _ tr₁ _); crush.
+    destruct (valrel_implies_Value H) as [vvs vvu].
+    change (S.app _ _) with (S.pctx_app ts₂ (S.papp₂ vs S.phole)).
+    change (U.app _ _) with (U.pctx_app tu₂ (U.papp₂ vu U.phole)).
+    refine (termrel_ectx _ _ (tr₂ w' fw')  _); crush.
+    replace _ with (valrel d w'0 τ₁ vs0 vu0) in H0 by eauto.
+    refine (valrel_app _ H0).
+    eauto using valrel_mono.
+  Qed. 
+
+  Lemma compat_app {Γ d n ts₁ tu₁ τ₁ ts₂ tu₂ τ₂} :
+    ⟪ Γ ⊩ ts₁ ⟦ d , n ⟧ tu₁ : ptarr τ₁ τ₂ ⟫ →
+    ⟪ Γ ⊩ ts₂ ⟦ d , n ⟧ tu₂ : τ₁ ⟫ →
+    ⟪ Γ ⊩ S.app ts₁ ts₂ ⟦ d , n ⟧ U.app tu₁ tu₂ : τ₂ ⟫.
+  Proof.
+    crush.
+    refine (termrel_app _ _); crush.
+    refine (H1 w' _ _ _ _). 
+    - unfold lev in *. omega.
+    - eauto using envrel_mono.
+  Qed.
 
 End CompatibilityLemmas.
