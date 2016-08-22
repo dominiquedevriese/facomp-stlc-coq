@@ -329,18 +329,6 @@ Section CompatibilityLemmas.
     refine (termrel_inr _); crush.
   Qed.
 
-  Lemma compat_var {Γ d n τ i} :
-    ⟪ i : τ p∈ Γ ⟫ →
-    ⟪ Γ ⊩ S.var i ⟦ d , n ⟧ U.var i : τ ⟫.
-  Proof.
-    intros iτ. constructor.
-    - crushTyping.
-      eauto using repEmulCtx_works.
-    - intros ? _ ? ? er.
-      apply valrel_in_termrel.
-      refine (er _ _ iτ).
-  Qed.
-      
   Lemma termrel_seq {d w τ ts₁ ts₂ tu₁ tu₂} :
     termrel d w ptunit ts₁ tu₁ →
     (forall w', w' ≤ w → termrel d w' τ ts₂ tu₂) →
@@ -379,6 +367,6 @@ Section CompatibilityLemmas.
     ⟪ embedCtx Γ ⊩ ts ⟦ d , n ⟧ erase ts : embed τ ⟫.
   Proof.
     induction 1; simpl; eauto using compat_inl, compat_inr, compat_pair, compat_lambda_embed, compat_app, compat_false, compat_true, compat_var, compat_unit, embedCtx_works, compat_seq.
-    
+  Admitted. 
 
 End CompatibilityLemmas.

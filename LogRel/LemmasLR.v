@@ -4,6 +4,7 @@ Require Import LogRel.LR.
 Require Import Stlc.SpecSyntax.
 Require Import Stlc.SpecEvaluation.
 Require Import Stlc.LemmasEvaluation.
+Require Import Stlc.LemmasTyping.
 Require Import Stlc.SpecTyping.
 Require Import Utlc.SpecSyntax.
 Require Import Utlc.SpecEvaluation.
@@ -17,6 +18,7 @@ Module S.
   Include Stlc.SpecSyntax.
   Include Stlc.SpecEvaluation.
   Include Stlc.LemmasEvaluation.
+  Include Stlc.LemmasTyping.
 End S.
 Module U.
   Include Utlc.SpecSyntax.
@@ -323,3 +325,20 @@ Section ClosedLR.
 
 
 End ClosedLR.
+
+Section OpenLR.
+
+  Lemma compat_var {Γ d n τ i} :
+    ⟪ i : τ p∈ Γ ⟫ →
+    ⟪ Γ ⊩ S.var i ⟦ d , n ⟧ U.var i : τ ⟫.
+  Proof.
+    intros iτ. constructor.
+    - crushTyping.
+      eauto using repEmulCtx_works.
+    - intros ? _ ? ? er.
+      apply valrel_in_termrel.
+      refine (er _ _ iτ).
+  Qed.
+
+End OpenLR.
+      
