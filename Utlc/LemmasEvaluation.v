@@ -71,6 +71,13 @@ End EvaluationContexts.
 (*   eauto using ectx_cat with eval. *)
 (* Qed. *)
 
+Lemma eval_ctx {C t t'}  : t --> t' → t' ≠ wrong → ECtx C → pctx_app t C --> pctx_app t' C.
+Proof.
+  induction 1; intuition.
+  rewrite <- ?pctx_cat_app in *.
+  eauto using ectx_cat with eval.
+Qed.
+
 Section Values.
 
   Lemma value_pctx_inversion {C} (eC: ECtx C) :
@@ -295,6 +302,12 @@ End Termination'.
 Section EvalN.
   Lemma evaln_to_evalStar {t t' n} :
     evaln t t' n → t -->* t'.
+  Proof.
+    induction 1; crush.
+  Qed.
+
+  Lemma evaln_to_evalPlus {t t' n} :
+    evaln t t' (S n) → t -->+ t'.
   Proof.
     induction 1; crush.
   Qed.

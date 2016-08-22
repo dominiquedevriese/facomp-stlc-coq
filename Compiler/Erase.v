@@ -362,6 +362,37 @@ Section CompatibilityLemmas.
     - eauto using envrel_mono.
   Qed.
   
+  Lemma termrel_proj₂ {d w τ₁ τ₂ ts tu} :
+    termrel d w (ptprod τ₁ τ₂) ts tu →
+    termrel d w τ₂ (S.proj₂ ts) (U.proj₂ tu).
+  Proof.
+    intros tr.
+    change (S.proj₂ _) with (S.pctx_app ts (S.pproj₂ S.phole)).
+    change (U.proj₂ _) with (U.pctx_app tu (U.pproj₂ U.phole)).
+    refine (termrel_ectx _ _ tr _); crush.
+    rewrite -> valrel_fixp in H.
+    destruct H as [ot [vs₁ [vs₂ [vu₁ [vu₂ [? [? [vr₁ vr₂]]]]]]]]; subst.
+    destruct (OfType_implies_Value ot) as [[vvs₁ vvs₂] [vvu₁ vvu₂]].
+    assert (S.eval (S.proj₂ (S.pair vs₁ vs₂)) vs₂) by 
+        (apply (S.eval_ctx₀ S.phole); try refine (S.eval_proj₂ _ _); simpl; intuition).
+    assert (esn : S.evaln (S.proj₂ (S.pair vs₁ vs₂)) vs₂ 1) by eauto using S.evaln.
+    assert (forall Cu, U.ECtx Cu → U.eval (U.pctx_app (U.proj₂ (U.pair vu₁ vu₂)) Cu) (U.pctx_app vu₂ Cu)) by 
+        (intros Cu eCu; apply (U.eval_ctx₀ Cu); try refine (U.eval_proj₂ _); simpl; intuition).
+    assert (eun : forall Cu, U.ECtx Cu → U.evaln (U.pctx_app (U.proj₂ (U.pair vu₁ vu₂)) Cu) (U.pctx_app vu₂ Cu) 1) by eauto using U.evaln.
+    destruct w'; try apply termrel_zero.
+    refine (termrel_antired w' esn eun _ _ _); unfold lev; simpl; try omega.
+    apply valrel_in_termrel.
+    apply vr₂; intuition; omega.
+  Qed. 
+
+  Lemma compat_proj₂ {Γ d n ts tu τ₁ τ₂} :
+    ⟪ Γ ⊩ ts ⟦ d , n ⟧ tu : ptprod τ₁ τ₂ ⟫ →
+    ⟪ Γ ⊩ S.proj₂ ts ⟦ d , n ⟧ U.proj₂ tu : τ₂ ⟫.
+  Proof.
+    crush.
+    refine (termrel_proj₂ _); crush.
+  Qed.
+
   Lemma termrel_proj₁ {d w τ₁ τ₂ ts tu} :
     termrel d w (ptprod τ₁ τ₂) ts tu →
     termrel d w τ₁ (S.proj₁ ts) (U.proj₁ tu).
@@ -439,11 +470,113 @@ Section CompatibilityLemmas.
       + eauto using envrel_mono.
   Qed.
 
+  Lemma termrel_caseof {d w τ τ₁ τ₂ ts₁ ts₂ ts₃ tu₁ tu₂ tu₃} :
+    termrel d w (ptsum τ₁ τ₂) ts₁ tu₁ →
+    (forall w' vs₁ vu₁, w' ≤ w → valrel d w' τ₁ vs₁ vu₁ → termrel d w' τ (ts₂ [beta1 vs₁]) (tu₂ [ beta1 vu₁])) →
+    (forall w' vs₂ vu₂, w' ≤ w → valrel d w' τ₂ vs₂ vu₂ → termrel d w' τ (ts₃ [beta1 vs₂]) (tu₃ [ beta1 vu₂])) →
+    termrel d w τ (S.caseof ts₁ ts₂ ts₃) (U.caseof tu₁ tu₂ tu₃).
+  Proof.
+    intros tr₁ tr₂ tr₃.
+    change (S.caseof _ _ _) with (S.pctx_app ts₁ (S.pcaseof₁ S.phole ts₂ ts₃)).
+    change (U.caseof _ _ _) with (U.pctx_app tu₁ (U.pcaseof₁ U.phole tu₂ tu₃)).
+    refine (termrel_ectx _ _ tr₁ _); crush.
+    rewrite -> valrel_fixp in H.
+    destruct H as [ot [[vs' [vu' [? [? vr]]]]|[vs' [vu' [? [? vr]]]]]]; subst;
+    destruct (OfType_implies_Value ot) as [vvs vvu]; clear ot.
+    - assert (S.eval (S.caseof (S.inl vs') ts₂ ts₃) (ts₂ [beta1 vs'])) by
+          (apply (S.eval_ctx₀ S.phole); try refine (S.eval_case_inl _); simpl; intuition).
+      assert (esn : S.evaln (S.caseof (S.inl vs') ts₂ ts₃) (ts₂ [beta1 vs']) 1) by eauto using S.evaln.
+      assert (forall Cu, U.ECtx Cu → U.eval (U.pctx_app (U.caseof (U.inl vu') tu₂ tu₃) Cu) (U.pctx_app (tu₂ [beta1 vu']) Cu)) by 
+          (intros Cu eCu; apply (U.eval_ctx₀ Cu); try refine (U.eval_case_inl _ _); simpl; intuition).
+      assert (eun : forall Cu, U.ECtx Cu → U.evaln (U.pctx_app (U.caseof (U.inl vu') tu₂ tu₃) Cu) (U.pctx_app (tu₂ [beta1 vu']) Cu) 1) by eauto using U.evaln.
+      destruct w'; try apply termrel_zero.
+      refine (termrel_antired w' esn eun _ _ _); unfold lev in *; simpl; try omega.
+      apply tr₂; intuition.
+      apply vr; omega.
+    - assert (S.eval (S.caseof (S.inr vs') ts₂ ts₃) (ts₃ [beta1 vs'])) by
+          (apply (S.eval_ctx₀ S.phole); try refine (S.eval_case_inr _); simpl; intuition).
+      assert (esn : S.evaln (S.caseof (S.inr vs') ts₂ ts₃) (ts₃ [beta1 vs']) 1) by eauto using S.evaln.
+      assert (forall Cu, U.ECtx Cu → U.eval (U.pctx_app (U.caseof (U.inr vu') tu₂ tu₃) Cu) (U.pctx_app (tu₃ [beta1 vu']) Cu)) by 
+          (intros Cu eCu; apply (U.eval_ctx₀ Cu); try refine (U.eval_case_inr _ _); simpl; intuition).
+      assert (eun : forall Cu, U.ECtx Cu → U.evaln (U.pctx_app (U.caseof (U.inr vu') tu₂ tu₃) Cu) (U.pctx_app (tu₃ [beta1 vu']) Cu) 1) by eauto using U.evaln.
+      destruct w'; try apply termrel_zero.
+      refine (termrel_antired w' esn eun _ _ _); unfold lev in *; simpl; try omega.
+      apply tr₃; intuition.
+      apply vr; omega.
+  Qed. 
+
+  Lemma compat_caseof {Γ d n ts₁ tu₁ ts₂ tu₂ ts₃ tu₃ τ₁ τ₂ τ} :
+    ⟪ Γ ⊩ ts₁ ⟦ d , n ⟧ tu₁ : ptsum τ₁ τ₂ ⟫ →
+    ⟪ Γ p▻ τ₁ ⊩ ts₂ ⟦ d , n ⟧ tu₂ : τ ⟫ →
+    ⟪ Γ p▻ τ₂ ⊩ ts₃ ⟦ d , n ⟧ tu₃ : τ ⟫ →
+    ⟪ Γ ⊩ S.caseof ts₁ ts₂ ts₃ ⟦ d , n ⟧ U.caseof tu₁ tu₂ tu₃ : τ ⟫.
+  Proof.
+    crush.
+    refine (termrel_caseof _ _ _); crush;
+    [change (apUTm (γu↑) tu₂) with (tu₂ [γu↑])
+    |change (apUTm (γu↑) tu₃) with (tu₃ [γu↑])];
+    rewrite -> (ap_comp _ γs↑);
+    rewrite -> (ap_comp _ γu↑).
+    - refine (H3 w' _ _ _ _). 
+      + unfold lev in *. omega.
+      + eauto using extend_envrel, envrel_mono.
+    - refine (H2 w' _ _ _ _). 
+      + unfold lev in *. omega.
+      + eauto using extend_envrel, envrel_mono.
+  Qed.
+
+  Lemma termrel_fix {d w τ₁ τ₂ ts tu} :
+    termrel d w (ptarr (ptarr τ₁ τ₂) (ptarr τ₁ τ₂)) ts tu →
+    termrel d w (ptarr τ₁ τ₂) (S.fixt (repEmul τ₁) (repEmul τ₂) ts) (U.app U.ufix tu).
+  Proof.
+    intros tr.
+    change (S.fixt _ _ _) with (S.pctx_app ts (S.pfixt (repEmul τ₁) (repEmul τ₂) S.phole)).
+    change (U.app _ _) with (U.pctx_app tu (U.papp₂ U.ufix U.phole)).
+    refine (termrel_ectx _ _ tr _); crush.
+    destruct (valrel_implies_Value H) as [vvs vvu].
+    destruct H as [ot [tsb [tub [? [? bodyrel]]]]]; subst.
+    assert (S.fixt (repEmul τ₁) (repEmul τ₂) (S.abs (repEmul (ptarr τ₁ τ₂)) tsb) --> tsb [beta1 (S.abs (repEmul τ₁) (S.app (S.fixt (repEmul τ₁) (repEmul τ₂) (S.abs (repEmul τ₁ ⇒ repEmul τ₂) tsb[wkm↑])) (S.var 0)))]) by (refine (eval_ctx₀ S.phole _ _); crush).
+    assert (es1 : S.evaln (S.fixt (repEmul τ₁) (repEmul τ₂) (S.abs (repEmul (ptarr τ₁ τ₂)) tsb)) (tsb [beta1 (S.abs (repEmul τ₁) (S.app (S.fixt (repEmul τ₁) (repEmul τ₂) (S.abs (repEmul τ₁ ⇒ repEmul τ₂) tsb[wkm↑])) (S.var 0)))])  1) by 
+        (eauto using S.evaln; omega).
+    assert (es2 : forall Cu, U.ECtx Cu → U.evaln (U.pctx_app (U.app U.ufix (U.abs tub)) Cu) (U.pctx_app (tub[beta1 (U.abs (U.app (U.ufix₁ (U.abs tub[wkm↑])) (U.var 0)))]) Cu) 3) by
+        (intros Cu eCu; eauto using U.evaln, U.ufix₁_evaln', U.ufix_eval₁').
+    destruct w'; try apply termrel_zero.
+    refine (termrel_antired w' es1 es2 _ _ _); unfold lev in *; simpl; try omega.
+    crush.
+    (* gaah why can't I simply apply bodyrel *)
+    (* rewrite -> termrel_fixp. *)
+    (* rewrite -> valrel_fixp. *)
+    (* refine (bodyrel w' _ (S.abs (repEmul τ₁) *)
+    (*                             (S.app (S.fixt (repEmul τ₁) (repEmul τ₂) *)
+    (*                                            (S.abs (repEmul τ₁ ⇒ repEmul τ₂) tsb[wkm↑]))  *)
+    (*                                    (S.var 0)))  *)
+    (*                 (U.abs (U.app (U.ufix₁ (U.abs tub[wkm↑])) (U.var 0))) _). *)
+  Admitted.
+    
+  Lemma compat_fix {Γ d n ts tu τ₁ τ₂} :
+    ⟪ Γ ⊩ ts ⟦ d , n ⟧ tu : ptarr (ptarr τ₁ τ₂) (ptarr τ₁ τ₂) ⟫ →
+    ⟪ Γ ⊩ S.fixt (repEmul τ₁) (repEmul τ₂) ts ⟦ d , n ⟧ U.app U.ufix tu : ptarr τ₁ τ₂ ⟫.
+  Proof.
+    intros tr.
+    crush.
+    refine (termrel_fix _); crush.
+  Qed.
+
+  Lemma compat_fix' {Γ d n ts tu τ₁ τ₂} :
+    ⟪ Γ ⊩ ts ⟦ d , n ⟧ tu : embed (tarr (tarr τ₁ τ₂) (tarr τ₁ τ₂)) ⟫ →
+    ⟪ Γ ⊩ S.fixt τ₁ τ₂ ts ⟦ d , n ⟧ U.app U.ufix tu : ptarr (embed τ₁) (embed τ₂) ⟫.
+  Proof.
+    intros tr.
+    rewrite <- (repEmul_embed_leftinv τ₁) at 1.
+    rewrite <- (repEmul_embed_leftinv τ₂) at 1.
+    apply compat_fix; assumption.
+  Qed.
+
   Lemma erase_correct {Γ d n ts τ} :
     ⟪ Γ ⊢ ts : τ ⟫ →
     ⟪ embedCtx Γ ⊩ ts ⟦ d , n ⟧ erase ts : embed τ ⟫.
   Proof.
-    induction 1; simpl; eauto using compat_inl, compat_inr, compat_pair, compat_lambda_embed, compat_app, compat_false, compat_true, compat_var, compat_unit, embedCtx_works, compat_seq, compat_ite, compat_proj₁.
-  Admitted. 
+    induction 1; simpl; eauto using compat_inl, compat_inr, compat_pair, compat_lambda_embed, compat_app, compat_false, compat_true, compat_var, compat_unit, embedCtx_works, compat_seq, compat_ite, compat_proj₁, compat_proj₂, compat_caseof, compat_fix'.
+  Qed. 
 
 End CompatibilityLemmas.

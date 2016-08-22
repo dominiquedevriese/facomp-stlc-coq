@@ -97,6 +97,11 @@ Section DerivedRules.
   Lemma eval_eval₀ {t t'} : t -->₀ t' -> t --> t'.
   Proof. intro r; now apply (eval_ctx₀ phole r). Qed.
 
+  Lemma eval_beta'' {t₁ t₂ t'} :
+    Value t₂ → t' = t₁[beta1 t₂] →
+    app (abs t₁) t₂ -->₀ t'.
+  Proof. intros; subst; auto using eval₀. Qed.
+
   Lemma eval_beta' {t₁ t₂ t'} :
     Value t₂ → t' = t₁[beta1 t₂] →
     app (abs t₁) t₂ --> t'.

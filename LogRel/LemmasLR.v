@@ -240,6 +240,24 @@ Section ClosedLR.
     refine (contrel_mono fw cr).
   Qed.
 
+  Lemma termrel_antired' {ts ts' tu tu' W d τ i j} W' :
+    S.evaln ts ts' i →
+    U.evaln tu tu' j → 
+    tu' ≠ wrong →
+    W' ≤ W →
+    lev W' + min i j ≥ lev W →
+    termrel d W' τ ts' tu' →
+    termrel d W τ ts tu.
+  Proof.
+    intros es eu nw.
+    apply termrel_antired; try assumption.
+    intros C eC.
+    induction eu; eauto using evaln; econstructor; eauto using evaln.
+    apply eval_ctx; try assumption.
+    intro eq; depind eu; intuition.
+    destruct H0 as [C'|C' eq']; destruct C'; simpl in eq; destruct H0; inversion eq; intuition.
+  Qed.
+
   Lemma valrel_in_termrel {ts tu W d τ} :
     valrel d W τ ts tu → termrel d W τ ts tu.
   Proof.
