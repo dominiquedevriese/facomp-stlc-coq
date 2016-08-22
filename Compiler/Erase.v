@@ -2,6 +2,7 @@ Require Stlc.SpecSyntax.
 Require Utlc.SpecSyntax.
 Require Import Stlc.SpecTyping.
 Require Import Stlc.LemmasTyping.
+Require Import Stlc.LemmasEvaluation.
 Require Import Utlc.SpecScoping.
 Require Import Utlc.LemmasScoping.
 Require Import LogRel.PseudoType.
@@ -13,6 +14,7 @@ Require Utlc.Fix.
 
 Module S.
     Include Stlc.SpecSyntax.
+    Include Stlc.LemmasEvaluation.
     Include Stlc.LemmasTyping.
 End S.
 Module U.
@@ -133,6 +135,14 @@ Section CompatibilityLemmas.
       refine (H0 w' _ (γs↑ >=> beta1 ts') (γu↑ >=> beta1 tu') _).
       + unfold lev in *. omega.
       + eauto using extend_envrel, envrel_mono.
+  Qed.
+
+  Lemma compat_lambda_embed {Γ τ' ts d n tu τ} :
+    ⟪ Γ p▻ embed τ' ⊩ ts ⟦ d , n ⟧ tu : τ ⟫ →
+    ⟪ Γ ⊩ (S.abs τ' ts) ⟦ d , n ⟧ abs tu : ptarr (embed τ') τ ⟫.
+  Proof.
+    rewrite <- (repEmul_embed_leftinv τ') at 2.
+    apply compat_lambda.
   Qed.
 
   Lemma compat_unit {Γ d n} :
@@ -318,5 +328,57 @@ Section CompatibilityLemmas.
     crush.
     refine (termrel_inr _); crush.
   Qed.
+
+  Lemma compat_var {Γ d n τ i} :
+    ⟪ i : τ p∈ Γ ⟫ →
+    ⟪ Γ ⊩ S.var i ⟦ d , n ⟧ U.var i : τ ⟫.
+  Proof.
+    intros iτ. constructor.
+    - crushTyping.
+      eauto using repEmulCtx_works.
+    - intros ? _ ? ? er.
+      apply valrel_in_termrel.
+      refine (er _ _ iτ).
+  Qed.
+      
+  Lemma termrel_seq {d w τ ts₁ ts₂ tu₁ tu₂} :
+    termrel d w ptunit ts₁ tu₁ →
+    (forall w', w' ≤ w → termrel d w' τ ts₂ tu₂) →
+    termrel d w τ (S.seq ts₁ ts₂) (U.seq tu₁ tu₂).
+  Proof.
+    intros tr₁ tr₂.
+    change (S.seq _ _) with (S.pctx_app ts₁ (S.pseq₁ S.phole ts₂)).
+    change (U.seq _ _) with (U.pctx_app tu₁ (U.pseq₁ U.phole tu₂)).
+    refine (termrel_ectx _ _ tr₁ _); crush.
+    rewrite -> valrel_fixp in H.
+    destruct H as [ot [eq₁ eq₂]]; subst.
+    assert (S.eval (S.seq S.unit ts₂) ts₂) by 
+        (apply (S.eval_ctx₀ S.phole); try refine (S.eval_seq_next _); simpl; intuition).
+    assert (esn : S.evaln (S.seq S.unit ts₂) ts₂ 1) by eauto using S.evaln.
+    assert (forall Cu, U.ECtx Cu → U.eval (U.pctx_app (U.seq U.unit tu₂) Cu) (U.pctx_app tu₂ Cu)) by 
+        (intros Cu eCu; apply (U.eval_ctx₀ Cu); try refine (U.eval_seq_next _); simpl; intuition).
+    assert (eun : forall Cu, U.ECtx Cu → U.evaln (U.pctx_app (U.seq U.unit tu₂) Cu) (U.pctx_app tu₂ Cu) 1) by eauto using U.evaln.
+    refine (termrel_antired w' esn eun _ _ _); try omega.
+    apply tr₂; intuition.
+  Qed. 
+
+  Lemma compat_seq {Γ d n ts₁ tu₁ ts₂ tu₂ τ₂} :
+    ⟪ Γ ⊩ ts₁ ⟦ d , n ⟧ tu₁ : ptunit ⟫ →
+    ⟪ Γ ⊩ ts₂ ⟦ d , n ⟧ tu₂ : τ₂ ⟫ →
+    ⟪ Γ ⊩ S.seq ts₁ ts₂ ⟦ d , n ⟧ U.seq tu₁ tu₂ : τ₂ ⟫.
+  Proof.
+    crush.
+    apply termrel_seq; crush.
+    refine (H1 w' _ _ _ _). 
+    - unfold lev in *. omega.
+    - eauto using envrel_mono.
+  Qed.
+    
+  Lemma erase_correct {Γ d n ts τ} :
+    ⟪ Γ ⊢ ts : τ ⟫ →
+    ⟪ embedCtx Γ ⊩ ts ⟦ d , n ⟧ erase ts : embed τ ⟫.
+  Proof.
+    induction 1; simpl; eauto using compat_inl, compat_inr, compat_pair, compat_lambda_embed, compat_app, compat_false, compat_true, compat_var, compat_unit, embedCtx_works, compat_seq.
+    
 
 End CompatibilityLemmas.
