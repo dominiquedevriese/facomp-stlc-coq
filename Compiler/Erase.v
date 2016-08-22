@@ -361,12 +361,89 @@ Section CompatibilityLemmas.
     - unfold lev in *. omega.
     - eauto using envrel_mono.
   Qed.
+  
+  Lemma termrel_proj₁ {d w τ₁ τ₂ ts tu} :
+    termrel d w (ptprod τ₁ τ₂) ts tu →
+    termrel d w τ₁ (S.proj₁ ts) (U.proj₁ tu).
+  Proof.
+    intros tr.
+    change (S.proj₁ _) with (S.pctx_app ts (S.pproj₁ S.phole)).
+    change (U.proj₁ _) with (U.pctx_app tu (U.pproj₁ U.phole)).
+    refine (termrel_ectx _ _ tr _); crush.
+    rewrite -> valrel_fixp in H.
+    destruct H as [ot [vs₁ [vs₂ [vu₁ [vu₂ [? [? [vr₁ vr₂]]]]]]]]; subst.
+    destruct (OfType_implies_Value ot) as [[vvs₁ vvs₂] [vvu₁ vvu₂]].
+    assert (S.eval (S.proj₁ (S.pair vs₁ vs₂)) vs₁) by 
+        (apply (S.eval_ctx₀ S.phole); try refine (S.eval_proj₁ _ _); simpl; intuition).
+    assert (esn : S.evaln (S.proj₁ (S.pair vs₁ vs₂)) vs₁ 1) by eauto using S.evaln.
+    assert (forall Cu, U.ECtx Cu → U.eval (U.pctx_app (U.proj₁ (U.pair vu₁ vu₂)) Cu) (U.pctx_app vu₁ Cu)) by 
+        (intros Cu eCu; apply (U.eval_ctx₀ Cu); try refine (U.eval_proj₁ _); simpl; intuition).
+    assert (eun : forall Cu, U.ECtx Cu → U.evaln (U.pctx_app (U.proj₁ (U.pair vu₁ vu₂)) Cu) (U.pctx_app vu₁ Cu) 1) by eauto using U.evaln.
+    destruct w'; try apply termrel_zero.
+    refine (termrel_antired w' esn eun _ _ _); unfold lev; simpl; try omega.
+    apply valrel_in_termrel.
+    apply vr₁; intuition; omega.
+  Qed. 
+
+  Lemma compat_proj₁ {Γ d n ts tu τ₁ τ₂} :
+    ⟪ Γ ⊩ ts ⟦ d , n ⟧ tu : ptprod τ₁ τ₂ ⟫ →
+    ⟪ Γ ⊩ S.proj₁ ts ⟦ d , n ⟧ U.proj₁ tu : τ₁ ⟫.
+  Proof.
+    crush.
+    refine (termrel_proj₁ _); crush.
+  Qed.
     
+  Lemma termrel_ite {d w τ ts₁ ts₂ ts₃ tu₁ tu₂ tu₃} :
+    termrel d w ptbool ts₁ tu₁ →
+    (forall w', w' ≤ w → termrel d w' τ ts₂ tu₂) →
+    (forall w', w' ≤ w → termrel d w' τ ts₃ tu₃) →
+    termrel d w τ (S.ite ts₁ ts₂ ts₃) (U.ite tu₁ tu₂ tu₃).
+  Proof.
+    intros tr₁ tr₂ tr₃.
+    change (S.ite _ _ _) with (S.pctx_app ts₁ (S.pite₁ S.phole ts₂ ts₃)).
+    change (U.ite _ _ _) with (U.pctx_app tu₁ (U.pite₁ U.phole tu₂ tu₃)).
+    refine (termrel_ectx _ _ tr₁ _); crush.
+    rewrite -> valrel_fixp in H.
+    destruct H as [ot [[? ?]|[? ?]]]; subst; clear ot.
+    - assert (S.eval (S.ite S.true ts₂ ts₃) ts₂) by 
+          (apply (S.eval_ctx₀ S.phole); try refine (S.eval_ite_true _ _); simpl; intuition).
+      assert (esn : S.evaln (S.ite S.true ts₂ ts₃) ts₂ 1) by eauto using S.evaln.
+      assert (forall Cu, U.ECtx Cu → U.eval (U.pctx_app (U.ite U.true tu₂ tu₃) Cu) (U.pctx_app tu₂ Cu)) by 
+          (intros Cu eCu; apply (U.eval_ctx₀ Cu); try refine (U.eval_ite_true _ _); simpl; intuition).
+      assert (eun : forall Cu, U.ECtx Cu → U.evaln (U.pctx_app (U.ite U.true tu₂ tu₃) Cu) (U.pctx_app tu₂ Cu) 1) by eauto using U.evaln.
+      refine (termrel_antired w' esn eun _ _ _); try omega.
+      apply tr₂; intuition.
+    - assert (S.eval (S.ite S.false ts₂ ts₃) ts₃) by 
+          (apply (S.eval_ctx₀ S.phole); try refine (S.eval_ite_false _ _); simpl; intuition).
+      assert (esn : S.evaln (S.ite S.false ts₂ ts₃) ts₃ 1) by eauto using S.evaln.
+      assert (forall Cu, U.ECtx Cu → U.eval (U.pctx_app (U.ite U.false tu₂ tu₃) Cu) (U.pctx_app tu₃ Cu)) by 
+          (intros Cu eCu; apply (U.eval_ctx₀ Cu); try refine (U.eval_ite_false _ _); simpl; intuition).
+      assert (eun : forall Cu, U.ECtx Cu → U.evaln (U.pctx_app (U.ite U.false tu₂ tu₃) Cu) (U.pctx_app tu₃ Cu) 1) by eauto using U.evaln.
+      refine (termrel_antired w' esn eun _ _ _); try omega.
+      apply tr₃; intuition.
+  Qed. 
+
+  Lemma compat_ite {Γ d n ts₁ tu₁ ts₂ tu₂ ts₃ tu₃ τ} :
+    ⟪ Γ ⊩ ts₁ ⟦ d , n ⟧ tu₁ : ptbool ⟫ →
+    ⟪ Γ ⊩ ts₂ ⟦ d , n ⟧ tu₂ : τ ⟫ →
+    ⟪ Γ ⊩ ts₃ ⟦ d , n ⟧ tu₃ : τ ⟫ →
+    ⟪ Γ ⊩ S.ite ts₁ ts₂ ts₃ ⟦ d , n ⟧ U.ite tu₁ tu₂ tu₃ : τ ⟫.
+  Proof.
+    crush.
+    apply termrel_ite; crush.
+    - refine (H3 w' _ _ _ _). 
+      + unfold lev in *. omega.
+      + eauto using envrel_mono.
+    - refine (H2 w' _ _ _ _). 
+      + unfold lev in *. omega.
+      + eauto using envrel_mono.
+  Qed.
+
   Lemma erase_correct {Γ d n ts τ} :
     ⟪ Γ ⊢ ts : τ ⟫ →
     ⟪ embedCtx Γ ⊩ ts ⟦ d , n ⟧ erase ts : embed τ ⟫.
   Proof.
-    induction 1; simpl; eauto using compat_inl, compat_inr, compat_pair, compat_lambda_embed, compat_app, compat_false, compat_true, compat_var, compat_unit, embedCtx_works, compat_seq.
+    induction 1; simpl; eauto using compat_inl, compat_inr, compat_pair, compat_lambda_embed, compat_app, compat_false, compat_true, compat_var, compat_unit, embedCtx_works, compat_seq, compat_ite, compat_proj₁.
   Admitted. 
 
 End CompatibilityLemmas.
