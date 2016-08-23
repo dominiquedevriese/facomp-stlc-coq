@@ -115,26 +115,36 @@ Local Ltac crush :=
          end.
 
 Section CompatibilityLemmas.
+  Lemma valrel_lambda {d τ' τ ts tu w} :
+    OfType (ptarr τ' τ) (S.abs (repEmul τ') ts) (U.abs tu) →
+    (forall w' vs vu, w' < w → valrel d w' τ' vs vu → termrel d w' τ (ts [beta1 vs]) (tu [beta1 vu])) →
+    valrel d w (ptarr τ' τ) (S.abs (repEmul τ') ts) (U.abs tu).
+  Proof.
+    intros ot hyp.
+    rewrite -> valrel_fixp; unfold valrel'; simpl; crush.
+    now apply hyp; assumption.
+  Qed.
+
   Lemma compat_lambda {Γ τ' ts d n tu τ} :
     ⟪ Γ p▻ τ' ⊩ ts ⟦ d , n ⟧ tu : τ ⟫ →
     ⟪ Γ ⊩ (S.abs (repEmul τ') ts) ⟦ d , n ⟧ abs tu : ptarr τ' τ ⟫.
   Proof.
-    intros lr. crush.
-    - (* OfType *)
-      unfold OfType, OfTypeStlc, OfTypeUtlc; repeat split.
-      + (* OfTypeStlc *)
-        change (S.abs (repEmul τ') (ts [γs↑])) with ((S.abs (repEmul τ') ts) [γs]).
-        refine (S.typing_sub _ _ _ _); crushTyping.
-        refine (envrel_implies_WtSub H2).
-      + (* OfTypeUtlc *)
-        crush.
-    - (* valrel_ptarr hypothesis *)
-      rewrite -> (ap_comp ts (γs↑) (beta1 ts')).
+    intros lr. 
+    constructor;[crush|].
+    intros w wl γs γu er.
+    apply valrel_in_termrel.
+    destruct lr as [tst termrel']. 
+    apply valrel_lambda;
+    fold apUTm; fold apTm.
+    - unfold OfType, OfTypeStlc, OfTypeUtlc; crush.
+      eauto using wtSub_up, envrel_implies_WtSub.
+    - intros w' vs vu fw vr.
       change (apUTm γu↑ tu) with (tu [γu↑]).
-      rewrite -> (ap_comp tu (γu↑) (beta1 tu')).
-      refine (H0 w' _ (γs↑ >=> beta1 ts') (γu↑ >=> beta1 tu') _).
-      + unfold lev in *. omega.
-      + eauto using extend_envrel, envrel_mono.
+      change (apTm γs↑ ts) with (ts [γs↑]).
+      rewrite -> (ap_comp tu (γu↑) (beta1 vu)).
+      rewrite -> (ap_comp ts (γs↑) (beta1 vs)).
+      apply termrel'; unfold lev in *; try omega. 
+      eauto using extend_envrel, envrel_mono.
   Qed.
 
   Lemma compat_lambda_embed {Γ τ' ts d n tu τ} :
@@ -525,33 +535,91 @@ Section CompatibilityLemmas.
       + eauto using extend_envrel, envrel_mono.
   Qed.
 
+  Lemma valrel_fix {d w τ₁ τ₂ vs vu} :
+    valrel d w (ptarr (ptarr τ₁ τ₂) (ptarr τ₁ τ₂)) vs vu →
+    termrel d w (ptarr τ₁ τ₂) (S.fixt (repEmul τ₁) (repEmul τ₂) vs) (U.ufix₁ vu).
+  Proof.
+    (* well-founded induction on w *)
+    rewrite -> valrel_fixp.
+    revert w vs vu.
+    refine (well_founded_ind (well_founded_ltof World (fun w => w)) 
+                             (fun w => 
+                                forall vs vu, valrel' d w (fun w _ => valrel d w) (ptarr (ptarr τ₁ τ₂) (ptarr τ₁ τ₂)) vs vu →
+                                termrel d w (ptarr τ₁ τ₂) (S.fixt (repEmul τ₁) (repEmul τ₂) vs) (U.ufix₁ vu)) _).
+    intros w indHyp vs vu.
+    
+    (* destruct valrel assumption *)
+    intros vr.
+    rewrite <- valrel_fixp in vr.
+    destruct (valrel_implies_Value vr) as [vvs vvu].
+    rewrite -> valrel_fixp in vr.
+    destruct vr as [ot [tsb [tub [? [? bodyrel]]]]]; subst.
+
+    (* evaluate *)
+    assert (es : S.fixt (repEmul τ₁) (repEmul τ₂) (S.abs (repEmul (ptarr τ₁ τ₂)) tsb) --> tsb [beta1 (S.abs (repEmul τ₁) (S.app (S.fixt (repEmul τ₁) (repEmul τ₂) (S.abs (repEmul τ₁ ⇒ repEmul τ₂) tsb[wkm↑])) (S.var 0)))]) by (refine (eval_ctx₀ S.phole _ _); crush).
+    assert (es1 : S.evaln (S.fixt (repEmul τ₁) (repEmul τ₂) (S.abs (repEmul (ptarr τ₁ τ₂)) tsb)) (tsb [beta1 (S.abs (repEmul τ₁) (S.app (S.fixt (repEmul τ₁) (repEmul τ₂) (S.abs (repEmul τ₁ ⇒ repEmul τ₂) tsb[wkm↑])) (S.var 0)))])  1) by 
+        (eauto using S.evaln; omega).
+    assert (es2 : forall Cu, U.ECtx Cu → U.evaln (U.pctx_app (U.ufix₁ (U.abs tub)) Cu) (U.pctx_app (tub[beta1 (U.abs (U.app (U.ufix₁ (U.abs tub[wkm↑])) (U.var 0)))]) Cu) 2) by
+        (intros Cu eCu; eauto using U.evaln, U.ufix₁_evaln').
+    destruct w; try apply termrel_zero.
+    refine (termrel_antired w es1 es2 _ _ _); unfold lev in *; simpl; try omega.
+    clear es es1 es2.
+
+    (* use the assumption about tsb and tub we extracted from vr *)
+    refine (bodyrel w _ _ _ _); try omega.
+
+    (* prove valrel for values being substituted into tsb and tub *)
+    crush.
+    - (* first the OfType relation *)
+      unfold OfType, OfTypeStlc, OfTypeUtlc. repeat split.
+      + econstructor; fold repEmul; econstructor; [econstructor|repeat econstructor].
+        change (S.abs _ tsb[wkm↑]) with ((S.abs (repEmul τ₁ ⇒ repEmul τ₂) tsb)[wkm]).
+        destruct ot as [[vtsb ttsb] ttub].
+        crushTyping.
+      + crush.
+    - (* prove the termrel of the body of the abstractions *)
+      refine (termrel_app _ _).
+      + change (abs (apUTm (beta1 tu')↑↑ (apUTm wkm↑ tub[wkm↑]))) with ((abs tub)[wkm][wkm][(beta1 tu')↑]).
+        rewrite <- apply_wkm_comm. 
+        rewrite -> apply_wkm_beta1_cancel.
+        change (U.app _ _) with (U.ufix₁ (abs tub)).
+        change (S.abs _ _) with  ((S.abs (repEmul τ₁ ⇒ repEmul τ₂) tsb)[wkm][(beta1 ts')]).
+        rewrite -> apply_wkm_beta1_cancel.
+        (* the goal is now what we set out to prove initially but in a strictly
+           later world, so we can use the induction hypothesis from our
+           well-founded induction on worlds *)
+        refine (indHyp _ _ _ _ _); unfold ltof; try omega.
+        clear indHyp.
+
+        (* it remains to prove the valrel for the arguments of S.fixt and U.ufix₁ *)
+        unfold valrel'; crush.
+      + intros w'' fw''.
+        refine (valrel_in_termrel _).
+        refine (valrel_mono _ H); intuition.
+  Qed.
+  
   Lemma termrel_fix {d w τ₁ τ₂ ts tu} :
     termrel d w (ptarr (ptarr τ₁ τ₂) (ptarr τ₁ τ₂)) ts tu →
     termrel d w (ptarr τ₁ τ₂) (S.fixt (repEmul τ₁) (repEmul τ₂) ts) (U.app U.ufix tu).
   Proof.
     intros tr.
+
+    (* first normalize ts and tu *)
     change (S.fixt _ _ _) with (S.pctx_app ts (S.pfixt (repEmul τ₁) (repEmul τ₂) S.phole)).
     change (U.app _ _) with (U.pctx_app tu (U.papp₂ U.ufix U.phole)).
     refine (termrel_ectx _ _ tr _); crush.
     destruct (valrel_implies_Value H) as [vvs vvu].
-    destruct H as [ot [tsb [tub [? [? bodyrel]]]]]; subst.
-    assert (S.fixt (repEmul τ₁) (repEmul τ₂) (S.abs (repEmul (ptarr τ₁ τ₂)) tsb) --> tsb [beta1 (S.abs (repEmul τ₁) (S.app (S.fixt (repEmul τ₁) (repEmul τ₂) (S.abs (repEmul τ₁ ⇒ repEmul τ₂) tsb[wkm↑])) (S.var 0)))]) by (refine (eval_ctx₀ S.phole _ _); crush).
-    assert (es1 : S.evaln (S.fixt (repEmul τ₁) (repEmul τ₂) (S.abs (repEmul (ptarr τ₁ τ₂)) tsb)) (tsb [beta1 (S.abs (repEmul τ₁) (S.app (S.fixt (repEmul τ₁) (repEmul τ₂) (S.abs (repEmul τ₁ ⇒ repEmul τ₂) tsb[wkm↑])) (S.var 0)))])  1) by 
-        (eauto using S.evaln; omega).
-    assert (es2 : forall Cu, U.ECtx Cu → U.evaln (U.pctx_app (U.app U.ufix (U.abs tub)) Cu) (U.pctx_app (tub[beta1 (U.abs (U.app (U.ufix₁ (U.abs tub[wkm↑])) (U.var 0)))]) Cu) 3) by
-        (intros Cu eCu; eauto using U.evaln, U.ufix₁_evaln', U.ufix_eval₁').
-    destruct w'; try apply termrel_zero.
-    refine (termrel_antired w' es1 es2 _ _ _); unfold lev in *; simpl; try omega.
-    crush.
-    (* gaah why can't I simply apply bodyrel *)
-    (* rewrite -> termrel_fixp. *)
-    (* rewrite -> valrel_fixp. *)
-    (* refine (bodyrel w' _ (S.abs (repEmul τ₁) *)
-    (*                             (S.app (S.fixt (repEmul τ₁) (repEmul τ₂) *)
-    (*                                            (S.abs (repEmul τ₁ ⇒ repEmul τ₂) tsb[wkm↑]))  *)
-    (*                                    (S.var 0)))  *)
-    (*                 (U.abs (U.app (U.ufix₁ (U.abs tub[wkm↑])) (U.var 0))) _). *)
-  Admitted.
+
+    (* next, reduce (U.app U.ufix tu) by one step in the conclusion *)
+    assert (es1 : S.evaln (S.fixt (repEmul τ₁) (repEmul τ₂) vs) (S.fixt (repEmul τ₁) (repEmul τ₂) vs) 0) by
+        (eauto using S.evaln).
+    assert (es2 : forall Cu, U.ECtx Cu → U.evaln (U.pctx_app (U.app U.ufix vu) Cu) (U.pctx_app (U.ufix₁ vu) Cu) 1) 
+      by (intros Cu eCu; eauto using U.evaln, U.ufix_eval₁').
+    refine (termrel_antired w' es1 es2 _ _ _); unfold lev in *; simpl; try omega. 
+
+    eauto using valrel_fix.
+  Qed.
+    
     
   Lemma compat_fix {Γ d n ts tu τ₁ τ₂} :
     ⟪ Γ ⊩ ts ⟦ d , n ⟧ tu : ptarr (ptarr τ₁ τ₂) (ptarr τ₁ τ₂) ⟫ →

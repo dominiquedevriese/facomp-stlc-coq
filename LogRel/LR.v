@@ -72,7 +72,9 @@ Definition termrel'
 
 Lemma lt_le {w w' w''} (fw : w' < w) (fw' : w'' ≤ w') : w'' < w.
 Proof.
-  omega.
+  unfold lt in *.
+  refine (le_trans _ _ _ _ fw).
+  refine (le_n_S _ _ fw').
 Defined.
 
 Definition prod_rel (R₁ R₂ : S.Tm -> U.UTm -> Prop) : S.Tm -> U.UTm -> Prop :=
@@ -141,7 +143,6 @@ Lemma valrel_fixp {d} :
   forall w, valrel d w = valrel' d w (fun w _ => valrel d w).
 Proof.
   unfold valrel. 
-  Check Fix_eq.
   refine (Fix_eq (well_founded_ltof World (fun w => w)) (fun w => PTRel)
                   (valrel' d) valrel_def_funext).
 Qed.
