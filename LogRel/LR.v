@@ -128,6 +128,7 @@ Definition valrel (d : Direction) (w : World) (τ : PTy)(t₁ : S.Tm) (t₂ : U.
   Fix (well_founded_ltof World (fun w => w))
                   (fun w => PTRel)
                   (valrel' d) w τ t₁ t₂.
+Arguments valrel d w τ t₁ t₂ : simpl never.
 
 Lemma valrel_def_funext {d} :
   forall w (ind₁ ind₂ : forall w', w' < w → PTRel),
