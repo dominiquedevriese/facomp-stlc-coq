@@ -130,15 +130,29 @@ Definition valrel (d : Direction) (w : World) (τ : PTy)(t₁ : S.Tm) (t₂ : U.
                   (valrel' d) w τ t₁ t₂.
 Arguments valrel d w τ t₁ t₂ : simpl never.
 
-Lemma valrel_def_funext {d} :
-  forall w (ind₁ ind₂ : forall w', w' < w → PTRel),
+Lemma valrel_def_funext {d} w (ind₁ ind₂ : forall w', w' < w → PTRel) :
   (forall w' (fw : w' < w), ind₁ w' fw = ind₂ w' fw) →
   valrel' d w ind₁ = valrel' d w ind₂.
 Proof.
-  intros ind₁ ind₂ hyp.
-  unfold valrel'.
-  (* Should we simply assume functional extensionality here? *)
-Admitted.
+  (* We simply assume functional extensionality and crush the proof... *)
+  intros hyp.
+  repeat (
+      try rewrite -> hyp;
+      try reflexivity;
+      try unfold prod_rel, sum_rel;
+      repeat (match goal with
+          [ |- (fun x => _) = (fun _ => _) ] => let x' := (fresh x) in extensionality x'
+        | [ |- valrel' _ _ = valrel' _ _] => unfold valrel'
+        | [ |- valrel' _ _ _ = valrel' _ _ _] => unfold valrel'
+        | [ |- (_ ∧ _) = (_ ∧ _)] => f_equal
+        | [ |- (_ ∨ _) = (_ ∨ _)] => f_equal
+        | [ |- (match ?τ with | _  => _ end) = (match ?τ with | _ => _ end )] => induction τ
+        | [ |- (exists t, _) = (exists _, _)] => f_equal
+        | [ |- (forall t, _) = (forall _, _)] => let x' := (fresh t) in extensionality x'
+        | [ |- termrel' _ _ _ _ _ _ = termrel' _ _ _ _ _ _] => f_equal
+      end)
+    ).
+Qed.
 
 Lemma valrel_fixp {d} :
   forall w, valrel d w = valrel' d w (fun w _ => valrel d w).
