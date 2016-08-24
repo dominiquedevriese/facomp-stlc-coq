@@ -10,6 +10,7 @@ Local Ltac crush :=
      eauto with eval;
      repeat crushDbSyntaxMatchH;
      repeat crushUtlcSyntaxMatchH;
+     repeat crushUtlcEvaluationMatchH;
      (* repeat crushDbLemmasMatchH; *)
      repeat crushDbLemmasRewriteH;
      try subst);

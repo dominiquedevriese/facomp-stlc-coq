@@ -153,3 +153,7 @@ Inductive evaln (t : UTm) : UTm → nat → Prop :=
 | evaln_step : forall t' t'' n, t --> t' → evaln t' t'' n → evaln t t'' (S n).
 
 
+Ltac crushUtlcEvaluationMatchH :=
+  match goal with
+    | [ H: exists tub', ?tu = abs tub' |- Value ?tu ] => (destruct H as [? ?]; subst)
+  end.

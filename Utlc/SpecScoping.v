@@ -5,7 +5,7 @@ Section WellScoping.
   (* Keep this in a section so that the notation for the ws type-class is only
      locally overwritten. *)
   Inductive wsUTm (γ: Dom) : UTm → Prop :=
-    | WsWronng            : ⟨ γ ⊢ wrong ⟩
+    | WsWrong            : ⟨ γ ⊢ wrong ⟩
     | WsVar {i}           : γ ∋ i → ⟨ γ ⊢ var i ⟩
     | WsAbs {t}           : ⟨ S γ ⊢ t ⟩ → ⟨ γ ⊢ abs t ⟩
     | WsApp {t₁ t₂}       : ⟨ γ ⊢ t₁ ⟩ → ⟨ γ ⊢ t₂ ⟩ → ⟨ γ ⊢ app t₁ t₂ ⟩

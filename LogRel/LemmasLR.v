@@ -267,8 +267,7 @@ Section ClosedLR.
     
   Ltac crush :=
     repeat match goal with 
-      | [ H: exists tub', ?tu = U.abs tub' |- U.Value ?tu ] => destruct H as [? ?]; subst
-      | [ |- exists ts₁' ts₂' tu₁' tu₂', S.pair ?ts₁ ?ts₂ = LR.S.pair ts₁' ts₂' ∧ U.pair ?tu₁ ?tu₂ = LR.U.pair tu₁' tu₂' ∧ _ ] => exists ts₁; exists ts₂; exists tu₁; exists tu₂
+             | [ |- exists ts₁' ts₂' tu₁' tu₂', S.pair ?ts₁ ?ts₂ = LR.S.pair ts₁' ts₂' ∧ U.pair ?tu₁ ?tu₂ = LR.U.pair tu₁' tu₂' ∧ _ ] => exists ts₁; exists ts₂; exists tu₁; exists tu₂
            end;
     cbn;
     intuition.
