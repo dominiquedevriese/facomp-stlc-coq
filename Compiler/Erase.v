@@ -405,15 +405,15 @@ Section CompatibilityLemmas.
     assert (S.eval (S.seq S.unit ts₂) ts₂) by 
         (apply (S.eval_ctx₀ S.phole); try refine (S.eval_seq_next _); simpl; intuition).
     assert (esn : S.evaln (S.seq S.unit ts₂) ts₂ 1) by eauto using S.evaln.
-    assert (forall Cu, U.ECtx Cu → U.eval (U.pctx_app (U.seq U.unit tu₂) Cu) (U.pctx_app tu₂ Cu)) by 
-        (intros Cu eCu; apply (U.eval_ctx₀ Cu); try refine (U.eval_seq_next _); simpl; intuition).
-    assert (eun : forall Cu, U.ECtx Cu → U.evaln (U.pctx_app (U.seq U.unit tu₂) Cu) (U.pctx_app tu₂ Cu) 1) by eauto using U.evaln.
+
+    (* assert (forall Cu, U.ECtx Cu → U.eval (U.pctx_app (U.seq U.unit tu₂) Cu) (U.pctx_app tu₂ Cu)) by  *)
+    (*     (intros Cu eCu; apply (U.eval_ctx₀ Cu); try refine (U.eval_seq_next _); simpl; intuition). *)
+    (* assert (eun : forall Cu, U.ECtx Cu → U.evaln (U.pctx_app (U.seq U.unit tu₂) Cu) (U.pctx_app tu₂ Cu) 1) by eauto using U.evaln. *)
 
     (* attempt at using evalMax instead of doing manual labor *)
-    (* pose (e := evalMax 2 (U.seq U.unit (var 0)) nil (idm UTm · tu₂) I). *)
-    (* unfold EvalMaxResult in e; cbn in e; simpl in e. *)
+    pose (e := evalMax 2 (U.seq U.unit (var 0)) nil (idm UTm · tu₂) I).
 
-    refine (termrel_antired w' esn eun _ _ _); try omega.
+    refine (termrel_antired w' esn e _ _ _); try omega.
 
     (* conclude *)
     apply tr₂; intuition.

@@ -394,26 +394,31 @@ Proof.
   eauto using IHn.
 Qed.
 
-Lemma continueEval_sound_ctx n γ (es : sigT (EvalStep γ)) es' t' varInfo vis ind :
-  (forall t'' es', L.In es' (ind t'') → evalStep_source es' = t' → forall Cu, ECtx Cu → pctx_app t''[γ] Cu -->* pctx_app t'[γ] Cu) →
-  L.In es' (continueEval n γ (projT2 es) ind varInfo vis) → evalStep_source es' = t' → 
-  forall Cu, ECtx Cu → pctx_app ((evalStep_source es)[γ]) Cu -->* pctx_app (t'[γ]) Cu.
+Lemma continueEval_sound_ctx n γ i (es : sigT (EvalStep γ)) es' t' varInfo vis ind :
+  (forall t'' es' j, L.nth_error (ind t'') j = Some es' → evalStep_source es' = t' → forall Cu, ECtx Cu → evaln (pctx_app t''[γ] Cu) (pctx_app t'[γ] Cu) j) →
+  L.nth_error (continueEval n γ (projT2 es) ind varInfo vis) i = Some es' → evalStep_source es' = t' → 
+  forall Cu, ECtx Cu → evaln (pctx_app ((evalStep_source es)[γ]) Cu) (pctx_app (t'[γ]) Cu) i.
 Proof.
   intros indHyp el eq.
-  destruct es as [? [?|?|?|?]]; crush; 
-  destruct el; subst; try contradiction;
-  eauto using ctxeval_eval_ctx, indHyp, evalStar_ctx_wrong₀ with eval.
+  destruct es as [? [?|?|?|?]]; destruct i;
+  inversion el; subst;
+  eauto using ctxeval_eval_ctx, indHyp, evalStar_ctx_wrong₀, evaln with eval;
+  match goal with
+      [ H: L.nth_error nil ?i = Some _ |- _ ] => destruct i; inversion H
+  end.
 Qed.
 
-Lemma boundedEval_sound_ctx n t t' varInfo γ vis es : 
-  L.In es (boundedEval n t varInfo γ vis) → 
+Lemma boundedEval_sound_ctx n t t' varInfo γ vis es j : 
+  L.nth_error (boundedEval n t varInfo γ vis) j = Some es → 
   evalStep_source es = t' → 
-  forall Cu, ECtx Cu → pctx_app (t [γ]) Cu -->* pctx_app (t'[γ]) Cu.
+  forall Cu, ECtx Cu → evaln (pctx_app (t [γ]) Cu) (pctx_app (t'[γ]) Cu) j.
 Proof.
-  revert t es.
-  induction n; try contradiction.
-  intros t es.
-  refine (continueEval_sound_ctx n γ (existT (EvalStep γ) _ (stepEval t varInfo γ vis)) es t' varInfo vis _ _).
+  revert t es j.
+  induction n; intros t es j el eq; simpl in *;
+    try match goal with
+        [ H: L.nth_error nil ?i = Some _ |- _ ] => destruct i; inversion H
+    end.
+  refine (continueEval_sound_ctx n γ j (existT (EvalStep γ) _ (stepEval t varInfo γ vis)) es t' varInfo vis _ _ el eq).
   eauto using IHn.
 Qed.
 
@@ -437,6 +442,13 @@ Proof.
     exists es; crush.
 Qed.
 
+Fixpoint lastIndex {A} (l : list A) : nat :=
+  match l with
+      nil => 0
+    | cons _ nil => 0
+    | cons _ l => S (lastIndex l)
+  end.
+
 Fixpoint findLast {A} (l : list A) : option A :=
   match l with
       nil => None
@@ -455,22 +467,15 @@ Proof.
   destruct o; crush.
 Defined.
 
-Lemma findLast_works {A} (l : list A) : IfSome (findLast l) (fun x => L.In x l).
+Lemma findLast_works {A} (l : list A) : IfSome (findLast l) (fun x => L.nth_error l (lastIndex l) = Some x).
 Proof.
   induction l; simpl; auto.
   destruct l; crush.
-  refine (IfSome_map _ IHl); crush.
 Defined.
-
-Definition EvalMaxResultH {γ} (t : UTm) (es : option (sigT (EvalStep γ))) : Type :=
-  match es with
-      None => True
-    | Some es => forall t', evalStep_source es = t' → forall Cu, ECtx Cu → pctx_app t[γ] Cu -->* pctx_app t'[γ] Cu
-  end.
 
 Definition EvalMaxResult n t varInfo γ vis :=
   IfSome (findLast (boundedEval n t varInfo γ vis))
-         (fun es => forall Cu, ECtx Cu → pctx_app t[γ] Cu -->* pctx_app (evalStep_source es)[γ] Cu).
+         (fun es => forall Cu, ECtx Cu → evaln (pctx_app t[γ] Cu) (pctx_app (evalStep_source es)[γ] Cu) (lastIndex (boundedEval n t varInfo γ vis))).
 
 Definition evalMax n t varInfo γ vis : EvalMaxResult n t varInfo γ vis.
 Proof.
