@@ -5,12 +5,15 @@ Require Import Stlc.LemmasTyping.
 Require Import Stlc.LemmasEvaluation.
 Require Import Utlc.SpecScoping.
 Require Import Utlc.LemmasScoping.
+Require Import Utlc.DecideEval.
 Require Import LogRel.PseudoType.
 Require Import LogRel.LR.
 Require Import LogRel.LemmasLR.
 Require Import Omega.
 Require Import Db.Lemmas.
 Require Utlc.Fix.
+
+Require Import Coq.Lists.List.
 
 Module S.
     Include Stlc.SpecSyntax.
@@ -405,6 +408,11 @@ Section CompatibilityLemmas.
     assert (forall Cu, U.ECtx Cu → U.eval (U.pctx_app (U.seq U.unit tu₂) Cu) (U.pctx_app tu₂ Cu)) by 
         (intros Cu eCu; apply (U.eval_ctx₀ Cu); try refine (U.eval_seq_next _); simpl; intuition).
     assert (eun : forall Cu, U.ECtx Cu → U.evaln (U.pctx_app (U.seq U.unit tu₂) Cu) (U.pctx_app tu₂ Cu) 1) by eauto using U.evaln.
+
+    (* attempt at using evalMax instead of doing manual labor *)
+    (* pose (e := evalMax 2 (U.seq U.unit (var 0)) nil (idm UTm · tu₂) I). *)
+    (* unfold EvalMaxResult in e; cbn in e; simpl in e. *)
+
     refine (termrel_antired w' esn eun _ _ _); try omega.
 
     (* conclude *)
