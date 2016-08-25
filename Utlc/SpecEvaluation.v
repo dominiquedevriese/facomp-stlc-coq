@@ -81,6 +81,9 @@ Inductive eval₀ : UTm → UTm → Prop :=
   | eval_seq_next {t₁ t₂} :
       Value t₁ →
       seq t₁ t₂ -->₀ t₂
+  | eval_seq_wrong {t₁ t₂} :
+      t₁ ≠ unit →
+      seq t₁ t₂ -->₀ wrong
 where "t₁ -->₀ t₂" := (eval₀ t₁ t₂).
 
 Reserved Notation "t₁ --> t₂" (at level 80).
