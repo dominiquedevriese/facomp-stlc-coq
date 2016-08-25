@@ -296,7 +296,11 @@ Section BasicLemmas.
      wsiWk: ∀ (δ: Dom) (x: X), ⟨ S δ ⊢ wk x ⟩ → ⟨ δ ⊢ x ⟩
     }.
   Class WsAp (X Y: Type) {vrY: Vr Y} {ap: Ap X Y} {wsX: Ws X} {wsY: Ws Y} :=
-    {wsAp: ∀ {ξ γ δ x}, ⟨ ξ : γ => δ ⟩ → ⟨ γ ⊢ x ⟩ → ⟨ δ ⊢ x[ξ] ⟩}.
+    {wsAp: ∀ {ξ γ δ x}, ⟨ ξ : γ => δ ⟩ → ⟨ γ ⊢ x ⟩ → ⟨ δ ⊢ x[ξ] ⟩;
+     wsApExt: ∀ {γ x}, ⟨ γ ⊢ x ⟩ →
+              ∀ {ξ ζ} (Hξζ: ∀ i, γ ∋ i → ξ i = ζ i),
+                x[ξ] = x[ζ]
+    }.
   Class WsLift (X Y: Type) {vrX: Vr X} {vrY: Vr Y} {liftXY: Lift X Y} {wsX: Ws X} {wsY: Ws Y} :=
     {wsLift: ∀ (δ: Dom) (x: X), ⟨ δ ⊢ x ⟩ → ⟨ δ ⊢ lift x ⟩}.
 
@@ -353,8 +357,23 @@ Section IndexInstances.
   Proof. reflexivity. Qed.
   Global Instance apCompIxIxIx: LemApComp Ix Ix Ix := {}.
   Proof. reflexivity. Qed.
+  Global Instance wsVrIx : WsVr Ix.
+  Proof. constructor; auto. Qed.
+  Global Instance wsWkIx : WsWk Ix.
+  Proof.
+    constructor.
+    - now constructor.
+    - now inversion 1.
+  Qed.
+  Global Instance wsApIxIx : WsAp Ix Ix.
+  Proof. constructor; auto. Qed.
+  Global Instance wsLiftIx {X} `{WsVr X} : WsLift Ix X.
+  Proof. constructor; eauto using wsVr. Qed.
 
 End IndexInstances.
+
+Instance wsLiftXX {X} {vrX: Vr X} {wsX: Ws X} : WsLift X X.
+Proof. now constructor. Qed.
 
 Arguments liftXX_id _ {_} _.
 
@@ -387,7 +406,8 @@ Ltac crushDbSyntaxMatchH :=
     | [|- S _                  = S _                  ] => f_equal
     | [|- @vr ?X ?vrX _        = @vr ?X ?vrX _        ] => apply (f_equal (@vr X vrX))
     | [|- @wk ?X ?vrX ?wkX _   = @wk ?X ?vrX ?wkX _   ] => apply (f_equal (@wk X vrX wkX))
-    | [|- @lift ?X ?Y ?liftX _ = @lift ?X ?Y ?liftX _ ] => apply (f_equal (@lift X Y liftX))
+    | [|- @lift ?X ?Y ?vrX ?vrY ?liftXY _ = @lift ?X ?Y ?vrX ?vrY ?liftXY _ ] =>
+      apply (f_equal (@lift X Y vrX vrY liftXY))
 
     (* | |- context[@lift _ _ _ _ liftXX ?x      ] => change (@lift _ _ _ _ liftXX x) with x *)
     | |- context[@vr Ix vrIx ?i               ] => change (@vr Ix vrIx i) with i

@@ -1,4 +1,6 @@
 Require Export Db.Spec.
+Require Export Db.Lemmas.
+Require Coq.Setoids.Setoid.
 
 Section WsSnoc.
 
@@ -124,6 +126,10 @@ Section Stuff.
     ∀ γ (x: X), ⟨ γ ⊢ x ⟩ → ⟨ γ ∪ δ ⊢ wks δ x ⟩.
   Proof. induction δ; crush. Qed.
 
+  Lemma wsi_wks (δ: Dom) :
+    ∀ γ (x: X), ⟨ γ ∪ δ ⊢ wks δ x ⟩ → ⟨ γ ⊢ x ⟩.
+  Proof. induction δ; crush. Qed.
+
   Lemma wsSub_idm (γ: Dom) : ⟨ idm X : γ => γ ⟩.
   Proof. unfold WsSub, idm; crush. Qed.
 
@@ -174,7 +180,51 @@ Section Stuff.
 
   Context {apX: Ap X X}.
   Context {apVrX: LemApVr X X}.
+  Context {apWkX: LemApWk X X}.
+  Context {apCompXXX: LemApComp X X X}.
   Context {wsApX: WsAp X X}.
+
+  Lemma weakening {γ: Dom} {x: X} (wx: ⟨ γ ⊢ x ⟩) :
+    ⟨ S γ ⊢ x[wkm] ⟩.
+  Proof.
+    rewrite <- ap_wk.
+    now apply wsWk.
+  Qed.
+
+  Lemma weakenings δ {γ: Dom} {x: X} (wx: ⟨ γ ⊢ x ⟩) :
+    ⟨ γ ∪ δ ⊢ x[wkms δ] ⟩.
+  Proof.
+    induction δ.
+    - cbn; now rewrite ap_id.
+    - rewrite wkms_succ, <- ap_comp.
+      now apply weakening.
+  Qed.
+
+  Lemma substitution {γ δ: Dom} {ξ: Sub X} (wξ: ⟨ ξ : γ => δ ⟩) :
+    ∀ {x: X}, ⟨ γ ⊢ x ⟩ → ⟨ δ ⊢ x[ξ] ⟩.
+  Proof. intros; now apply (wsAp wξ). Qed.
+
+  (* Lemma wsSubClosed_beta {δ} {ξ: Sub X} (wξ: ⟨ ξ : δ => 0 ⟩) : *)
+  (*   ∀ i, δ ∋ i → ξ i = beta δ ξ i. *)
+  (* Proof. *)
+  (*   revert ξ wξ. *)
+  (*   induction δ; intros ξ wξ i wi. *)
+  (*   - crush. *)
+  (*   - crush. *)
+  (*     apply (IHδ (S >-> ξ)). *)
+  (*     + intros j wj. *)
+  (*       apply wξ. *)
+  (*       now constructor. *)
+  (*     + easy. *)
+  (* Qed. *)
+
+  Lemma wsClosed_invariant {x: X} (wx: ⟨ 0 ⊢ x ⟩) :
+    ∀ (ξ: Sub X), x[ξ] = x.
+  Proof.
+    intros.
+    replace x with x[idm X] at 2 by crush.
+    eapply (wsApExt wx); inversion 1.
+  Qed.
 
   Lemma wsSub_natural
     {f₁ f₂: Dom → Dom} {ξ₁ ξ₂: Sub X}
@@ -220,10 +270,14 @@ Section Stuff.
   Proof. apply (wsSub_beta γ 1); crush. Qed.
   Hint Resolve wsSub_sub_beta1 : ws.
 
-  (* Lemma wsSubNatural_wks_id δ : *)
-  (*   ∀ γ, WsSubNatural (γ ∪ δ) γ (wkms δ) (idm X). *)
-  (* Proof. unfold WsSubNatural; eauto using wsiIx_wkl. Qed. *)
-  (* Hint Resolve wsSubNatural_wkl_id : wsi. *)
+  Lemma wsSubNatural_wks_id δ :
+    ∀ γ, WsSubNatural (γ ∪ δ) γ (wkms δ) (idm X).
+  Proof.
+    unfold WsSubNatural; intros.
+    eapply wsi_wks.
+    rewrite ap_wks, ap_vr; simpl; eauto.
+  Qed.
+  Hint Resolve wsSubNatural_wks_id : wsi.
 
   (* Lemma wsiSub_comp_wkms δ ξ : *)
   (*   ∀ γ₁ γ₂, *)

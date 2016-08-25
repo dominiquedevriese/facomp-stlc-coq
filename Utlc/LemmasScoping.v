@@ -1,4 +1,5 @@
 Require Export Utlc.SpecScoping.
+Require Export Utlc.Inst.
 Require Import Db.Lemmas.
 
 Lemma ws_pctx_app {γ₀ t₀ γ C} :

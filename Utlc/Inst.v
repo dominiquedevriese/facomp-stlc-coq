@@ -1,6 +1,8 @@
 Require Export Db.Inst.
 Require Export Db.Lemmas.
+Require Export Db.WellScoping.
 Require Export Utlc.SpecSyntax.
+Require Export Utlc.SpecScoping.
 
 Instance vrUTm : Vr UTm := {| vr := var |}.
 Proof. inversion 1; auto. Defined.
@@ -67,6 +69,54 @@ Module InstUTm := Inst UTmKit.
    we export the contents anyway so that the implicits have shorter names in
    unambiguous contexts. *)
 Export InstUTm.
+
+Instance wsVrUTm: WsVr UTm.
+Proof.
+  constructor.
+  - now constructor.
+  - now inversion 1.
+Qed.
+
+Section Application.
+
+  Context {Y: Type}.
+  Context {vrY : Vr Y}.
+  Context {wkY: Wk Y}.
+  Context {liftY: Lift Y UTm}.
+  Context {wsY: Ws Y}.
+  Context {wsVrY: WsVr Y}.
+  Context {wsWkY: WsWk Y}.
+  Context {wsLiftY: WsLift Y UTm}.
+
+  Hint Resolve wsLift : ws.
+  Hint Resolve wsSub_up : ws.
+
+  Global Instance wsApUTm : WsAp UTm Y.
+  Proof.
+    constructor.
+    - intros ξ γ δ t wξ wt; revert ξ δ wξ.
+      induction wt; intros ξ δ wξ; crush;
+        try econstructor;
+        try match goal with
+              | |- wsUTm ?δ ?t =>
+                change (wsUTm δ t) with ⟨ δ ⊢ t ⟩
+            end; eauto with ws.
+    - intros γ t wt.
+      induction wt; crush.
+      + apply IHwt; inversion 1; crush.
+      + apply IHwt2; inversion 1; crush.
+      + apply IHwt3; inversion 1; crush.
+  Qed.
+
+End Application.
+
+Instance wsWkUTm: WsWk UTm.
+Proof.
+  constructor; crush.
+  - refine (wsAp _ H); eauto.
+    constructor; eauto.
+  - admit.
+Admitted.
 
 Section ApplicationPCtx.
 
