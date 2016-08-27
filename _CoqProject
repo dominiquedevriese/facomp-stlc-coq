@@ -8,6 +8,7 @@ Db/Spec.v
 Db/Tactics.v
 Db/WellScoping.v
 LogRel/LemmasLR.v
+LogRel/LemmasPseudoType.v
 LogRel/LR.v
 LogRel/PseudoType.v
 Stlc/Inst.v

@@ -14,18 +14,6 @@ Require Import Utlc.Inst.
 Require Import Omega.
 Require Import Min.
 
-Module S.
-  Include Stlc.SpecSyntax.
-  Include Stlc.SpecEvaluation.
-  Include Stlc.LemmasEvaluation.
-  Include Stlc.LemmasTyping.
-End S.
-Module U.
-  Include Utlc.SpecSyntax.
-  Include Utlc.SpecEvaluation.
-  Include Utlc.LemmasEvaluation.
-End U.
-
 Section Obs.
   Lemma obs_zero {d ts tu} : Obs d 0 ts tu.
   Proof.
@@ -263,36 +251,6 @@ Section ClosedLR.
   Proof.
     intros vr Cs Cu eCs eCu contrel.
     apply contrel; auto.
-  Qed.
-    
-  Ltac crush :=
-    repeat match goal with 
-             | [ |- exists ts₁' ts₂' tu₁' tu₂', S.pair ?ts₁ ?ts₂ = LR.S.pair ts₁' ts₂' ∧ U.pair ?tu₁ ?tu₂ = LR.U.pair tu₁' tu₂' ∧ _ ] => exists ts₁; exists ts₂; exists tu₁; exists tu₂
-           end;
-    cbn;
-    intuition.
-
-  Lemma OfTypeUtlc_implies_Value {τ tu} :
-    OfTypeUtlc τ tu →
-    U.Value tu.
-  Proof.
-    revert tu; induction τ;
-    intros tu ot; unfold OfTypeUtlc in ot; subst; crush; subst; crush.
-    - destruct ot as [tu₁ [tu₂ [equ [ot₁ ot₂]]]].
-      subst; crush.
-    - destruct H as [tu' [eq' ot']].
-      subst; crush.
-    - destruct H as [tu' [eq' ot']].
-      subst; crush.
-  Qed. 
-
-  Lemma OfType_implies_Value {τ ts tu} :
-    OfType τ ts tu →
-    S.Value ts ∧ U.Value tu.
-  Proof.
-    unfold OfType, OfTypeStlc, OfTypeUtlc.
-    intros ot; destruct_conjs;
-    eauto using OfTypeUtlc_implies_Value.
   Qed.
 
   Lemma valrel_implies_Value {d w τ ts tu} :

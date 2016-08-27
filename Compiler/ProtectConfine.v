@@ -9,18 +9,6 @@ Require Import LogRel.PseudoType.
 Require Import LogRel.LR.
 Require Import Erase.
 
-Module S.
-     Include Stlc.SpecSyntax.
-     Include Stlc.SpecEvaluation.
-     Include Stlc.SpecTyping.
-     Include Stlc.LemmasTyping.
-End S.
-
-Module U.
-  Include Utlc.SpecSyntax.
-  Include Utlc.SpecEvaluation.
-End U.
-
 Fixpoint protect (ty : S.Ty) : U.UTm :=
   abs (match ty with
          | S.tunit => var 0
@@ -43,7 +31,6 @@ Local Ltac crush :=
   repeat (try intros;
           simpl;
           intuition; 
-          repeat crushOfTypeUtlcMatch;
           repeat crushUtlcScoping;
           repeat crushUtlcSyntaxMatchH;
           repeat crushUtlcEvaluationMatchH;
