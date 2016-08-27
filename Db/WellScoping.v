@@ -226,6 +226,16 @@ Section Stuff.
     eapply (wsApExt wx); inversion 1.
   Qed.
 
+  Lemma closed_invar_sub {d1 d2 t0} (wt0: ⟨ 0 ⊢ t0 ⟩) :
+    ∀ t1 ζ,
+      t1 = t0[wkms d1] →
+      ⟨ ζ : d1 => d2 ⟩ →
+      t1[ζ] = t0[wkms d2].
+  Proof.
+    intros; subst. rewrite ap_comp.
+    eapply (wsApExt wt0); inversion 1.
+  Qed.
+
   Lemma wsSub_natural
     {f₁ f₂: Dom → Dom} {ξ₁ ξ₂: Sub X}
     (hyp: ∀ γ, WsSubNatural (f₁ γ) (f₂ γ) ξ₁ ξ₂) (ξ: Sub Ix) :
