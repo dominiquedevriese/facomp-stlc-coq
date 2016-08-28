@@ -12,6 +12,7 @@ LogRel/LemmasPseudoType.v
 LogRel/LR.v
 LogRel/PseudoType.v
 Stlc/Inst.v
+Stlc/CanForm.v
 Stlc/LemmasEvaluation.v
 Stlc/LemmasProgramContext.v
 Stlc/LemmasTyping.v

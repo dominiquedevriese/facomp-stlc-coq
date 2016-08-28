@@ -1,3 +1,4 @@
+Require Import Stlc.CanForm.
 Require Import Stlc.SpecEvaluation.
 Require Import Stlc.SpecTyping.
 Require Import Stlc.LemmasTyping.
@@ -13,31 +14,6 @@ Local Ltac crush :=
   try discriminate;
   eauto with eval.
 
-Lemma can_form_tarr {Γ t τ₁ τ₂}
-  (v: Value t) (wt: ⟪ Γ ⊢ t : tarr τ₁ τ₂ ⟫) :
-    ∃ t₂, t = abs τ₁ t₂.
-Proof. depind wt; try contradiction; eauto. Qed.
-
-(* Lemma can_form_tunit {Γ t} *)
-(*   (v: Value t) (wt: ⟪ Γ ⊢ t : tunit ⟫) : *)
-(*     t = unit. *)
-(* Proof. depind wt; try contradiction; eauto. Qed. *)
-
-Lemma can_form_tbool {Γ t}
-  (v: Value t) (wt: ⟪ Γ ⊢ t : tbool ⟫) :
-    t = true ∨ t = false.
-Proof. depind wt; try contradiction; eauto. Qed.
-
-Lemma can_form_tprod {Γ t τ₁ τ₂}
-  (v: Value t) (wt: ⟪ Γ ⊢ t : tprod τ₁ τ₂ ⟫) :
-    ∃ t₁ t₂, t = pair t₁ t₂.
-Proof. depind wt; try contradiction; eauto. Qed.
-
-Lemma can_form_tsum {Γ t τ₁ τ₂}
-  (v: Value t) (wt: ⟪ Γ ⊢ t : tsum τ₁ τ₂ ⟫) :
-    (∃ t₁, t = inl t₁) ∨ (∃ t₂, t = inr t₂).
-Proof. depind wt; try contradiction; eauto. Qed.
-
 Ltac progressH :=
   match goal with
     | [ H: ⟪ _ : _ ∈ empty ⟫ |- _         ] => inversion H
@@ -46,15 +22,8 @@ Ltac progressH :=
     | [ H: False             |- _         ] => inversion H
     | [                      |- False ∨ _ ] => right
     | [                      |- True ∨ _  ] => left; auto
-    | [ wt: ⟪ _ ⊢ ?t : tarr _ _ ⟫, vt: Value ?t |- _ ] =>
-      destruct (can_form_tarr vt wt); clear wt
-    | [ wt: ⟪ _ ⊢ ?t : tbool ⟫, vt: Value ?t |- _ ] =>
-      destruct (can_form_tbool vt wt); clear wt
-    | [ wt: ⟪ _ ⊢ ?t : tprod _ _ ⟫, vt: Value ?t |- _ ] =>
-      destruct (can_form_tprod vt wt); clear wt
-    | [ wt: ⟪ _ ⊢ ?t : tsum _ _ ⟫, vt: Value ?t |- _ ] =>
-      destruct (can_form_tsum vt wt); clear wt
-  end.
+  end;
+  stlcCanForm.
 
 Hint Constructors eval : pctx.
 Hint Constructors eval₀ : pctx.
