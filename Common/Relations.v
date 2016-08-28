@@ -35,6 +35,10 @@ Section RtProperties.
     t -->+ t' → t' -->* t'' → t -->+ t''.
   Proof. induction 2; eauto using evalPlusStepToPlus with eval. Qed.
 
+  Lemma evalStepStarToPlus {t} t' {t''} :
+    t --> t' → t' -->* t'' → t -->+ t''.
+  Proof. eauto using evalPlusStarToPlus with eval. Qed.
+
   Lemma evalStepStar {t} t' {t''} :
     t --> t' → t' -->* t'' → t -->* t''.
   Proof. eauto with eval. Qed.

@@ -2,6 +2,7 @@ Require Export Db.Lemmas.
 Require Export Utlc.SpecSyntax.
 Require Export Utlc.SpecEvaluation.
 Require Import Common.Common.
+Require Import Common.Relations.
 
 Local Ltac crush :=
   intros;
@@ -310,7 +311,9 @@ Section EvalN.
   Lemma evaln_to_evalPlus {t t' n} :
     evaln t t' (S n) → t -->+ t'.
   Proof.
-  Admitted.
+    inversion 1; subst;
+      eauto using evalStepStarToPlus, evaln_to_evalStar.
+  Qed.
 
   Lemma TerminatingN_eval {t t' n } :
     t --> t' → t' ⇓_ n ↔ t ⇓_ (S n).
