@@ -3,6 +3,7 @@ Require Export Stlc.SpecSyntax.
 Require Export Stlc.SpecEvaluation.
 Require Export Coq.Program.Tactics.
 Require Import Common.Common.
+Require Import Common.Relations.
 
 Require Import Omega.
 
@@ -55,27 +56,6 @@ Proof.
   intros ec.
   induction 1; eauto using eval_ctx with eval.
 Qed.
-
-
- (* ** Transitive and transitive-reflexive closure *)
-Lemma evalPlusToStar {t t'} : t -->+ t' -> t -->* t'.
-Proof. induction 1; eauto with eval. Qed.
-
-Lemma evalStarPlusToPlus {t t' t''} :
-  t -->* t' → t' -->+ t'' → t -->+ t''.
-Proof. induction 1; eauto with eval. Qed.
-
-Lemma evalPlusStepToPlus {t t' t''} :
-  t -->+ t' → t' --> t'' → t -->+ t''.
-Proof. induction 1; eauto with eval. Qed.
-
-Lemma evalPlusStarToPlus {t t' t''} :
-  t -->+ t' → t' -->* t'' → t -->+ t''.
-Proof. induction 2; eauto using evalPlusStepToPlus with eval. Qed.
-
-Lemma inversion_evalStar {t t'} :
-  t -->* t' → t = t' ∨ (t -->+ t').
-Proof. inversion 1; eauto using evalPlusStarToPlus with eval. Qed.
 
 Lemma inversion_termination_evalcontext C t (ec: ECtx C) :
   Terminating (pctx_app t C) → Terminating t.

@@ -1,5 +1,6 @@
 -R . FaComp
 Common/Common.v
+Common/Relations.v
 Compiler/Erase.v
 Compiler/ProtectConfine.v
 Db/Inst.v
