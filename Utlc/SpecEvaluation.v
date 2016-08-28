@@ -1,6 +1,6 @@
 Require Export Utlc.Inst.
 Require Export Coq.Relations.Relation_Operators.
-Require Export Common.Common.
+Require Export Common.Relations.
 
 (** ** Evaluation *)
 

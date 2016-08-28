@@ -48,3 +48,11 @@ Section RtProperties.
   Proof. inversion 1; eauto using evalPlusStarToPlus with eval. Qed.
 
 End RtProperties.
+
+Section StepRel.
+
+  Inductive stepRel {A} (R : A → A → Prop) (t : A) : A → nat → Prop :=
+  | stepRel_zero : stepRel R t t 0
+  | stepRel_step : forall t' t'' n, R t t' → stepRel R t' t'' n → stepRel R t t'' (S n).
+
+End StepRel.
