@@ -1,5 +1,6 @@
 -R . FaComp
 Common/Common.v
+Common/Relations.v
 Compiler/Erase.v
 Compiler/ProtectConfine.v
 Db/Inst.v
@@ -8,9 +9,11 @@ Db/Spec.v
 Db/Tactics.v
 Db/WellScoping.v
 LogRel/LemmasLR.v
+LogRel/LemmasPseudoType.v
 LogRel/LR.v
 LogRel/PseudoType.v
 Stlc/Inst.v
+Stlc/CanForm.v
 Stlc/LemmasEvaluation.v
 Stlc/LemmasProgramContext.v
 Stlc/LemmasTyping.v

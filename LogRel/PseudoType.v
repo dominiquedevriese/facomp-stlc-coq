@@ -1,6 +1,32 @@
+Require Import Stlc.LemmasEvaluation.
+Require Import Stlc.LemmasTyping.
+Require Import Stlc.SpecEvaluation.
 Require Import Stlc.SpecSyntax.
 Require Import Stlc.SpecTyping.
+Require Import Utlc.Fix.
+Require Import Utlc.LemmasEvaluation.
+Require Import Utlc.LemmasScoping.
+Require Import Utlc.SpecEvaluation.
+Require Import Utlc.SpecScoping.
+Require Import Utlc.SpecSyntax.
 Require Import UVal.UVal.
+
+Module S.
+  Include Stlc.LemmasEvaluation.
+  Include Stlc.LemmasTyping.
+  Include Stlc.SpecEvaluation.
+  Include Stlc.SpecSyntax.
+  Include Stlc.SpecTyping.
+End S.
+
+Module U.
+  Include Utlc.Fix.
+  Include Utlc.LemmasEvaluation.
+  Include Utlc.LemmasScoping.
+  Include Utlc.SpecEvaluation.
+  Include Utlc.SpecScoping.
+  Include Utlc.SpecSyntax.
+End U.
 
 Inductive Prec : Set :=
 | precise
@@ -13,6 +39,45 @@ Inductive PTy : Set :=
 | ptprod (τ₁ τ₂ : PTy)
 | ptsum (τ₁ τ₂ : PTy)
 | pEmulDV (n : nat) (p : Prec).
+
+Fixpoint repEmul (τ : PTy) : Ty :=
+  match τ with
+    | ptarr τ₁ τ₂ => tarr (repEmul τ₁) (repEmul τ₂)
+    | ptunit => tunit
+    | ptbool => tbool
+    | ptprod τ₁ τ₂ => tprod (repEmul τ₁) (repEmul τ₂)
+    | ptsum τ₁ τ₂ => tsum (repEmul τ₁) (repEmul τ₂)
+    | pEmulDV n p => UVal n
+  end.
+
+Definition OfTypeStlc (τ : PTy) (t : S.Tm) : Prop :=
+  S.Value t ∧ ⟪ empty ⊢ t : repEmul τ ⟫.
+
+Fixpoint OfTypeUtlc (τ : PTy) (t : U.UTm) : Prop :=
+  match τ with
+    | ptarr τ₁ τ₂ =>
+      match t with
+        | U.abs _ => True
+        | _       => False
+      end
+    | ptunit => t = U.unit
+    | ptbool => t = U.true ∨ t = U.false
+    | ptprod τ₁ τ₂ =>
+      match t with
+        | U.pair t₁ t₂ => OfTypeUtlc τ₁ t₁ ∧ OfTypeUtlc τ₂ t₂
+        | _            => False
+      end
+    | ptsum τ₁ τ₂ =>
+      match t with
+        | U.inl t₁ => OfTypeUtlc τ₁ t₁
+        | U.inr t₂ => OfTypeUtlc τ₂ t₂
+        | _        => False
+      end
+    | pEmulDV n p => U.Value t
+  end.
+
+Definition OfType (τ : PTy) (t₁ : S.Tm) (t₂ : U.UTm) : Prop :=
+  OfTypeStlc τ t₁ ∧ OfTypeUtlc τ t₂.
 
 Inductive PEnv : Set :=
 | pempty
@@ -29,16 +94,6 @@ Inductive GetEvarP : PEnv → Ix → PTy → Prop :=
       ⟪   i : T p∈ Γ      ⟫ →
       ⟪ S i : T p∈ Γ p▻ T' ⟫
 where "⟪  i : T p∈ Γ  ⟫" := (GetEvarP Γ i T).
-
-Fixpoint repEmul (τ : PTy) : Ty :=
-  match τ with
-    | ptarr τ₁ τ₂ => tarr (repEmul τ₁) (repEmul τ₂)
-    | ptunit => tunit
-    | ptbool => tbool
-    | ptprod τ₁ τ₂ => tprod (repEmul τ₁) (repEmul τ₂)
-    | ptsum τ₁ τ₂ => tsum (repEmul τ₁) (repEmul τ₂)
-    | pEmulDV n p => UVal n
-  end.
 
 Fixpoint repEmulCtx (Γ : PEnv) : Env :=
   match Γ with

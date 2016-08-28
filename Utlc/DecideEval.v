@@ -378,8 +378,8 @@ Lemma continueEval_sound_ctx n γ i (es : sigT (EvalStep γ)) es' t' varInfo vis
 Proof.
   intros indHyp el eq.
   destruct es as [? [?|?|?|?]]; destruct i;
-  inversion el; subst;
-  eauto using indHyp, evalStar_ctx_wrong₀, evaln with eval;
+  inversion el; subst; unfold ctxevaln in *;
+  eauto using indHyp, evalStar_ctx_wrong₀ with eval;
   try match goal with
       [ H: L.nth_error nil ?i = Some _ |- _ ] => destruct i; inversion H
   end.

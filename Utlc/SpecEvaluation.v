@@ -79,10 +79,10 @@ Inductive eval₀ : UTm → UTm → Prop :=
   | eval_case_inr {t t₁ t₂} :
       Value t →
       caseof (inr t) t₁ t₂ -->₀ t₂[beta1 t]
-  | eval_seq_next {t₁ t₂} :
-      Value t₁ →
-      seq t₁ t₂ -->₀ t₂
+  | eval_seq_next {t₂} :
+      seq unit t₂ -->₀ t₂
   | eval_seq_wrong {t₁ t₂} :
+      Value t₁ →
       t₁ ≠ unit →
       seq t₁ t₂ -->₀ wrong
 where "t₁ -->₀ t₂" := (eval₀ t₁ t₂).
@@ -110,6 +110,16 @@ Section DerivedRules.
     Value t₂ → t' = t₁[beta1 t₂] →
     app (abs t₁) t₂ --> t'.
   Proof. intros; apply eval_eval₀; subst; auto using eval₀. Qed.
+
+  Lemma eval₀_case_inl' {t t₁ t₂ t'} :
+    Value t → t' = t₁[beta1 t] →
+    caseof (inl t) t₁ t₂ -->₀ t'.
+  Proof. intros; subst; auto using eval₀. Qed.
+
+  Lemma eval₀_case_inr' {t t₁ t₂ t'} :
+    Value t → t' = t₂[beta1 t] →
+    caseof (inr t) t₁ t₂ -->₀ t'.
+  Proof. intros; subst; auto using eval₀. Qed.
 
   Lemma eval_case_inl' {t t₁ t₂ t'} :
     Value t → t' = t₁[beta1 t] →

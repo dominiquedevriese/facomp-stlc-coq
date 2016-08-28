@@ -2,6 +2,7 @@ Require Export Db.Lemmas.
 Require Export Utlc.SpecSyntax.
 Require Export Utlc.SpecEvaluation.
 Require Import Common.Common.
+Require Import Common.Relations.
 
 Local Ltac crush :=
   intros;
@@ -336,7 +337,8 @@ Section EvalN.
   Lemma evaln_to_evalPlus {t t' n} :
     evaln t t' (S n) → t -->+ t'.
   Proof.
-    induction 1; crush.
+    inversion 1; subst;
+      eauto using evalStepStarToPlus, evaln_to_evalStar.
   Qed.
 
   Lemma TerminatingN_eval {t t' n } :
@@ -369,7 +371,7 @@ Section EvalN.
   Lemma ctxevaln_ctx {t t' n} :
     ctxevaln t t' n -> forall C, ECtx C → evaln (pctx_app t C) (pctx_app t' C) n.
   Proof.
-    intros ec.
-    induction 1; eauto using eval_ctx with eval.
+    intros ec C eC; unfold evaln.
+    induction ec; eauto using ctxeval_eval_ctx with eval.
   Qed.
 End EvalN.

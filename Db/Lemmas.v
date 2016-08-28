@@ -168,6 +168,14 @@ Section Lemmas.
     Context {apX : Ap X X}.
     Context {apWkX: LemApWk X X}.
 
+    Lemma apply_up_def_O (ζ: Sub X) :
+      (ζ ↑) 0 = vr 0.
+    Proof. crush. Qed.
+
+    Lemma apply_up_def_S (ζ: Sub X) :
+      ∀ (i: Ix), (ζ ↑) (S i) = (ζ i)[wkm].
+    Proof. crush. Qed.
+
     Lemma up_def (ζ: Sub X) :
       ζ ↑ = (ζ >=> wkm) · vr 0.
     Proof. extensionality i; destruct i; crush. Qed.

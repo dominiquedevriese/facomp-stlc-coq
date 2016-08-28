@@ -1,4 +1,6 @@
 Require Export LogRel.PseudoType.
+Require Import LogRel.LemmasPseudoType.
+Require Import LogRel.PseudoType.
 Require Import Stlc.SpecSyntax.
 Require Import Stlc.SpecEvaluation.
 Require Import Stlc.SpecTyping.
@@ -6,38 +8,11 @@ Require Import Utlc.SpecSyntax.
 Require Import Utlc.SpecEvaluation.
 Require Import Utlc.Inst.
 Require Import UVal.UVal.
+
 Require Import Coq.Program.Basics.
 Require Import Coq.Logic.FunctionalExtensionality.
-
-
 Require Import Coq.Arith.Wf_nat.
 Require Import Omega.
-
-Module S.
-   Include Stlc.SpecSyntax.
-   Include Stlc.SpecEvaluation.
-End S.
-
-Module U.
-   Include Utlc.SpecSyntax.
-   Include Utlc.SpecEvaluation.
-End U.
-
-Definition OfTypeStlc (τ : PTy) (t : S.Tm) : Prop :=
-  S.Value t ∧ ⟪ empty ⊢ t : repEmul τ ⟫.
-
-Fixpoint OfTypeUtlc (τ : PTy) (t : U.UTm) : Prop :=
-  match τ with
-    | ptarr τ₁ τ₂ => exists t', t = abs t'
-    | ptunit => t = U.unit
-    | ptbool => t = U.true ∨ t = U.false
-    | ptprod τ₁ τ₂ => exists t₁ t₂, t = U.pair t₁ t₂ ∧ OfTypeUtlc τ₁ t₁ ∧ OfTypeUtlc τ₂ t₂
-    | ptsum τ₁ τ₂ => (exists t₁, t = U.inl t₁ ∧ OfTypeUtlc τ₁ t₁) ∨ (exists t₂, t = U.inr t₂ ∧ OfTypeUtlc τ₂ t₂)
-    | pEmulDV n p => Value t
-  end.
-
-Definition OfType (τ : PTy) (t₁ : S.Tm) (t₂ : U.UTm) : Prop :=
-  OfTypeStlc τ t₁ ∧ OfTypeUtlc τ t₂.
 
 Inductive Direction : Set :=
 | dir_lt
@@ -77,15 +52,28 @@ Proof.
   refine (le_n_S _ _ fw').
 Defined.
 
-Definition prod_rel (R₁ R₂ : S.Tm -> U.UTm -> Prop) : S.Tm -> U.UTm -> Prop :=
-  fun ts tu => 
-    exists ts₁ ts₂ tu₁ tu₂,
-      ts = S.pair ts₁ ts₂ ∧ tu = U.pair tu₁ tu₂ ∧
-      R₁ ts₁ tu₁ ∧ R₂ ts₂ tu₂.
-Definition sum_rel (R₁ R₂ : S.Tm -> U.UTm -> Prop) : S.Tm -> U.UTm -> Prop :=
-  fun ts tu => 
-    (exists ts' tu', ts = S.inl ts' ∧ tu = U.inl tu' ∧ R₁ ts' tu') ∨
-    (exists ts' tu', ts = S.inr ts' ∧ tu = U.inr tu' ∧ R₂ ts' tu').
+Definition prod_rel (R₁ R₂ : S.Tm → U.UTm → Prop) : S.Tm → U.UTm → Prop :=
+  fun ts tu =>
+    match ts , tu with
+      | S.pair ts₁ ts₂ , U.pair tu₁ tu₂ => R₁ ts₁ tu₁ ∧ R₂ ts₂ tu₂
+      | _              , _              => False
+    end.
+Definition sum_rel (R₁ R₂ : S.Tm → U.UTm → Prop) : S.Tm → U.UTm → Prop :=
+  fun ts tu =>
+    match ts , tu with
+      | S.inl ts' , U.inl tu' => R₁ ts' tu'
+      | S.inr ts' , U.inr tu' => R₂ ts' tu'
+      | _         , _         => False
+    end.
+Definition arr_rel (R₁ R₂ : S.Tm → U.UTm → Prop) : S.Tm → U.UTm → Prop :=
+  fun ts tu =>
+    match ts , tu with
+      | S.abs τ₁' tsb , U.abs tub =>
+        ∀ ts' tu',
+          R₁ ts' tu' →
+          R₂ (tsb [beta1 ts']) (tub [beta1 tu'])
+      | _ , _ => False
+    end.
 
 Definition valrel' 
            (d : Direction) (w : World) (ind : forall w' : World, w' < w -> PTRel) : PTRel := 
@@ -95,18 +83,20 @@ Definition valrel'
     let laterlatervr : forall w' (fw : w' < w) w'' (fw' : w'' ≤ w'), PTRel := fun w' fw w'' fw' => ind w'' (lt_le fw fw') in 
     let vrunit : S.Tm -> U.UTm -> Prop := fun ts tu => ts = S.unit ∧ tu = U.unit in
     let vrbool : S.Tm -> U.UTm -> Prop := fun ts tu => (ts = S.true ∧ tu = U.true) ∨ (ts = S.false ∧ tu = U.false) in
-    let vrprod : PTy -> PTy -> S.Tm -> U.UTm -> Prop := 
-        fun τ₁ τ₂ ts tu => 
-          prod_rel (latervr τ₁) (latervr τ₂) ts tu in
-    let vrsum : PTy -> PTy -> S.Tm -> U.UTm -> Prop := 
-        fun τ₁ τ₂ ts tu => 
-          sum_rel (latervr τ₁) (latervr τ₂) ts tu in
-    let vrarr : PTy -> PTy -> S.Tm -> U.UTm -> Prop := 
-        fun τ₁ τ₂ ts tu => 
-          exists tsb tub, ts = S.abs (repEmul τ₁) tsb ∧ tu = U.abs tub ∧
-                          forall w' (fw : w' < w) ts' tu',
-                            ind w' fw τ₁ ts' tu' ->
-                            termrel' d w' (laterlatervr w' fw) τ₂ (tsb [beta1 ts']) (tub [beta1 tu']) in
+    let vrprod : PTy -> PTy -> S.Tm -> U.UTm -> Prop :=
+        fun τ₁ τ₂ =>
+          prod_rel (latervr τ₁) (latervr τ₂) in
+    let vrsum : PTy -> PTy -> S.Tm -> U.UTm -> Prop :=
+        fun τ₁ τ₂ =>
+          sum_rel (latervr τ₁) (latervr τ₂) in
+    let vrarr : PTy → PTy → S.Tm → U.UTm → Prop :=
+        fun τ₁ τ₂ ts tu =>
+          ∀ w' (fw : w' < w),
+            arr_rel
+              (ind w' fw τ₁)
+              (termrel' d w' (laterlatervr w' fw) τ₂)
+              ts tu
+    in
     match τ with
       | ptunit => vrunit ts tu
       | ptbool => vrbool ts tu
@@ -116,18 +106,17 @@ Definition valrel'
       | pEmulDV n p => match n with
                          | 0 => ts = S.unit ∧ p = imprecise
                          | S n' => (ts = unkUVal (S n') ∧ p = imprecise) ∨
-                                   (exists ts', ts = inUnit n ts' ∧ vrunit ts' tu) ∨
-                                   (exists ts', ts = inBool n ts' ∧ vrbool ts' tu) ∨
-                                   (exists ts', ts = inProd n ts' ∧ vrprod (pEmulDV n' p) (pEmulDV n' p) ts' tu) ∨
-                                   (exists ts', ts = inSum n ts' ∧ vrsum (pEmulDV n' p) (pEmulDV n' p) ts' tu) ∨
-                                   (exists ts', ts = inArr n ts' ∧ vrarr (pEmulDV n' p) (pEmulDV n' p) ts' tu)
+                                   exists ts',
+                                     (ts = inUnit n ts' ∧ vrunit ts' tu) ∨
+                                     (ts = inBool n ts' ∧ vrbool ts' tu) ∨
+                                     (ts = inProd n ts' ∧ vrprod (pEmulDV n' p) (pEmulDV n' p) ts' tu) ∨
+                                     (ts = inSum n ts' ∧ vrsum (pEmulDV n' p) (pEmulDV n' p) ts' tu) ∨
+                                     (ts = inArr n ts' ∧ vrarr (pEmulDV n' p) (pEmulDV n' p) ts' tu)
                        end
     end.
 
 Definition valrel (d : Direction) (w : World) (τ : PTy)(t₁ : S.Tm) (t₂ : U.UTm) : Prop :=
-  Fix (well_founded_ltof World (fun w => w))
-                  (fun w => PTRel)
-                  (valrel' d) w τ t₁ t₂.
+  Fix lt_wf (fun w => PTRel) (valrel' d) w τ t₁ t₂.
 Arguments valrel d w τ t₁ t₂ : simpl never.
 
 Lemma valrel_def_funext {d} w (ind₁ ind₂ : forall w', w' < w → PTRel) :
@@ -139,14 +128,13 @@ Proof.
   repeat (
       try rewrite -> hyp;
       try reflexivity;
-      try unfold prod_rel, sum_rel;
+      try unfold prod_rel, sum_rel, arr_rel;
       repeat (match goal with
           [ |- (fun x => _) = (fun _ => _) ] => let x' := (fresh x) in extensionality x'
-        | [ |- valrel' _ _ = valrel' _ _] => unfold valrel'
         | [ |- valrel' _ _ _ = valrel' _ _ _] => unfold valrel'
         | [ |- (_ ∧ _) = (_ ∧ _)] => f_equal
         | [ |- (_ ∨ _) = (_ ∨ _)] => f_equal
-        | [ |- (match ?τ with | _  => _ end) = (match ?τ with | _ => _ end )] => induction τ
+        | [ |- (match ?τ with | _  => _ end) = (match ?τ with | _ => _ end )] => destruct τ eqn: ?
         | [ |- (exists t, _) = (exists _, _)] => f_equal
         | [ |- (forall t, _) = (forall _, _)] => let x' := (fresh t) in extensionality x'
         | [ |- termrel' _ _ _ _ _ _ = termrel' _ _ _ _ _ _] => f_equal
@@ -157,9 +145,7 @@ Qed.
 Lemma valrel_fixp {d} :
   forall w, valrel d w = valrel' d w (fun w _ => valrel d w).
 Proof.
-  unfold valrel. 
-  refine (Fix_eq (well_founded_ltof World (fun w => w)) (fun w => PTRel)
-                  (valrel' d) valrel_def_funext).
+  refine (Fix_eq lt_wf (fun w => PTRel) (valrel' d) valrel_def_funext).
 Qed.
 
 Definition contrel

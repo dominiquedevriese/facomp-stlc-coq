@@ -8,6 +8,7 @@ Require Import Utlc.SpecScoping.
 Require Import Utlc.LemmasScoping.
 Require Import Utlc.DecideEval.
 Require Import LogRel.PseudoType.
+Require Import LogRel.LemmasPseudoType.
 Require Import LogRel.LR.
 Require Import LogRel.LemmasLR.
 Require Import Omega.
@@ -15,16 +16,6 @@ Require Import Db.Lemmas.
 Require Utlc.Fix.
 
 Require Import Coq.Lists.List.
-
-Module S.
-    Include Stlc.SpecSyntax.
-    Include Stlc.LemmasEvaluation.
-    Include Stlc.LemmasTyping.
-End S.
-Module U.
-  Include Utlc.SpecSyntax.
-  Include Utlc.Fix.
-End U.
 
 Fixpoint erase (t : S.Tm) : U.UTm :=
   match t with
@@ -87,16 +78,7 @@ Proof.
   apply U.ufix_ws.
 Qed.
 
-Ltac crushOfTypeUtlcMatch :=
-  match goal with
-    | [ |- exists tsb tub, S.abs _ ?tsb' = S.abs _ tsb ∧ U.abs ?tub' = U.abs tub ∧ _] => (exists tsb'; exists tub'; split; intuition)
-    | [ |- exists t', U.abs ?t = U.abs t' ] => (exists t; intuition)
-    | [ |- exists ts₁' ts₂' tu₁' tu₂', S.pair ?ts₁ ?ts₂ = S.pair ts₁' ts₂' ∧ U.pair ?tu₁ ?tu₂ = LR.U.pair tu₁' tu₂' ∧ _ ] => (exists ts₁; exists ts₂; exists tu₁; exists tu₂)
-    | [ |- (exists ts₁' tu₁', S.inl ?ts₁ = LR.S.inl ts₁' ∧ U.inl ?tu₁ = LR.U.inl tu₁' ∧ _) ∨ _ ] => (left; exists ts₁; exists tu₁)
-    | [ |- _ ∨ (exists ts₁' tu₁', S.inr ?ts₁ = LR.S.inr ts₁' ∧ U.inr ?tu₁ = LR.U.inr tu₁' ∧ _) ] => (right; exists ts₁; exists tu₁)
-  end.
-
-Ltac crushLRMatch := 
+Ltac crushLRMatch :=
   match goal with
       [ |- _ ∧ _ ] => split
     | [ |- context[ lev ]] => unfold lev
@@ -115,100 +97,20 @@ Ltac crushLRMatch :=
     | [ |- valrel _ _ _ _ _] => rewrite -> valrel_fixp in |- *; unfold valrel' in |- *
     | [ |- S.ECtx (S.pctx_cat _ _) ] => apply S.ectx_cat
     | [ |- U.ECtx (U.pctx_cat _ _) ] => apply U.ectx_cat
-    | [ H: exists tub', ?tu = U.abs tub' |- U.Value ?tu ] => (destruct H as [? ?]; subst)
-    | [ |- sum_rel _ _ _ _ ] => unfold sum_rel
-    | [ |- prod_rel _ _ _ _ ] => unfold prod_rel
   end.
-                  
-Section OfType.
-  Local Ltac crush :=
-    repeat (try intros;
-            simpl;
-            intuition; 
-            repeat crushOfTypeUtlcMatch;
-            repeat crushUtlcScoping;
-            repeat match goal with
-                       [ |- _ ∧ _ ] => split
-                     | [ |- OfType _ _ _ ] => unfold OfType, OfTypeStlc
-                     | [ H: OfType _ _ _  |- _ ] => destruct H as [[? ?] ?]
-                     | [ H: OfTypeStlc _ _  |- _ ] => destruct H as [? ?]
-                   end;
-            crushTyping
-           ).
-
-  Lemma OfType_unit : OfType ptunit S.unit U.unit.
-  Proof.
-    crush.
-  Qed.
-
-  Lemma OfType_true : OfType ptbool S.true U.true.
-  Proof.
-    crush.
-  Qed.
-  
-  Lemma OfType_false : OfType ptbool S.false U.false.
-  Proof.
-    crush.
-  Qed.
-
-  Lemma OfType_inl {τ₁ τ₂ ts tu} :
-    OfType τ₁ ts tu →
-    OfType (ptsum τ₁ τ₂) (S.inl ts) (U.inl tu).
-  Proof.
-    unfold OfType.
-    destruct 1 as [ots otu].
-    split; unfold OfTypeStlc in *; crush.
-  Qed.
-  
-  Lemma OfType_inr {τ₁ τ₂ ts tu} :
-    OfType τ₂ ts tu →
-    OfType (ptsum τ₁ τ₂) (S.inr ts) (U.inr tu).
-  Proof.
-    unfold OfType.
-    destruct 1 as [ots otu].
-    split; unfold OfTypeStlc in *; crush.
-  Qed.
-  
-  
-  Lemma OfType_pair {τ₁ τ₂ ts₁ ts₂ tu₁ tu₂} :
-    OfType τ₁ ts₁ tu₁ →
-    OfType τ₂ ts₂ tu₂ →
-    OfType (ptprod τ₁ τ₂) (S.pair ts₁ ts₂) (U.pair tu₁ tu₂).
-  Proof.
-    crush.
-  Qed.
-
-  Lemma OfType_lambda {τ₁ τ₂ tsb tub} :
-    ⟪ empty ⊢ S.abs (repEmul τ₁) tsb : repEmul τ₁ ⇒ repEmul τ₂ ⟫ →
-    OfType (ptarr τ₁ τ₂) (S.abs (repEmul τ₁) tsb) (U.abs tub).
-  Proof.
-    crush. 
-  Qed.
-End OfType.
-
-Ltac crushOfType :=
-  repeat (intuition;
-          repeat match goal with
-              [ |- OfType ptunit S.unit U.unit ] => apply OfType_unit
-            | [ |- OfType ptbool S.true U.true ] => apply OfType_true
-            | [ |- OfType ptbool S.false U.false ] => apply OfType_false
-            | [ |- OfType (ptsum _ _) (S.inl _) (U.inl _)] => apply OfType_inl
-            | [ |- OfType (ptsum _ _) (S.inr _) (U.inr _)] => apply OfType_inr
-            | [ |- OfType (ptprod _ _) (S.pair _ _) (U.pair _ _) ] => apply OfType_pair
-            | [ |- OfType (ptarr _ _) (S.abs _ _) (U.abs _) ] => apply OfType_lambda
-          end; 
-          repeat crushOfTypeUtlcMatch;
-          intuition).
 
 Local Ltac crush :=
   cbn in * |- ;
-  repeat (cbn;
-          repeat crushLRMatch;
-          crushOfType;
-          crushTyping;
-          repeat crushUtlcSyntaxMatchH;
-          repeat crushUtlcScopingMatchH;
-          intuition).
+  repeat
+    (cbn;
+     repeat crushLRMatch;
+     crushOfType;
+     crushTyping;
+     repeat crushUtlcSyntaxMatchH;
+     repeat crushUtlcScopingMatchH;
+     subst;
+     trivial
+    ); try omega; eauto.
 
 Section CompatibilityLemmas.
   Lemma valrel_lambda {d τ' τ ts tu w} :
@@ -216,14 +118,14 @@ Section CompatibilityLemmas.
     (forall w' vs vu, w' < w → valrel d w' τ' vs vu → termrel d w' τ (ts [beta1 vs]) (tu [beta1 vu])) →
     valrel d w (ptarr τ' τ) (S.abs (repEmul τ') ts) (U.abs tu).
   Proof.
+    unfold OfType, OfTypeStlc, termrel;
     intros ot hyp.
-    rewrite -> valrel_fixp; unfold valrel'; simpl; crush.
-    now apply hyp; assumption.
+    rewrite -> valrel_fixp; unfold valrel'; crush.
   Qed.
 
   Lemma compat_lambda {Γ τ' ts d n tu τ} :
     ⟪ Γ p▻ τ' ⊩ ts ⟦ d , n ⟧ tu : τ ⟫ →
-    ⟪ Γ ⊩ (S.abs (repEmul τ') ts) ⟦ d , n ⟧ abs tu : ptarr τ' τ ⟫.
+    ⟪ Γ ⊩ (S.abs (repEmul τ') ts) ⟦ d , n ⟧ U.abs tu : ptarr τ' τ ⟫.
   Proof.
     crush.
     - eauto using wtSub_up, envrel_implies_WtSub.
@@ -300,7 +202,9 @@ Section CompatibilityLemmas.
     (* destruct assumptions *)
     intros vr₁ vr₂.
     rewrite -> valrel_fixp in vr₁.
-    destruct vr₁ as [ot [tsb [tub [eq₁ [eq₂ bodyrel]]]]]; subst.
+    destruct vr₁ as [ot hyp]; subst; cbn in hyp.
+    apply OfType_inversion_ptarr in ot.
+    destruct ot as (tsb & tub & eqs & equ & _); subst.
     destruct (valrel_implies_Value vr₂) as [vvs₂ vvu₂].
 
     (* beta-reduce *) 
@@ -316,7 +220,7 @@ Section CompatibilityLemmas.
     refine (termrel_antired w es1 eu1 _ _ _); unfold lev in *; simpl; try omega.
 
     (* use assumption for function body *)
-    eapply bodyrel; try omega; eauto using valrel_mono.
+    eapply hyp; try omega; eauto using valrel_mono.
   Qed.    
     
 
@@ -443,8 +347,13 @@ Section CompatibilityLemmas.
 
     (* then evaluate the projection *)
     rewrite -> valrel_fixp in H.
-    destruct H as [ot [vs₁ [vs₂ [vu₁ [vu₂ [? [? [vr₁ vr₂]]]]]]]]; subst.
-    destruct (OfType_implies_Value ot) as [[vvs₁ vvs₂] [vvu₁ vvu₂]].
+    destruct H as [ot hyp]; subst; cbn in hyp.
+    apply OfType_inversion_ptprod in ot.
+    destruct ot as (vs₁ & vu₁ & vs₂ & vu₂ & ? & ? & ot₁ & ot₂); subst.
+    destruct (OfType_implies_Value ot₁) as [vvs₁ vvs₂].
+    destruct (OfType_implies_Value ot₂) as [vvu₁ vvu₂].
+    destruct hyp as [vr₁ vr₂].
+
     assert (S.eval (S.proj₂ (S.pair vs₁ vs₂)) vs₂) by 
         (apply (S.eval_ctx₀ S.phole); try refine (S.eval_proj₂ _ _); simpl; intuition).
     assert (esn : S.evaln (S.proj₂ (S.pair vs₁ vs₂)) vs₂ 1) by eauto using S.evaln.
@@ -480,8 +389,13 @@ Section CompatibilityLemmas.
 
     (* then evaluate the projection *)
     rewrite -> valrel_fixp in H.
-    destruct H as [ot [vs₁ [vs₂ [vu₁ [vu₂ [? [? [vr₁ vr₂]]]]]]]]; subst.
-    destruct (OfType_implies_Value ot) as [[vvs₁ vvs₂] [vvu₁ vvu₂]].
+    destruct H as [ot hyp]; subst; cbn in hyp.
+    apply OfType_inversion_ptprod in ot.
+    destruct ot as (vs₁ & vu₁ & vs₂ & vu₂ & ? & ? & ot₁ & ot₂); subst.
+    destruct (OfType_implies_Value ot₁) as [vvs₁ vvs₂].
+    destruct (OfType_implies_Value ot₂) as [vvu₁ vvu₂].
+    destruct hyp as [vr₁ vr₂].
+
     assert (S.eval (S.proj₁ (S.pair vs₁ vs₂)) vs₁) by 
         (apply (S.eval_ctx₀ S.phole); try refine (S.eval_proj₁ _ _); simpl; intuition).
     assert (esn : S.evaln (S.proj₁ (S.pair vs₁ vs₂)) vs₁ 1) by eauto using S.evaln.
@@ -550,8 +464,8 @@ Section CompatibilityLemmas.
 
   Lemma termrel_caseof {d w τ τ₁ τ₂ ts₁ ts₂ ts₃ tu₁ tu₂ tu₃} :
     termrel d w (ptsum τ₁ τ₂) ts₁ tu₁ →
-    (forall w' vs₁ vu₁, w' ≤ w → valrel d w' τ₁ vs₁ vu₁ → termrel d w' τ (ts₂ [beta1 vs₁]) (tu₂ [ beta1 vu₁])) →
-    (forall w' vs₂ vu₂, w' ≤ w → valrel d w' τ₂ vs₂ vu₂ → termrel d w' τ (ts₃ [beta1 vs₂]) (tu₃ [ beta1 vu₂])) →
+    (forall w' vs₁ vu₁, w' < w → valrel d w' τ₁ vs₁ vu₁ → termrel d w' τ (ts₂ [beta1 vs₁]) (tu₂ [ beta1 vu₁])) →
+    (forall w' vs₂ vu₂, w' < w → valrel d w' τ₂ vs₂ vu₂ → termrel d w' τ (ts₃ [beta1 vs₂]) (tu₃ [ beta1 vu₂])) →
     termrel d w τ (S.caseof ts₁ ts₂ ts₃) (U.caseof tu₁ tu₂ tu₃).
   Proof.
     intros tr₁ tr₂ tr₃.
@@ -563,8 +477,11 @@ Section CompatibilityLemmas.
 
     (* then evaluate the caseof *)
     rewrite -> valrel_fixp in H.
-    destruct H as [ot [[vs' [vu' [? [? vr]]]]|[vs' [vu' [? [? vr]]]]]]; subst;
-    destruct (OfType_implies_Value ot) as [vvs vvu]; clear ot.
+    destruct H as [ot hyp]; subst; cbn in hyp.
+    apply OfType_inversion_ptsum in ot.
+    destruct ot as (vs' & vu' & [(? & ? & ot)|[(? & ?)|[(? & ?)|(? & ? & ot)]]]);
+      subst; cbn in *; try contradiction;
+      destruct (OfType_implies_Value ot) as [vvs vvu]; clear ot.
     - assert (S.eval (S.caseof (S.inl vs') ts₂ ts₃) (ts₂ [beta1 vs'])) by
           (apply (S.eval_ctx₀ S.phole); try refine (S.eval_case_inl _); simpl; intuition).
       assert (esn : S.evaln (S.caseof (S.inl vs') ts₂ ts₃) (ts₂ [beta1 vs']) 1) by eauto using S.evaln.
@@ -602,22 +519,21 @@ Section CompatibilityLemmas.
   Proof.
     (* well-founded induction on w *)
     revert w vs vu.
-    refine (well_founded_ind 
-              (well_founded_ltof World (fun w => w)) 
-              (fun w => 
-                 forall vs vu, 
+    refine (well_founded_ind lt_wf
+              (fun w =>
+                 ∀ vs vu,
                    valrel d w (ptarr (ptarr τ₁ τ₂) (ptarr τ₁ τ₂)) vs vu →
                    termrel d w (ptarr τ₁ τ₂) (S.fixt (repEmul τ₁) (repEmul τ₂) vs) (U.ufix₁ vu)) _).
     intros w indHyp vs vu.
     
     (* destruct valrel assumption *)
     intros vr.
-    destruct (valrel_implies_Value vr) as [vvs vvu].
     rewrite -> valrel_fixp in vr.
-    destruct vr as [ot [tsb [tub [? [? bodyrel]]]]]; subst.
+    destruct vr as [ot hyp]; cbn in hyp. crush.
+    destruct ot as (tsb & tub & ? & ? & ?); crush.
 
     (* evaluate *)
-    assert (es : S.fixt (repEmul τ₁) (repEmul τ₂) (S.abs (repEmul (ptarr τ₁ τ₂)) tsb) --> tsb [beta1 (S.abs (repEmul τ₁) (S.app (S.fixt (repEmul τ₁) (repEmul τ₂) (S.abs (repEmul τ₁ ⇒ repEmul τ₂) tsb[wkm↑])) (S.var 0)))]) by (refine (eval_ctx₀ S.phole _ _); crush).
+    assert (es : S.fixt (repEmul τ₁) (repEmul τ₂) (S.abs (repEmul (ptarr τ₁ τ₂)) tsb) --> tsb [beta1 (S.abs (repEmul τ₁) (S.app (S.fixt (repEmul τ₁) (repEmul τ₂) (S.abs (repEmul τ₁ ⇒ repEmul τ₂) tsb[wkm↑])) (S.var 0)))]) by (refine (eval_ctx₀ S.phole _ _); constructor).
     assert (es1 : S.evaln (S.fixt (repEmul τ₁) (repEmul τ₂) (S.abs (repEmul (ptarr τ₁ τ₂)) tsb)) (tsb [beta1 (S.abs (repEmul τ₁) (S.app (S.fixt (repEmul τ₁) (repEmul τ₂) (S.abs (repEmul τ₁ ⇒ repEmul τ₂) tsb[wkm↑])) (S.var 0)))])  1) by 
         (eauto using S.evaln; omega).
     assert (es2 : U.ctxevaln (U.ufix₁ (U.abs tub)) (tub[beta1 (U.abs (U.app (U.ufix₁ (U.abs tub[wkm↑])) (U.var 0)))]) 2) by
@@ -627,32 +543,26 @@ Section CompatibilityLemmas.
     clear es es1 es2.
 
     (* use the assumption about tsb and tub we extracted from vr *)
-    refine (bodyrel w _ _ _ _); try omega.
+    refine (hyp w _ _ _ _); try omega.
 
     (* prove valrel for values being substituted into tsb and tub *)
-    (* don't use crush cause it messes up the OfType proof for some reason *)
     rewrite -> valrel_fixp.
-    unfold valrel'; simpl.
-    split; [|crush].
+    unfold valrel', arr_rel; split; intros.
     - (* first the OfType relation *)
-      unfold OfType, OfTypeStlc, OfTypeUtlc. repeat split; [|crush].
-      econstructor; fold repEmul; econstructor; [econstructor|repeat econstructor].
-      change (S.abs _ tsb[wkm↑]) with ((S.abs (repEmul τ₁ ⇒ repEmul τ₂) tsb)[wkm]).
-      destruct ot as [[vtsb ttsb] ttub].
       crush.
     - (* prove the termrel of the body of the abstractions *)
-      refine (termrel_app _ _); [|crush].
+      refine (termrel_app (τ₁ := τ₁) (τ₂ := τ₂)_ _); crush.
       change (abs (tub[wkm↑][wkm↑][(beta1 tu')↑↑])) with ((abs tub)[wkm][wkm][(beta1 tu')↑]).
       change (S.abs _ _) with  ((S.abs (repEmul τ₁ ⇒ repEmul τ₂) tsb)[wkm][(beta1 ts')]).
-      rewrite <- apply_wkm_comm. 
+      rewrite <- apply_wkm_comm.
       rewrite -> ?apply_wkm_beta1_cancel.
       change (U.app _ _) with (U.ufix₁ (abs tub)).
       (* the goal is now what we set out to prove initially but in a strictly
            later world, so we can use the induction hypothesis from our
            well-founded induction on worlds *)
-      refine (indHyp _ _ _ _ _); try unfold ltof; crush.
+      refine (indHyp _ _ _ _ _); crush.
       (* why do I need to call crush again? *)
-      crush.
+      eapply hyp; crush.
   Qed.
   
   Lemma termrel_fix {d w τ₁ τ₂ ts tu} :
