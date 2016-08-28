@@ -78,10 +78,10 @@ Inductive eval₀ : UTm → UTm → Prop :=
   | eval_case_inr {t t₁ t₂} :
       Value t →
       caseof (inr t) t₁ t₂ -->₀ t₂[beta1 t]
-  | eval_seq_next {t₁ t₂} :
-      Value t₁ →
-      seq t₁ t₂ -->₀ t₂
+  | eval_seq_next {t₂} :
+      seq unit t₂ -->₀ t₂
   | eval_seq_wrong {t₁ t₂} :
+      Value t₁ →
       t₁ ≠ unit →
       seq t₁ t₂ -->₀ wrong
 where "t₁ -->₀ t₂" := (eval₀ t₁ t₂).

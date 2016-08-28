@@ -70,6 +70,7 @@ Proof.
     refine (U.eval_ctx₀ _ _ _); crush.
     replace (abs (app (protect τ2) (app vu (app (confine τ1) (var 0))))) with ((abs (app (protect τ2) (app (var 1) (app (confine τ1) (var 0))))) [beta1 vu]).
     + refine (U.eval_beta _); crush.
+      destruct vu; crush.
     + simpl. repeat f_equal.
       (* Problem: no assumption currently that OfType values are closed *) 
       (* Problem: closedness implies that substitution has no effect: lemma missing? *) 

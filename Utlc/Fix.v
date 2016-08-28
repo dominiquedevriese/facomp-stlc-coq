@@ -30,12 +30,13 @@ Definition ufix : UTm :=
 Lemma ufix_eval₁' f C (eC : ECtx C) (valf: Value f) : pctx_app (app ufix f) C --> pctx_app (ufix₁ f) C.
 Proof.
   unfold ufix, ufix₁.
-  apply eval_beta'; crush.
+  apply (eval_ctx₀ C); auto.
+  apply eval_beta''; crush.
 Qed.
 
 Lemma ufix_eval₁ f (valf: Value f) : app ufix f --> ufix₁ f.
 Proof.
-  apply (ufix_eval₁' phole); crush.
+  apply (ufix_eval₁' _ phole); crush.
 Qed.
 
 Lemma ufix₁_evaln' {t} C (eC : ECtx C) : evaln (pctx_app (ufix₁ (abs t)) C) (pctx_app (t[beta1 (abs (app (ufix₁ (abs t[wkm↑])) (var 0)))]) C) 2.

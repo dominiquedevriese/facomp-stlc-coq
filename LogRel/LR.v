@@ -65,11 +65,10 @@ Definition sum_rel (R₁ R₂ : S.Tm → U.UTm → Prop) : S.Tm → U.UTm → Pr
       | S.inr ts' , U.inr tu' => R₂ ts' tu'
       | _         , _         => False
     end.
-Definition arr_rel (R₁ R₂ : S.Tm → U.UTm → Prop) : PTy → S.Tm → U.UTm → Prop :=
-  fun τ₁ ts tu =>
+Definition arr_rel (R₁ R₂ : S.Tm → U.UTm → Prop) : S.Tm → U.UTm → Prop :=
+  fun ts tu =>
     match ts , tu with
       | S.abs τ₁' tsb , U.abs tub =>
-        τ₁' = repEmul τ₁ ∧
         ∀ ts' tu',
           R₁ ts' tu' →
           R₂ (tsb [beta1 ts']) (tub [beta1 tu'])
@@ -96,7 +95,7 @@ Definition valrel'
             arr_rel
               (ind w' fw τ₁)
               (termrel' d w' (laterlatervr w' fw) τ₂)
-              τ₁ ts tu
+              ts tu
     in
     match τ with
       | ptunit => vrunit ts tu
@@ -107,11 +106,12 @@ Definition valrel'
       | pEmulDV n p => match n with
                          | 0 => ts = S.unit ∧ p = imprecise
                          | S n' => (ts = unkUVal (S n') ∧ p = imprecise) ∨
-                                   (exists ts', ts = inUnit n ts' ∧ vrunit ts' tu) ∨
-                                   (exists ts', ts = inBool n ts' ∧ vrbool ts' tu) ∨
-                                   (exists ts', ts = inProd n ts' ∧ vrprod (pEmulDV n' p) (pEmulDV n' p) ts' tu) ∨
-                                   (exists ts', ts = inSum n ts' ∧ vrsum (pEmulDV n' p) (pEmulDV n' p) ts' tu) ∨
-                                   (exists ts', ts = inArr n ts' ∧ vrarr (pEmulDV n' p) (pEmulDV n' p) ts' tu)
+                                   exists ts',
+                                     (ts = inUnit n ts' ∧ vrunit ts' tu) ∨
+                                     (ts = inBool n ts' ∧ vrbool ts' tu) ∨
+                                     (ts = inProd n ts' ∧ vrprod (pEmulDV n' p) (pEmulDV n' p) ts' tu) ∨
+                                     (ts = inSum n ts' ∧ vrsum (pEmulDV n' p) (pEmulDV n' p) ts' tu) ∨
+                                     (ts = inArr n ts' ∧ vrarr (pEmulDV n' p) (pEmulDV n' p) ts' tu)
                        end
     end.
 

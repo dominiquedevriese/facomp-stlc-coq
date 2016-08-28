@@ -48,9 +48,10 @@ Section OfType.
     OfType (ptprod τ₁ τ₂) (S.pair ts₁ ts₂) (U.pair tu₁ tu₂).
   Proof. crush. Qed.
 
-  Lemma OfType_lambda {τ₁ τ₂ tsb tub} :
+  Lemma OfType_lambda {τ₁ τ₂ τ₁' tsb tub} :
+    τ₁' = repEmul τ₁ →
     ⟪ empty ⊢ S.abs (repEmul τ₁) tsb : repEmul τ₁ ⇒ repEmul τ₂ ⟫ →
-    OfType (ptarr τ₁ τ₂) (S.abs (repEmul τ₁) tsb) (U.abs tub).
+    OfType (ptarr τ₁ τ₂) (S.abs τ₁' tsb) (U.abs tub).
   Proof. crush. Qed.
 
   Lemma OfType_inversion_ptunit {ts tu} :

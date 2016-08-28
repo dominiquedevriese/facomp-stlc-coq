@@ -1,4 +1,5 @@
 Require Import Common.Common.
+Require Import LogRel.LemmasPseudoType.
 Require Import LogRel.PseudoType.
 Require Import LogRel.LR.
 Require Import Stlc.SpecSyntax.
@@ -147,48 +148,37 @@ Section ClosedLR.
     unfold OfTypeStlc in ots.
     subst. exact ots.
   Qed.
-    
+
+  Local Ltac crush :=
+    crushOfType;
+    repeat
+      (cbn in *;
+       subst*;
+       destruct_conjs;
+       intuition).
+
   Lemma valrel_mono {d W τ ts tu W'} :
     W' ≤ W → valrel d W τ ts tu → valrel d W' τ ts tu.
-  Proof.
+  Proof with subst; intuition.
     rewrite -> ?valrel_fixp.
-    unfold valrel'.
     revert ts tu W' W.
-    induction τ;
-    intros ts tu W' W fw vr;
-    destruct_conjs; split; subst; auto.
+    induction τ;  unfold valrel';
+    intros ts tu W' W fw [ot hyp];
+    split; eauto; cbn in *.
     - (* ptarr _ _ *)
-      exists H0. exists H1.
-      repeat split; auto.
-      intros W'' fw' ts' tu' vr'.
-      apply H4; try omega; try assumption.
+      intros W'' fw'.
+      apply hyp; try omega.
     - (* ptprod *)
-      unfold prod_rel in *.
-      destruct H0 as [ts₁ [ts₂ [tu₁ [tu₂ [eqs [equ [vr1 vr2]]]]]]].
-      exists ts₁. exists ts₂. exists tu₁. exists tu₂.
-      split; intuition.
-    - (* ptsum *) 
-      unfold sum_rel in *.
-      destruct H0 as [[ts₁ [tu₁ [eqs [equ vr1]]]] | [ts₂ [tu₂ [eqs [equ vr2]]]]];
-      [left; exists ts₁; exists tu₁; intuition | right; exists ts₂; exists tu₂; intuition].
+      crush.
+    - (* ptsum *)
+      crush.
     - (* pEmulDV n p *)
-      induction n; try assumption.
-      destruct H0 as [[eqs eqp]
-                     |[[ts' [eqs [eqs' equ']]]
-                      |[[ts' [eqs eqbools]]
-                       |[[ts' [eqs [ts₁ [ts₂ [tu₁ [tu₂ [eqs' [equ' hyp]]]]]]]]
-                        |[[ts' [eqs sumrel]]
-                         |[ts' [eqs [tsb [tub [eqs' [equ' hyp]]]]]]]]]]];
-        [ left
-        | right;left; exists S.unit
-        | right;right;left ; exists ts'
-        | right; right; right; left; exists ts'; unfold prod_rel; repeat split; intuition;
-          exists ts₁; exists ts₂; exists tu₁; exists tu₂
-        | right; right; right; right; left; exists ts'; split; try assumption; unfold sum_rel in *;
-          destruct sumrel as [[ts₁ [tu₁ [eqs' [equ' vr]]]]|[ts₂ [tu₂ [eqs' [equ' vr]]]]];
-          [left;exists ts₁; exists tu₁ | right; exists ts₂; exists tu₂]
-        | right; right; right; right; right; exists ts'; intuition; exists tsb; exists tub];
-        subst; intuition.
+      destruct n; [ assumption | idtac ].
+      destruct hyp as [[eqs eqp]|[ts' hyp]];
+        [ now left
+        | right; exists ts'].
+      repeat (destruct hyp as [[eqs hyp]|hyp]; [ left | right]);
+        crush; destruct ts'; crush; destruct tu; crush.
   Qed.
         
   Lemma envrel_mono {d W Γ γs γu W'} :
