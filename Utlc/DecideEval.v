@@ -27,29 +27,6 @@ Inductive VarInfo : Set :=
 | vi_Value
 | vi_Unknown.
 
-Inductive ctxeval : UTm → UTm → Set :=
-| mkCtxEval : forall Cu t₀ t₀', ECtx Cu → t₀ -->₀ t₀' → ctxeval (pctx_app t₀ Cu) (pctx_app t₀' Cu).
-
-Lemma ctxeval_eval {t t'} : ctxeval t t' → t --> t'.
-Proof.
-  destruct 1.
-  refine (eval_ctx₀ _ _ _); crush.
-Qed.
-
-Lemma ctxeval_eval_ctx {t t'} : ctxeval t t' → forall Cu, ECtx Cu → pctx_app t Cu --> pctx_app t' Cu.
-Proof.
-  destruct 1; crush; rewrite <- ?pctx_cat_app; eauto using ectx_cat with eval.
-Qed.
-
-
-Lemma extend_ctxeval tu tu' Cu : ECtx Cu → ctxeval tu tu' → ctxeval (pctx_app tu Cu) (pctx_app tu' Cu).
-Proof.
-  intros eCu ce. 
-  induction ce.
-  rewrite <- ?pctx_cat_app.
-  eauto using ctxeval, ectx_cat.
-Qed.
-
 Inductive EvalStep γ : UTm → Set :=
 | IntermediateStep : forall t t', ctxeval (t [γ]) (t' [γ]) → EvalStep γ t
 | CrashStep : forall Cu, ECtx (Cu [ γ ]) → EvalStep γ (pctx_app wrong Cu)
@@ -395,15 +372,15 @@ Proof.
 Qed.
 
 Lemma continueEval_sound_ctx n γ i (es : sigT (EvalStep γ)) es' t' varInfo vis ind :
-  (forall t'' es' j, L.nth_error (ind t'') j = Some es' → evalStep_source es' = t' → forall Cu, ECtx Cu → evaln (pctx_app t''[γ] Cu) (pctx_app t'[γ] Cu) j) →
+  (forall t'' es' j, L.nth_error (ind t'') j = Some es' → evalStep_source es' = t' → ctxevaln t''[γ]  t'[γ] j) →
   L.nth_error (continueEval n γ (projT2 es) ind varInfo vis) i = Some es' → evalStep_source es' = t' → 
-  forall Cu, ECtx Cu → evaln (pctx_app ((evalStep_source es)[γ]) Cu) (pctx_app (t'[γ]) Cu) i.
+  ctxevaln ((evalStep_source es)[γ]) (t'[γ]) i.
 Proof.
   intros indHyp el eq.
   destruct es as [? [?|?|?|?]]; destruct i;
   inversion el; subst;
-  eauto using ctxeval_eval_ctx, indHyp, evalStar_ctx_wrong₀, evaln with eval;
-  match goal with
+  eauto using indHyp, evalStar_ctx_wrong₀, evaln with eval;
+  try match goal with
       [ H: L.nth_error nil ?i = Some _ |- _ ] => destruct i; inversion H
   end.
 Qed.
@@ -411,7 +388,7 @@ Qed.
 Lemma boundedEval_sound_ctx n t t' varInfo γ vis es j : 
   L.nth_error (boundedEval n t varInfo γ vis) j = Some es → 
   evalStep_source es = t' → 
-  forall Cu, ECtx Cu → evaln (pctx_app (t [γ]) Cu) (pctx_app (t'[γ]) Cu) j.
+  ctxevaln (t [γ]) (t'[γ]) j.
 Proof.
   revert t es j.
   induction n; intros t es j el eq; simpl in *;
@@ -475,7 +452,7 @@ Defined.
 
 Definition EvalMaxResult n t varInfo γ vis :=
   IfSome (findLast (boundedEval n t varInfo γ vis))
-         (fun es => forall Cu, ECtx Cu → evaln (pctx_app t[γ] Cu) (pctx_app (evalStep_source es)[γ] Cu) (lastIndex (boundedEval n t varInfo γ vis))).
+         (fun es => ctxevaln t[γ] (evalStep_source es)[γ] (lastIndex (boundedEval n t varInfo γ vis))).
 
 Definition evalMax n t varInfo γ vis : EvalMaxResult n t varInfo γ vis.
 Proof.

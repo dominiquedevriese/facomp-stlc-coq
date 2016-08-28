@@ -300,6 +300,32 @@ Section Termination'.
   Qed.
 End Termination'.
 
+Section CtxEval.
+  Lemma ctxeval_eval {t t'} : ctxeval t t' → t --> t'.
+  Proof.
+    destruct 1.
+    refine (eval_ctx₀ _ _ _); assumption.
+  Qed.
+
+  Lemma ctxevaln_evaln {t t' n} : ctxevaln t t' n → evaln t t' n.
+  Proof.
+  Admitted.
+
+  (* The following implication is actually an equivalence, but we don't need that. *)
+  Lemma ctxeval_eval_ctx {t t'} : ctxeval t t' → forall Cu, ECtx Cu → pctx_app t Cu --> pctx_app t' Cu.
+  Proof.
+    destruct 1; intros; rewrite <- ?pctx_cat_app; eauto using ectx_cat with eval.
+  Qed.
+
+  Lemma extend_ctxeval tu tu' Cu : ECtx Cu → ctxeval tu tu' → ctxeval (pctx_app tu Cu) (pctx_app tu' Cu).
+  Proof.
+    intros eCu ce. 
+    induction ce.
+    rewrite <- ?pctx_cat_app.
+    eauto using ctxeval, ectx_cat.
+  Qed.
+End CtxEval.
+
 Section EvalN.
   Lemma evaln_to_evalStar {t t' n} :
     evaln t t' n → t -->* t'.
@@ -338,5 +364,12 @@ Section EvalN.
     destruct (S_le le); destruct_conjs; subst.
     apply TerminatingIS.
     auto.
+  Qed.
+
+  Lemma ctxevaln_ctx {t t' n} :
+    ctxevaln t t' n -> forall C, ECtx C → evaln (pctx_app t C) (pctx_app t' C) n.
+  Proof.
+    intros ec.
+    induction 1; eauto using eval_ctx with eval.
   Qed.
 End EvalN.

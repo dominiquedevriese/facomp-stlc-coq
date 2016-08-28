@@ -27,33 +27,33 @@ Definition ufix₁ (f : UTm) : UTm :=
 Definition ufix : UTm :=
   abs (ufix₁ (var 0)).
 
-Lemma ufix_eval₁' f C (eC : ECtx C) (valf: Value f) : pctx_app (app ufix f) C --> pctx_app (ufix₁ f) C.
+Lemma ufix_eval₁' f (valf: Value f) : ctxeval (app ufix f) (ufix₁ f).
 Proof.
   unfold ufix, ufix₁.
-  apply eval_beta'; crush.
+  apply (mkCtxEval phole); crush; eapply eval_beta''; crush.
 Qed.
 
 Lemma ufix_eval₁ f (valf: Value f) : app ufix f --> ufix₁ f.
 Proof.
-  apply (ufix_eval₁' phole); crush.
+  eauto using ufix_eval₁', ctxeval_eval.
 Qed.
 
-Lemma ufix₁_evaln' {t} C (eC : ECtx C) : evaln (pctx_app (ufix₁ (abs t)) C) (pctx_app (t[beta1 (abs (app (ufix₁ (abs t[wkm↑])) (var 0)))]) C) 2.
+Lemma ufix₁_evaln' {t}  : ctxevaln (ufix₁ (abs t)) (t[beta1 (abs (app (ufix₁ (abs t[wkm↑])) (var 0)))]) 2.
 Proof.
-  cut (pctx_app (ufix₁ (abs t)) C --> pctx_app (app (abs t) (abs (app (ufix₁ (abs t[wkm↑])) (var 0)))) C /\
-       pctx_app (app (abs t) (abs (app (ufix₁ (abs t[wkm↑])) (var 0)))) C --> pctx_app (t[beta1 (abs (app (ufix₁ (abs t[wkm↑])) (var 0)))]) C).
-  - destruct 1. eauto using evaln with eval.
+  cut (ctxeval (ufix₁ (abs t)) (app (abs t) (abs (app (ufix₁ (abs t[wkm↑])) (var 0)))) /\
+       ctxeval (app (abs t) (abs (app (ufix₁ (abs t[wkm↑])) (var 0)))) (t[beta1 (abs (app (ufix₁ (abs t[wkm↑])) (var 0)))])).
+  - destruct 1. unfold ctxevaln; eauto with eval.
   - split.
     + unfold ufix₁.
-      apply (eval_ctx₀ C); crush.
+      apply (mkCtxEval phole); crush.
       apply eval_beta''; crush.
-    + apply (eval_ctx₀ C); crush.
+    + apply (mkCtxEval phole); crush.
       apply eval_beta; crush.
 Qed.
 
 Lemma ufix₁_evaln {t} : evaln (ufix₁ (abs t)) (t[beta1 (abs (app (ufix₁ (abs t[wkm↑])) (var 0)))]) 2.
 Proof.
-  apply (ufix₁_evaln' phole I).
+  eauto using ufix₁_evaln', ctxevaln_evaln.
 Qed.
 
 Lemma ufix₁_eval {t} : ufix₁ (abs t) -->+ t[beta1 (abs (app (ufix₁ (abs t[wkm↑])) (var 0)))].

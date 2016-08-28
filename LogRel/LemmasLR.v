@@ -226,7 +226,7 @@ Section ClosedLR.
 
   Lemma termrel_antired {ts ts' tu tu' W d τ i j} W' :
     S.evaln ts ts' i →
-    (forall C, ECtx C → U.evaln (U.pctx_app tu C) (U.pctx_app tu' C) j) →
+    U.ctxevaln tu tu' j →
     W' ≤ W →
     lev W' + min i j ≥ lev W →
     termrel d W' τ ts' tu' →
@@ -235,28 +235,27 @@ Section ClosedLR.
     intros es eu fw sge tr.
     unfold termrel, termrel'.
     intros Cs Cu ecs ecu cr.
-    refine (obs_antired _ _ fw sge _); eauto using S.evaln_ctx.
+    refine (obs_antired _ _ fw sge _); eauto using S.evaln_ctx, U.ctxevaln_ctx.
     apply tr; auto. 
     refine (contrel_mono fw cr).
   Qed.
 
-  Lemma termrel_antired' {ts ts' tu tu' W d τ i j} W' :
-    S.evaln ts ts' i →
-    U.evaln tu tu' j → 
-    tu' ≠ wrong →
-    W' ≤ W →
-    lev W' + min i j ≥ lev W →
-    termrel d W' τ ts' tu' →
-    termrel d W τ ts tu.
-  Proof.
-    intros es eu nw.
-    apply termrel_antired; try assumption.
-    intros C eC.
-    induction eu; eauto using evaln; econstructor; eauto using evaln.
-    apply eval_ctx; try assumption.
-    intro eq; depind eu; intuition.
-    destruct H0 as [C'|C' eq']; destruct C'; simpl in eq; destruct H0; inversion eq; intuition.
-  Qed.
+  (* Lemma termrel_antired' {ts ts' tu tu' W d τ i j} W' : *)
+  (*   S.evaln ts ts' i → *)
+  (*   U.evaln tu tu' j →  *)
+  (*   tu' ≠ wrong → *)
+  (*   W' ≤ W → *)
+  (*   lev W' + min i j ≥ lev W → *)
+  (*   termrel d W' τ ts' tu' → *)
+  (*   termrel d W τ ts tu. *)
+  (* Proof. *)
+  (*   intros es eu nw. *)
+  (*   apply termrel_antired; try assumption. *)
+  (*   induction eu; eauto using evaln; econstructor; eauto using evaln. *)
+  (*   apply eval_ctx; try assumption. *)
+  (*   intro eq; depind eu; intuition. *)
+  (*   destruct H0 as [C'|C' eq']; destruct C'; simpl in eq; destruct H0; inversion eq; intuition. *)
+  (* Qed. *)
 
   Lemma valrel_in_termrel {ts tu W d τ} :
     valrel d W τ ts tu → termrel d W τ ts tu.
@@ -266,24 +265,25 @@ Section ClosedLR.
   Qed.
     
   Ltac crush :=
-    repeat match goal with 
-             | [ |- exists ts₁' ts₂' tu₁' tu₂', S.pair ?ts₁ ?ts₂ = LR.S.pair ts₁' ts₂' ∧ U.pair ?tu₁ ?tu₂ = LR.U.pair tu₁' tu₂' ∧ _ ] => exists ts₁; exists ts₂; exists tu₁; exists tu₂
-           end;
-    cbn;
-    intuition.
+    repeat (repeat match goal with 
+                     | [ |- exists ts₁' ts₂' tu₁' tu₂', S.pair ?ts₁ ?ts₂ = LR.S.pair ts₁' ts₂' ∧ U.pair ?tu₁ ?tu₂ = LR.U.pair tu₁' tu₂' ∧ _ ] => (exists ts₁; exists ts₂; exists tu₁; exists tu₂)
+                   end;
+            cbn;
+            repeat crushUtlcSyntaxMatchH;
+            repeat crushUtlcEvaluationMatchH;
+            simpl;
+            subst;
+            intuition).
 
   Lemma OfTypeUtlc_implies_Value {τ tu} :
     OfTypeUtlc τ tu →
     U.Value tu.
   Proof.
     revert tu; induction τ;
-    intros tu ot; unfold OfTypeUtlc in ot; subst; crush; subst; crush.
-    - destruct ot as [tu₁ [tu₂ [equ [ot₁ ot₂]]]].
-      subst; crush.
-    - destruct H as [tu' [eq' ot']].
-      subst; crush.
-    - destruct H as [tu' [eq' ot']].
-      subst; crush.
+    intros tu ot; unfold OfTypeUtlc in ot; crush.
+    - destruct ot as [? [? [? [? ?]]]]; crush.
+    - destruct H as [? [? ?]]; crush.
+    - destruct H as [? [? ?]]; crush.
   Qed. 
 
   Lemma OfType_implies_Value {τ ts tu} :

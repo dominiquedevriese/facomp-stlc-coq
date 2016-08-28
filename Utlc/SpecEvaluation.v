@@ -1,5 +1,6 @@
 Require Export Utlc.Inst.
 Require Export Coq.Relations.Relation_Operators.
+Require Export Common.Common.
 
 (** ** Evaluation *)
 
@@ -151,12 +152,21 @@ Inductive TerminatingN (t: UTm) : nat -> Prop :=
   | TerminatingIS : forall n, (∀ t', t --> t' → TerminatingN t' n) → TerminatingN t (S n).
 Notation "t ⇓_ n" := (TerminatingN t n) (at level 8, format "t ⇓_ n").
 
-Inductive evaln (t : UTm) : UTm → nat → Prop :=
-| evaln_zero : evaln t t 0
-| evaln_step : forall t' t'' n, t --> t' → evaln t' t'' n → evaln t t'' (S n).
+Hint Constructors stepRel : eval.
 
+Definition evaln := stepRel eval.
 
 Ltac crushUtlcEvaluationMatchH :=
   match goal with
     | [ H: exists tub', ?tu = abs tub' |- Value ?tu ] => (destruct H as [? ?]; subst)
   end.
+
+
+
+Inductive ctxeval : UTm → UTm → Prop :=
+| mkCtxEval : forall Cu t₀ t₀', ECtx Cu → t₀ -->₀ t₀' → ctxeval (pctx_app t₀ Cu) (pctx_app t₀' Cu).
+
+Definition ctxevalStar := clos_refl_trans_1n UTm ctxeval.
+Definition ctxevaln := stepRel ctxeval.
+
+Arguments ctxevaln /.
