@@ -110,6 +110,16 @@ Section DerivedRules.
     app (abs t₁) t₂ --> t'.
   Proof. intros; apply eval_eval₀; subst; auto using eval₀. Qed.
 
+  Lemma eval₀_case_inl' {t t₁ t₂ t'} :
+    Value t → t' = t₁[beta1 t] →
+    caseof (inl t) t₁ t₂ -->₀ t'.
+  Proof. intros; subst; auto using eval₀. Qed.
+
+  Lemma eval₀_case_inr' {t t₁ t₂ t'} :
+    Value t → t' = t₂[beta1 t] →
+    caseof (inr t) t₁ t₂ -->₀ t'.
+  Proof. intros; subst; auto using eval₀. Qed.
+
   Lemma eval_case_inl' {t t₁ t₂ t'} :
     Value t → t' = t₁[beta1 t] →
     caseof (inl t) t₁ t₂ --> t'.
