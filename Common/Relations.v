@@ -64,4 +64,12 @@ Section StepRel.
   | stepRel_zero : stepRel R t t 0
   | stepRel_step : forall t' t'' n, R t t' → stepRel R t' t'' n → stepRel R t t'' (S n).
 
+  Lemma evalTrans_to_stepRel {A R t t'} :
+    clos_refl_trans_1n A R t t' → exists n, stepRel R t t' n.
+  Proof.
+    induction 1 as [|t t' t'' e es [n IHn]]; eauto using stepRel_zero, stepRel_step.
+  Qed.
+
 End StepRel.
+
+Hint Constructors stepRel : eval.

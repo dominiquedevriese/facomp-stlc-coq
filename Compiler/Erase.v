@@ -211,7 +211,7 @@ Section CompatibilityLemmas.
     assert (es : S.eval (S.app (S.abs (repEmul τ₁) tsb) vs₂) (tsb [beta1 vs₂])) by
         (refine (S.eval_ctx₀ S.phole _ I); refine (S.eval_beta vvs₂)).
     assert (es1 : S.evaln (S.app (S.abs (repEmul τ₁) tsb) vs₂) (tsb [beta1 vs₂]) 1) by 
-        (eauto using S.evaln; omega).
+        (unfold S.evaln; eauto with eval; omega).
     assert (eu : U.ctxeval (U.app (U.abs tub) vu₂) (tub [beta1 vu₂])) by
         (refine (U.mkCtxEval phole _ _ I _); refine (U.eval_beta vvu₂)).
     assert (eu1 : U.ctxevaln (U.app (U.abs tub) vu₂) (tub [beta1 vu₂]) 1) by 
@@ -309,7 +309,7 @@ Section CompatibilityLemmas.
     destruct H as [ot [eq₁ eq₂]]; subst.
     assert (S.eval (S.seq S.unit ts₂) ts₂) by 
         (apply (S.eval_ctx₀ S.phole); try refine (S.eval_seq_next _); simpl; intuition).
-    assert (esn : S.evaln (S.seq S.unit ts₂) ts₂ 1) by eauto using S.evaln.
+    assert (esn : S.evaln (S.seq S.unit ts₂) ts₂ 1) by (unfold S.evaln; eauto with eval).
 
     (* assert (forall Cu, U.ECtx Cu → U.eval (U.pctx_app (U.seq U.unit tu₂) Cu) (U.pctx_app tu₂ Cu)) by  *)
     (*     (intros Cu eCu; apply (U.eval_ctx₀ Cu); try refine (U.eval_seq_next _); simpl; intuition). *)
@@ -356,7 +356,7 @@ Section CompatibilityLemmas.
 
     assert (S.eval (S.proj₂ (S.pair vs₁ vs₂)) vs₂) by 
         (apply (S.eval_ctx₀ S.phole); try refine (S.eval_proj₂ _ _); simpl; intuition).
-    assert (esn : S.evaln (S.proj₂ (S.pair vs₁ vs₂)) vs₂ 1) by eauto using S.evaln.
+    assert (esn : S.evaln (S.proj₂ (S.pair vs₁ vs₂)) vs₂ 1) by (unfold S.evaln; eauto with eval).
     assert (U.ctxeval (U.proj₂ (U.pair vu₁ vu₂)) vu₂) by 
         (apply (U.mkCtxEval phole); try refine (U.eval_proj₂ _); simpl; intuition).
     assert (eun : U.ctxevaln (U.proj₂ (U.pair vu₁ vu₂)) vu₂ 1)
@@ -398,7 +398,7 @@ Section CompatibilityLemmas.
 
     assert (S.eval (S.proj₁ (S.pair vs₁ vs₂)) vs₁) by 
         (apply (S.eval_ctx₀ S.phole); try refine (S.eval_proj₁ _ _); simpl; intuition).
-    assert (esn : S.evaln (S.proj₁ (S.pair vs₁ vs₂)) vs₁ 1) by eauto using S.evaln.
+    assert (esn : S.evaln (S.proj₁ (S.pair vs₁ vs₂)) vs₁ 1) by (unfold S.evaln; eauto with eval).
     assert (U.ctxeval (U.proj₁ (U.pair vu₁ vu₂)) vu₁) by 
         (apply (U.mkCtxEval phole); try refine (U.eval_proj₁ _); simpl; intuition).
     assert (eun : U.ctxevaln (U.proj₁ (U.pair vu₁ vu₂)) vu₁ 1) by (unfold U.ctxevaln; eauto with eval).
@@ -436,14 +436,14 @@ Section CompatibilityLemmas.
     destruct H as [ot [[? ?]|[? ?]]]; subst; clear ot.
     - assert (S.eval (S.ite S.true ts₂ ts₃) ts₂) by 
           (apply (S.eval_ctx₀ S.phole); try refine (S.eval_ite_true _ _); simpl; intuition).
-      assert (esn : S.evaln (S.ite S.true ts₂ ts₃) ts₂ 1) by eauto using S.evaln.
+      assert (esn : S.evaln (S.ite S.true ts₂ ts₃) ts₂ 1) by (unfold S.evaln; eauto with eval).
       assert (U.ctxeval (U.ite U.true tu₂ tu₃) tu₂) by 
           (apply (U.mkCtxEval phole); try refine (U.eval_ite_true _ _); simpl; intuition).
       assert (eun : U.ctxevaln (U.ite U.true tu₂ tu₃) tu₂ 1) by (unfold U.ctxevaln; eauto with eval).
       refine (termrel_antired w' esn eun _ _ _); crush.
     - assert (S.eval (S.ite S.false ts₂ ts₃) ts₃) by 
           (apply (S.eval_ctx₀ S.phole); try refine (S.eval_ite_false _ _); simpl; intuition).
-      assert (esn : S.evaln (S.ite S.false ts₂ ts₃) ts₃ 1) by eauto using S.evaln.
+      assert (esn : S.evaln (S.ite S.false ts₂ ts₃) ts₃ 1) by (unfold S.evaln; eauto with eval).
       assert (U.ctxeval (U.ite U.false tu₂ tu₃) tu₃) by 
           (apply (U.mkCtxEval phole); try refine (U.eval_ite_false _ _); simpl; intuition).
       assert (eun : U.ctxevaln (U.ite U.false tu₂ tu₃) tu₃ 1) by (unfold U.ctxevaln; eauto with eval).
@@ -484,7 +484,7 @@ Section CompatibilityLemmas.
       destruct (OfType_implies_Value ot) as [vvs vvu]; clear ot.
     - assert (S.eval (S.caseof (S.inl vs') ts₂ ts₃) (ts₂ [beta1 vs'])) by
           (apply (S.eval_ctx₀ S.phole); try refine (S.eval_case_inl _); simpl; intuition).
-      assert (esn : S.evaln (S.caseof (S.inl vs') ts₂ ts₃) (ts₂ [beta1 vs']) 1) by eauto using S.evaln.
+      assert (esn : S.evaln (S.caseof (S.inl vs') ts₂ ts₃) (ts₂ [beta1 vs']) 1) by (unfold S.evaln; eauto with eval).
       assert (U.ctxeval (U.caseof (U.inl vu') tu₂ tu₃) (tu₂ [beta1 vu'])) by 
           (apply (U.mkCtxEval phole); try refine (U.eval_case_inl _ _); simpl; intuition).
       assert (eun : U.ctxevaln (U.caseof (U.inl vu') tu₂ tu₃) (tu₂ [beta1 vu']) 1) by (unfold U.ctxevaln; eauto with eval).
@@ -492,7 +492,7 @@ Section CompatibilityLemmas.
       refine (termrel_antired w' esn eun _ _ _); crush.
     - assert (S.eval (S.caseof (S.inr vs') ts₂ ts₃) (ts₃ [beta1 vs'])) by
           (apply (S.eval_ctx₀ S.phole); try refine (S.eval_case_inr _); simpl; intuition).
-      assert (esn : S.evaln (S.caseof (S.inr vs') ts₂ ts₃) (ts₃ [beta1 vs']) 1) by eauto using S.evaln.
+      assert (esn : S.evaln (S.caseof (S.inr vs') ts₂ ts₃) (ts₃ [beta1 vs']) 1) by (unfold S.evaln; eauto with eval).
       assert (U.ctxeval (U.caseof (U.inr vu') tu₂ tu₃) (tu₃ [beta1 vu'])) by 
           (apply (U.mkCtxEval phole); try refine (U.eval_case_inr _ _); simpl; intuition).
       assert (eun : U.ctxevaln (U.caseof (U.inr vu') tu₂ tu₃) (tu₃ [beta1 vu']) 1) by (unfold U.ctxevaln; eauto with eval).
@@ -535,7 +535,7 @@ Section CompatibilityLemmas.
     (* evaluate *)
     assert (es : S.fixt (repEmul τ₁) (repEmul τ₂) (S.abs (repEmul (ptarr τ₁ τ₂)) tsb) --> tsb [beta1 (S.abs (repEmul τ₁) (S.app (S.fixt (repEmul τ₁) (repEmul τ₂) (S.abs (repEmul τ₁ ⇒ repEmul τ₂) tsb[wkm↑])) (S.var 0)))]) by (refine (eval_ctx₀ S.phole _ _); constructor).
     assert (es1 : S.evaln (S.fixt (repEmul τ₁) (repEmul τ₂) (S.abs (repEmul (ptarr τ₁ τ₂)) tsb)) (tsb [beta1 (S.abs (repEmul τ₁) (S.app (S.fixt (repEmul τ₁) (repEmul τ₂) (S.abs (repEmul τ₁ ⇒ repEmul τ₂) tsb[wkm↑])) (S.var 0)))])  1) by 
-        (eauto using S.evaln; omega).
+        (unfold S.evaln; eauto with eval; omega).
     assert (es2 : U.ctxevaln (U.ufix₁ (U.abs tub)) (tub[beta1 (U.abs (U.app (U.ufix₁ (U.abs tub[wkm↑])) (U.var 0)))]) 2) by
         (eauto using U.ufix₁_evaln' with eval).
     destruct w; try apply termrel_zero.
@@ -579,7 +579,7 @@ Section CompatibilityLemmas.
 
     (* next, reduce (U.app U.ufix tu) by one step in the conclusion *)
     assert (es1 : S.evaln (S.fixt (repEmul τ₁) (repEmul τ₂) vs) (S.fixt (repEmul τ₁) (repEmul τ₂) vs) 0) by
-        (eauto using S.evaln).
+        (unfold S.evaln; eauto with eval).
     assert (es2 : U.ctxevaln (U.app U.ufix vu) (U.ufix₁ vu) 1) 
       by (unfold U.ctxevaln; eauto using U.ufix_eval₁' with eval).
     refine (termrel_antired w' es1 es2 _ _ _); unfold lev in *; simpl; try omega. 

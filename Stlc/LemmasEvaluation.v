@@ -54,7 +54,7 @@ Lemma evaln_ctx {C t t' n} :
   ECtx C → evaln t t' n -> evaln (pctx_app t C) (pctx_app t' C) n.
 Proof.
   intros ec.
-  induction 1; eauto using eval_ctx with eval.
+  induction 1; unfold evaln; eauto using eval_ctx with eval.
 Qed.
 
 Lemma inversion_termination_evalcontext C t (ec: ECtx C) :
@@ -212,7 +212,7 @@ Proof.
   induction 1; constructor; auto; intro term;
   change (S n + n') with (S (n + n')) in *;
   [rewrite <- (TerminatingN_eval H) | rewrite <- (TerminatingN_eval H) in term];
-  apply IHevaln; auto.
+  apply IHstepRel; auto.
 Qed.
 
 (* This should not hold. *)

@@ -218,6 +218,18 @@ Section ClosedLR.
     refine (contrel_mono fw cr).
   Qed.
 
+  Lemma termrel_antired_star {ts ts' tu tu' W d τ} :
+    clos_refl_trans_1n S.Tm S.eval ts ts' →
+    U.ctxevalStar tu tu' →
+    termrel d W τ ts' tu' →
+    termrel d W τ ts tu.
+  Proof.
+    intros es eu tr.
+    destruct (evalTrans_to_stepRel es) as [i esi].
+    destruct (evalTrans_to_stepRel eu) as [j euj].
+    refine (termrel_antired W esi euj _ _ tr); omega.
+  Qed.
+
   (* Lemma termrel_antired' {ts ts' tu tu' W d τ i j} W' : *)
   (*   S.evaln ts ts' i → *)
   (*   U.evaln tu tu' j →  *)

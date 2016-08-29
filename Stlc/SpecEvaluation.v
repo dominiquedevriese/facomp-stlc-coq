@@ -1,5 +1,6 @@
 Require Export Stlc.Inst.
 Require Export Coq.Relations.Relation_Operators.
+Require Export Common.Relations.
 
 (** ** Evaluation *)
 
@@ -151,9 +152,4 @@ Proof.
   induction C; cbn in *; intuition.
 Qed.
 
-Inductive evaln (t : Tm) : Tm → nat → Prop :=
-| evaln_zero : evaln t t 0
-| evaln_step : forall t' t'' n, t --> t' → evaln t' t'' n → evaln t t'' (S n).
-
-
-Hint Constructors evaln : eval.
+Definition evaln := stepRel eval.

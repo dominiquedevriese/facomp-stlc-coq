@@ -5,6 +5,7 @@ Require Import Utlc.LemmasEvaluation.
 Require Import Utlc.LemmasScoping.
 Require Import Utlc.Inst.
 Require Import Utlc.DecideEval.
+Require Import Stlc.CanForm.
 Require Import LogRel.PseudoType.
 Require Import LogRel.LemmasPseudoType.
 Require Import LogRel.LR.
@@ -78,7 +79,7 @@ Proof.
   destruct τ; crush.
 Qed.
 
-Lemma confine_Value {τ} : Value (protect τ).
+Lemma confine_Value {τ} : Value (confine τ).
 Proof.
   (* quite annoying that I have to crush here... *)
   destruct τ; crush.
@@ -96,11 +97,166 @@ Proof.
     try apply (weakenings 2); auto.
 Qed.
 
-Lemma protect_confine_terminate {τ vu} :
+Lemma protect_prod {τ1 τ2 vu1 vu2 vu1' vu2'} :
+      Value vu1 → Value vu2 → Value vu1' → Value vu2' →
+      ctxevalStar (app (protect τ1) vu1) vu1' →
+      ctxevalStar (app (protect τ2) vu2) vu2' →
+      ctxevalStar (app (protect (S.tprod τ1 τ2)) (pair vu1 vu2)) (pair vu1' vu2').
+Proof.
+  intros vv1 vv2 vv1' vv2' hyp1 hyp2.
+  (* it would be nice if we could automate the following argument some more... Perhaps improve DecideEval with vi_Terminates ... somehow? *)
+  apply (evalStepStar
+           (pair (app (protect τ1) (proj₁ (U.pair vu1 vu2)))
+                 (app (protect τ2) (proj₂ (U.pair vu1 vu2))))).
+  apply U.eval₀_ctxeval; crush.
+  eapply U.eval_beta''; crush;
+  eauto using OfTypeUtlc_implies_Value.
+  apply (evalStepStar
+           (pair (app (protect τ1) vu1)
+                 (app (protect τ2) (proj₂ (U.pair vu1 vu2))))).
+  
+  assert (e₀ : U.proj₁ (U.pair vu1 vu2) -->₀ vu1) by (eauto with eval).
+  eapply (ctxeval_from_eval₀ e₀); repeat inferContext; crush; eauto using protect_Value.
+
+  pose (hyp1' := extend_ctxevalStar (ppair₁ phole (app (protect τ2) (proj₂ (U.pair vu1 vu2)))) I hyp1).
+  simpl in hyp1'.
+  apply (evalStepTrans (pair vu1' (app (protect τ2) (proj₂ (U.pair vu1 vu2)))) hyp1').
+
+  apply (evalStepStar (pair vu1' (app (protect τ2) vu2))).
+  assert (e₀ : U.proj₂ (U.pair vu1 vu2) -->₀ vu2) by (eauto with eval).
+  eapply (ctxeval_from_eval₀ e₀); repeat inferContext; crush; eauto using protect_Value.
+  
+  assert (eC' : ECtx (ppair₂ vu1' phole)) by crush.
+  pose (hyp2' := extend_ctxevalStar (ppair₂ vu1' phole) eC' hyp2).
+  simpl in hyp2'.
+  exact hyp2'.
+
+Qed.
+    
+Lemma protect_inl {τ1 τ2 vu vu' } :
+      Value vu → Value vu' →
+      ctxevalStar (app (protect τ1) vu) vu' →
+      ctxevalStar (app (protect (S.tsum τ1 τ2)) (inl vu)) (inl vu').
+Proof.
+  intros vv vv' hyp.
+  apply (evalStepStar (caseof
+                   (U.inl vu)
+                   (inl (app (protect τ1)[wkm] (var 0)))
+                   (inr (app (protect τ2)[wkm] (var 0))))).
+
+  apply U.eval₀_ctxeval; crush.
+  apply U.eval_beta''; crush.
+
+  apply (evalStepStar (inl (app (protect τ1) vu))).
+  apply U.eval₀_ctxeval; crush.
+  eapply eval₀_case_inl'; crush.
+
+  refine (extend_ctxevalStar (pinl phole) I hyp).
+Qed.
+
+Lemma protect_inr {τ1 τ2 vu vu' } :
+      Value vu → Value vu' →
+      ctxevalStar (app (protect τ2) vu) vu' →
+      ctxevalStar (app (protect (S.tsum τ1 τ2)) (inr vu)) (inr vu').
+Proof.
+  intros vv vv' hyp.
+  apply (evalStepStar (caseof
+                   (U.inr vu)
+                   (inl (app (protect τ1)[wkm] (var 0)))
+                   (inr (app (protect τ2)[wkm] (var 0))))).
+
+  apply U.eval₀_ctxeval; crush.
+  apply U.eval_beta''; crush.
+
+  apply (evalStepStar (inr (app (protect τ2) vu))).
+  apply U.eval₀_ctxeval; crush.
+  eapply eval₀_case_inr'; crush.
+
+  refine (extend_ctxevalStar (pinr phole) I hyp).
+Qed.
+
+Lemma confine_prod {τ1 τ2 vu1 vu2 vu1' vu2'} :
+      Value vu1 → Value vu2 → Value vu1' → Value vu2' →
+      ctxevalStar (app (confine τ1) vu1) vu1' →
+      ctxevalStar (app (confine τ2) vu2) vu2' →
+      ctxevalStar (app (confine (S.tprod τ1 τ2)) (pair vu1 vu2)) (pair vu1' vu2').
+Proof.
+  intros vv1 vv2 vv1' vv2' hyp1 hyp2.
+  (* it would be nice if we could automate the following argument some more... Perhaps improve DecideEval with vi_Terminates ... somehow? *)
+  apply (evalStepStar
+           (pair (app (confine τ1) (proj₁ (U.pair vu1 vu2)))
+                 (app (confine τ2) (proj₂ (U.pair vu1 vu2))))).
+  apply U.eval₀_ctxeval; crush.
+  eapply U.eval_beta''; crush;
+  eauto using OfTypeUtlc_implies_Value.
+  apply (evalStepStar
+           (pair (app (confine τ1) vu1)
+                 (app (confine τ2) (proj₂ (U.pair vu1 vu2))))).
+  
+  assert (e₀ : U.proj₁ (U.pair vu1 vu2) -->₀ vu1) by (eauto with eval).
+  eapply (ctxeval_from_eval₀ e₀); repeat inferContext; crush; eauto using confine_Value.
+
+  pose (hyp1' := extend_ctxevalStar (ppair₁ phole (app (confine τ2) (proj₂ (U.pair vu1 vu2)))) I hyp1).
+  simpl in hyp1'.
+  apply (evalStepTrans (pair vu1' (app (confine τ2) (proj₂ (U.pair vu1 vu2)))) hyp1').
+
+  apply (evalStepStar (pair vu1' (app (confine τ2) vu2))).
+  assert (e₀ : U.proj₂ (U.pair vu1 vu2) -->₀ vu2) by (eauto with eval).
+  eapply (ctxeval_from_eval₀ e₀); repeat inferContext; crush; eauto using confine_Value.
+  
+  assert (eC' : ECtx (ppair₂ vu1' phole)) by crush.
+  pose (hyp2' := extend_ctxevalStar (ppair₂ vu1' phole) eC' hyp2).
+  simpl in hyp2'.
+  exact hyp2'.
+
+Qed.
+    
+Lemma confine_inl {τ1 τ2 vu vu' } :
+      Value vu → Value vu' →
+      ctxevalStar (app (confine τ1) vu) vu' →
+      ctxevalStar (app (confine (S.tsum τ1 τ2)) (inl vu)) (inl vu').
+Proof.
+  intros vv vv' hyp.
+  apply (evalStepStar (caseof
+                   (U.inl vu)
+                   (inl (app (confine τ1)[wkm] (var 0)))
+                   (inr (app (confine τ2)[wkm] (var 0))))).
+
+  apply U.eval₀_ctxeval; crush.
+  apply U.eval_beta''; crush.
+
+  apply (evalStepStar (inl (app (confine τ1) vu))).
+  apply U.eval₀_ctxeval; crush.
+  eapply eval₀_case_inl'; crush.
+
+  refine (extend_ctxevalStar (pinl phole) I hyp).
+Qed.
+
+Lemma confine_inr {τ1 τ2 vu vu' } :
+      Value vu → Value vu' →
+      ctxevalStar (app (confine τ2) vu) vu' →
+      ctxevalStar (app (confine (S.tsum τ1 τ2)) (inr vu)) (inr vu').
+Proof.
+  intros vv vv' hyp.
+  apply (evalStepStar (caseof
+                   (U.inr vu)
+                   (inl (app (confine τ1)[wkm] (var 0)))
+                   (inr (app (confine τ2)[wkm] (var 0))))).
+
+  apply U.eval₀_ctxeval; crush.
+  apply U.eval_beta''; crush.
+
+  apply (evalStepStar (inr (app (confine τ2) vu))).
+  apply U.eval₀_ctxeval; crush.
+  eapply eval₀_case_inr'; crush.
+
+  refine (extend_ctxevalStar (pinr phole) I hyp).
+Qed.
+
+Lemma protect_terminates {τ vu} :
   OfTypeUtlc (embed τ) vu →
   ∃ vu', U.Value vu' ∧
-    ∀ Cu, U.ECtx Cu →
-          (U.pctx_app (U.app (protect τ) vu) Cu) -->* (U.pctx_app vu' Cu).
+          U.ctxevalStar (U.app (protect τ) vu) vu'.
 Proof.
   revert vu.
   induction τ; crush.
@@ -112,12 +268,12 @@ Proof.
                (abs vu[wkm↑])
                (app (confine τ1)[wkm] (var 0))))).
     crush.
-    apply evalToStar, U.eval_ctx₀; crush.
+    apply evalToStar, U.eval₀_ctxeval; crush.
     apply U.eval_beta''; crush.
   - (* ptunit *)
     exists U.unit.
     crush.
-    apply evalToStar, U.eval_ctx₀; crush.
+    apply evalToStar, U.eval₀_ctxeval; crush.
     apply U.eval_beta''; crush.
   - (* ptbool *)
     (* why isn't this included in crush through crushOfType *)
@@ -127,7 +283,7 @@ Proof.
     assert (Value vu) by (destruct H; subst; crush).
     exists vu.
     crush.
-    apply evalToStar, U.eval_ctx₀; crush.
+    apply evalToStar, U.eval₀_ctxeval; crush.
     apply U.eval_beta''; crush.
   - (* ptprod *)
 
@@ -137,85 +293,113 @@ Proof.
     specialize (IHτ1 vu1 H); destruct IHτ1 as (vu1' & vvu1' & hyp1).
     specialize (IHτ2 vu2 H0); destruct IHτ2 as (vu2' & vvu2' & hyp2).
     exists (U.pair vu1' vu2'); crush.
-    (* it would be nice if we could automate the following argument some more... Perhaps improve DecideEval with vi_Terminates ... somehow? *)
-    apply (evalStepStar
-             (U.pctx_app
-               (pair (app (protect τ1) (proj₁ (U.pair vu1 vu2)))
-                  (app (protect τ2) (proj₂ (U.pair vu1 vu2))))
-               Cu)).
-    apply U.eval_ctx₀; crush.
-    eapply U.eval_beta''; crush;
-      eauto using OfTypeUtlc_implies_Value.
-    apply (evalStepStar
-             (U.pctx_app
-                (pair (app (protect τ1) vu1)
-                   (app (protect τ2) (proj₂ (U.pair vu1 vu2)))) Cu)).
 
-    assert (e₀ : U.proj₁ (U.pair vu1 vu2) -->₀ vu1) by (eauto with eval).
-    eapply (eval_from_eval₀ e₀); repeat inferContext; crush; eauto using protect_Value.
+    refine (protect_prod _ _ _ _ _ _); crush.
 
-    specialize (hyp1 (pctx_cat (ppair₁ phole (app (protect τ2) (proj₂ (U.pair vu1 vu2)))) Cu)).
-    rewrite -> ?pctx_cat_app in hyp1; simpl in hyp1.
-    apply (evalStepTrans (pctx_app
-                           (pctx_app vu1'
-                                     (ppair₁ phole (app (protect τ2) (proj₂ (U.pair vu1 vu2)))))
-                           Cu)).
-    apply hyp1; crush.
-
-    apply (evalStepStar
-             (U.pctx_app (pair vu1' (app (protect τ2) vu2)) Cu)).
-    assert (e₀ : U.proj₂ (U.pair vu1 vu2) -->₀ vu2) by (eauto with eval).
-    eapply (eval_from_eval₀ e₀); repeat inferContext; crush; eauto using protect_Value.
-
-    specialize (hyp2 (pctx_cat (ppair₂ vu1' phole) Cu)).
-    rewrite -> ?pctx_cat_app in hyp2; simpl in hyp2.
-    apply (evalStepTrans (pctx_app (pair vu1' vu2') Cu)).
-    apply hyp2; crush.
-    
-    eauto with eval.
-    
   - (* ptsum, inl *)
     specialize (IHτ1 vu H); destruct IHτ1 as (vu' & vvu' & hyp).
     assert (vvu: Value vu) by eauto using OfTypeUtlc_implies_Value.
     exists (inl vu'); crush.
-    apply (evalStepStar
-             (U.pctx_app
-                (caseof
-                   (U.inl vu)
-                   (inl (app (protect τ1)[wkm] (var 0)))
-                   (inr (app (protect τ2)[wkm] (var 0))))
-                Cu)).
+    refine (protect_inl _ _ _); crush.
 
-    apply U.eval_ctx₀; crush.
-    apply U.eval_beta''; crush.
-
-    apply (evalStepStar (U.pctx_app (inl (app (protect τ1) vu)) Cu)).
-    apply U.eval_ctx₀; crush.
-    eapply eval₀_case_inl'; crush.
-
-    specialize (hyp (pctx_cat (pinl phole) Cu)).
-    rewrite -> ?pctx_cat_app in hyp; simpl in hyp.
-    apply hyp; crush.
   - (* ptsum, inr *)
     specialize (IHτ2 vu H); destruct IHτ2 as (vu' & vvu' & hyp).
     assert (vvu: Value vu) by eauto using OfTypeUtlc_implies_Value.
     exists (inr vu'); crush.
-    apply (evalStepStar
-             (U.pctx_app
-                (caseof
-                   (U.inr vu)
-                   (inl (app (protect τ1)[wkm] (var 0)))
-                   (inr (app (protect τ2)[wkm] (var 0))))
-                Cu)).
-
-    apply U.eval_ctx₀; crush.
-    apply U.eval_beta''; crush.
-
-    apply (evalStepStar (U.pctx_app (inr (app (protect τ2) vu)) Cu)).
-    apply U.eval_ctx₀; crush.
-    eapply eval₀_case_inr'; crush.
-
-    specialize (hyp (pctx_cat (pinr phole) Cu)).
-    rewrite -> ?pctx_cat_app in hyp; simpl in hyp.
-    apply hyp; crush.
+    refine (protect_inr _ _ _); crush.
 Qed.
+
+
+Lemma confine_terminates {τ vu} :
+  OfTypeUtlc (embed τ) vu →
+  ∃ vu', U.Value vu' ∧ ctxevalStar (U.app (confine τ) vu) vu'.
+Proof.
+  revert vu.
+  induction τ; crush.
+  - exists
+      (abs
+         (app
+            (confine τ2)[wkm]
+            (app
+               (abs vu[wkm↑])
+               (app (protect τ1)[wkm] (var 0))))).
+    crush.
+    apply evalToStar, U.eval₀_ctxeval; crush.
+    apply U.eval_beta''; crush.
+  - (* ptunit *)
+    exists U.unit.
+    crush.
+    apply (evalStepStar (seq unit unit)). 
+    apply U.eval₀_ctxeval; crush.
+    apply U.eval_beta''; crush.
+    apply evalToStar, eval₀_ctxeval; crush.
+    apply U.eval_seq_next.
+  - (* ptbool *)
+    (* why isn't this included in crush through crushOfType *)
+    match goal with 
+      | [ H: OfTypeUtlc ptbool ?t  |- _ ] => (assert (t = true ∨ t = false) by (destruct t; unfold OfTypeUtlc in H; try inversion H; intuition))
+    end.
+    assert (Value vu) by (destruct H; subst; crush).
+    exists vu.
+    crush.
+    apply (evalStepStar (ite vu true false)). 
+    apply U.eval₀_ctxeval; crush.
+    apply U.eval_beta''; crush.
+    apply evalToStar, U.eval₀_ctxeval; crush.
+    destruct H0; subst; [apply eval_ite_true|apply eval_ite_false]; crush.
+  - (* ptprod *)
+
+    pose (OfTypeUtlc_implies_Value H).
+    pose (OfTypeUtlc_implies_Value H0).
+    
+    specialize (IHτ1 vu1 H); destruct IHτ1 as (vu1' & vvu1' & hyp1).
+    specialize (IHτ2 vu2 H0); destruct IHτ2 as (vu2' & vvu2' & hyp2).
+    exists (U.pair vu1' vu2'); crush.
+    refine (confine_prod _ _ _ _ _ _); crush.
+
+
+  - (* ptsum, inl *)
+    specialize (IHτ1 vu H); destruct IHτ1 as (vu' & vvu' & hyp).
+    assert (vvu: Value vu) by eauto using OfTypeUtlc_implies_Value.
+    exists (inl vu'); crush.
+    refine (confine_inl _ _ _); crush.
+
+  - (* ptsum, inr *)
+    specialize (IHτ2 vu H); destruct IHτ2 as (vu' & vvu' & hyp).
+    assert (vvu: Value vu) by eauto using OfTypeUtlc_implies_Value.
+    exists (inr vu'); crush.
+    refine (confine_inr _ _ _); crush.
+Qed.
+
+
+
+
+Lemma protect_confine_transp {d w τ vs vu} :
+  valrel d w (embed τ) vs vu →
+  ∃ vu', U.Value vu' ∧
+             (∀ Cu, U.ECtx Cu →
+                   (U.pctx_app (U.app (protect τ) vu) Cu) -->* (U.pctx_app vu' Cu)) ∧
+             valrel d w (embed τ) vs vu'.
+Proof.
+  revert vs vu w; induction τ; intros vs vu w vr; crush.
+  destruct (valrel_implies_Value vr).
+  - (* ptarr τ1 τ2 *)
+    exists (abs
+              (app
+                 (protect τ2)[wkm]
+                 (app vu[wkm]
+                    (app (confine τ1)[wkm] (var 0))))).
+    crush.
+    apply evalToStar, eval_ctx₀; crush.
+    apply eval_beta''; crush.
+
+    destruct (valrel_implies_OfType vr).
+    rewrite -> valrel_fixp; unfold valrel'; crush.
+    rewrite -> valrel_fixp in vr; unfold valrel' in vr.
+    destruct vr as [[[vvs tvs] _] bodyrel].
+    destruct (can_form_tarr vvs tvs) as [tsb [eq ttsb]]; subst. 
+    unfold arr_rel in *; simpl in *. 
+
+    intros vs' vu' vr'.
+    refine (termrel_antired_star _ _ (bodyrel w' fw vs' vu' vr')); eauto with eval.
+    

@@ -302,6 +302,11 @@ Section Termination'.
 End Termination'.
 
 Section CtxEval.
+  Lemma eval₀_ctxeval {t t'} : t -->₀ t' → ctxeval t t'.
+  Proof.
+    apply (mkCtxEval phole _ _ I).
+  Qed.
+
   Lemma ctxeval_eval {t t'} : ctxeval t t' → t --> t'.
   Proof.
     destruct 1.
@@ -324,6 +329,14 @@ Section CtxEval.
     induction ce.
     rewrite <- ?pctx_cat_app.
     eauto using ctxeval, ectx_cat.
+  Qed.
+
+  Lemma extend_ctxevalStar {tu tu'} Cu : ECtx Cu → ctxevalStar tu tu' → ctxevalStar (pctx_app tu Cu) (pctx_app tu' Cu).
+  Proof.
+    intros eCu ce. 
+    unfold ctxevalStar.
+    induction ce;
+    eauto using extend_ctxeval with eval.
   Qed.
 End CtxEval.
 
@@ -385,6 +398,16 @@ Section EvalInContext.
     t --> t'.
   Proof.
     intros; subst; eauto using eval_ctx₀.
+  Qed.
+
+  Lemma ctxeval_from_eval₀ {t t' t₀ t₀' C} :
+    t₀ -->₀ t₀' →
+    t = pctx_app t₀ C →
+    t' = pctx_app t₀' C →
+    ECtx C →
+    ctxeval t t'.
+  Proof.
+    intros; subst; eauto using ctxeval.
   Qed.
 
 End EvalInContext.
