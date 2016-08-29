@@ -1,4 +1,6 @@
 Require Export Coq.Relations.Relations.
+Require Coq.Relations.Operators_Properties.
+Require Coq.Setoids.Setoid.
 Require Export Coq.Unicode.Utf8.
 
 Hint Constructors clos_refl_trans_1n : eval.
@@ -42,6 +44,13 @@ Section RtProperties.
   Lemma evalStepStar {t} t' {t''} :
     t --> t' → t' -->* t'' → t -->* t''.
   Proof. eauto with eval. Qed.
+
+  Lemma evalStepTrans {t} t' {t''} :
+    t -->* t' → t' -->* t'' → t -->* t''.
+  Proof. intros e1 e2. 
+         rewrite <- clos_rt_rt1n_iff in *.
+         refine (rt_trans _ _ _ _ _ e1 e2).
+  Qed.
 
   Lemma inversion_evalStar {t t'} :
     t -->* t' → t = t' ∨ (t -->+ t').

@@ -6,7 +6,7 @@ Require Import UVal.UVal.
 Section OfType.
 
   Local Ltac crush :=
-    unfold OfType, OfTypeStlc; intros;
+    unfold OfType, OfTypeStlc, OfTypeUtlc; intros;
     repeat
       (subst;
        stlcCanForm;
@@ -121,12 +121,17 @@ End OfType.
 Ltac crushOfType :=
   repeat
     match goal with
-      | H: OfType ptunit _ _ |- _ => apply OfType_inversion_ptunit in H
-      | H: OfType ptbool _ _ |- _ => apply OfType_inversion_ptbool in H
-      | H: OfType (ptsum _ _) _ _ |- _ => apply OfType_inversion_ptsum in H
-      | H: OfType (ptprod _ _) _ _ |- _ => apply OfType_inversion_ptprod in H
-      | H: OfType (ptarr _ _) _ _ |- _ => apply OfType_inversion_ptarr in H
-      | H: OfType (pEmulDV _ _) _ _ |- _ => apply OfType_inversion_pEmulDV in H
+      | [ H: OfType ptunit _ _ |- _ ] => apply OfType_inversion_ptunit in H
+      | [ H: OfType ptbool _ _ |- _ ] => apply OfType_inversion_ptbool in H
+      | [ H: OfType (ptsum _ _) _ _ |- _ ] => apply OfType_inversion_ptsum in H
+      | [ H: OfType (ptprod _ _) _ _ |- _ ] => apply OfType_inversion_ptprod in H
+      | [ H: OfType (ptarr _ _) _ _ |- _ ] => apply OfType_inversion_ptarr in H
+      | [ H: OfType (pEmulDV _ _) _ _ |- _ ] => apply OfType_inversion_pEmulDV in H
+      | [ H: OfTypeUtlc (ptprod _ _) ?t  |- _ ] => (destruct t; unfold OfTypeUtlc in H; fold OfTypeUtlc in *)
+      | [ H: OfTypeUtlc (ptsum _ _) ?t  |- _ ] => (destruct t; unfold OfTypeUtlc in H; fold OfTypeUtlc in *)
+      | [ H: OfTypeUtlc ptbool ?t  |- _ ] => (assert (t = true ∨ t = false) by (destruct t; unfold OfTypeUtlc in H; try inversion H; intuition))
+      | [ H: OfTypeUtlc ptunit ?t  |- _ ] => (destruct t; unfold OfTypeUtlc in H)
+      | [ H: OfTypeUtlc (ptarr _ _) ?t  |- _ ] => (destruct t; unfold OfTypeUtlc in H)
       | [ |- OfType ptunit S.unit U.unit ] => apply OfType_unit
       | [ |- OfType ptbool S.true U.true ] => apply OfType_true
       | [ |- OfType ptbool S.false U.false ] => apply OfType_false

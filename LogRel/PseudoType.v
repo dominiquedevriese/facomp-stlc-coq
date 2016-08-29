@@ -75,6 +75,7 @@ Fixpoint OfTypeUtlc (τ : PTy) (t : U.UTm) : Prop :=
       end
     | pEmulDV n p => U.Value t
   end.
+Arguments OfTypeUtlc τ t : simpl never.
 
 Definition OfType (τ : PTy) (t₁ : S.Tm) (t₂ : U.UTm) : Prop :=
   OfTypeStlc τ t₁ ∧ OfTypeUtlc τ t₂.

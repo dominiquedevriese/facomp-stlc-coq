@@ -189,21 +189,51 @@ Fixpoint depthlPCtx (C: PCtx) : Dom :=
 
 Ltac crushUtlcSyntaxMatchH :=
   match goal with
-    | [ H: var _        = var _         |- _ ] => inversion H; clear H
-    | [ H: abs _        = abs _         |- _ ] => inversion H; clear H
-    | [ H: app _ _      = app _ _       |- _ ] => inversion H; clear H
-    | [ H: ite _ _ _    = ite _ _ _     |- _ ] => inversion H; clear H
-    | [ H: pair _ _     = pair _ _      |- _ ] => inversion H; clear H
-    | [ H: proj₁ _      = proj₁ _       |- _ ] => inversion H; clear H
-    | [ H: proj₂ _      = proj₂ _       |- _ ] => inversion H; clear H
-    | [ H: inl _        = inl _         |- _ ] => inversion H; clear H
-    | [ H: inr _        = inr _         |- _ ] => inversion H; clear H
-    | [ H: caseof _ _ _ = caseof _ _ _  |- _ ] => inversion H; clear H
-    | [ H: seq _ _      = seq _ _       |- _ ] => inversion H; clear H
+    | [ H: var _        = var _        |- _ ] => inversion H; clear H
+    | [ H: abs _        = abs _        |- _ ] => inversion H; clear H
+    | [ H: app _ _      = app _ _      |- _ ] => inversion H; clear H
+    | [ H: ite _ _ _    = ite _ _ _    |- _ ] => inversion H; clear H
+    | [ H: pair _ _     = pair _ _     |- _ ] => inversion H; clear H
+    | [ H: proj₁ _      = proj₁ _      |- _ ] => inversion H; clear H
+    | [ H: proj₂ _      = proj₂ _      |- _ ] => inversion H; clear H
+    | [ H: inl _        = inl _        |- _ ] => inversion H; clear H
+    | [ H: inr _        = inr _        |- _ ] => inversion H; clear H
+    | [ H: caseof _ _ _ = caseof _ _ _ |- _ ] => inversion H; clear H
+    | [ H: seq _ _      = seq _ _      |- _ ] => inversion H; clear H
 
-    | [ H: context[apUTm ?ξ ?t]         |- _ ] =>
+    | [ H: wrong        = unit         |- _ ] => inversion H
+    | [ H: true         = unit         |- _ ] => inversion H
+    | [ H: false        = unit         |- _ ] => inversion H
+    | [ H: var _        = unit         |- _ ] => inversion H
+    | [ H: abs _        = unit         |- _ ] => inversion H
+    | [ H: app _ _      = unit         |- _ ] => inversion H
+    | [ H: ite _ _ _    = unit         |- _ ] => inversion H
+    | [ H: proj₁ _      = unit         |- _ ] => inversion H
+    | [ H: pair _ _     = unit         |- _ ] => inversion H
+    | [ H: proj₂ _      = unit         |- _ ] => inversion H
+    | [ H: inl _        = unit         |- _ ] => inversion H
+    | [ H: inr _        = unit         |- _ ] => inversion H
+    | [ H: seq _ _      = unit         |- _ ] => inversion H
+    | [ H: caseof _ _ _ = unit         |- _ ] => inversion H
+
+    | [ H: (unit         = true) ∨ (unit         = false) |- _ ] => (destruct H as [Ht|Hf]; [inversion Ht|inversion Hf])
+    | [ H: (wrong        = true) ∨ (wrong        = false) |- _ ] => (destruct H as [Ht|Hf]; [inversion Ht|inversion Hf])
+    | [ H: (false        = true) ∨ (false        = false) |- _ ] => (destruct H as [Ht|Hf]; [inversion Ht|inversion Hf])
+    | [ H: (var _        = true) ∨ (var _        = false) |- _ ] => (destruct H as [Ht|Hf]; [inversion Ht|inversion Hf])
+    | [ H: (abs _        = true) ∨ (abs _        = false) |- _ ] => (destruct H as [Ht|Hf]; [inversion Ht|inversion Hf])
+    | [ H: (app _ _      = true) ∨ (app _ _      = false) |- _ ] => (destruct H as [Ht|Hf]; [inversion Ht|inversion Hf])
+    | [ H: (ite _ _ _    = true) ∨ (ite _ _ _    = false) |- _ ] => (destruct H as [Ht|Hf]; [inversion Ht|inversion Hf])
+    | [ H: (proj₁ _      = true) ∨ (proj₁ _      = false) |- _ ] => (destruct H as [Ht|Hf]; [inversion Ht|inversion Hf])
+    | [ H: (pair _ _     = true) ∨ (pair _ _     = false) |- _ ] => (destruct H as [Ht|Hf]; [inversion Ht|inversion Hf])
+    | [ H: (proj₂ _      = true) ∨ (proj₂ _      = false) |- _ ] => (destruct H as [Ht|Hf]; [inversion Ht|inversion Hf])
+    | [ H: (inl _        = true) ∨ (inl _        = false) |- _ ] => (destruct H as [Ht|Hf]; [inversion Ht|inversion Hf])
+    | [ H: (inr _        = true) ∨ (inr _        = false) |- _ ] => (destruct H as [Ht|Hf]; [inversion Ht|inversion Hf])
+    | [ H: (seq _ _      = true) ∨ (seq _ _      = false) |- _ ] => (destruct H as [Ht|Hf]; [inversion Ht|inversion Hf])
+    | [ H: (caseof _ _ _ = true) ∨ (caseof _ _ _ = false) |- _ ] => (destruct H as [Ht|Hf]; [inversion Ht|inversion Hf])
+
+    | [ H: context[apUTm ?ξ ?t]        |- _ ] =>
       change (apUTm ξ t) with t[ξ] in H
-    | [ H: context[apPCtx ?ξ ?C]        |- _ ] =>
+    | [ H: context[apPCtx ?ξ ?C]       |- _ ] =>
       change (apPCtx ξ C) with C[ξ] in H
 
     | [ |- wrong          = wrong          ] => f_equal
