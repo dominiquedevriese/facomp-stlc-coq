@@ -154,6 +154,8 @@ Section ClosedLR.
     repeat
       (cbn in *;
        subst*;
+       repeat crushUtlcSyntaxMatchH;
+       repeat crushStlcSyntaxMatchH;
        destruct_conjs;
        intuition).
 
@@ -311,6 +313,87 @@ Section ClosedLR.
   Qed.
 
 End ClosedLR.
+
+Section ValrelInversion.
+  Local Ltac crush :=
+    repeat
+      (simpl;
+       try assumption;
+       crushOfType;
+       repeat crushTyping;
+       repeat crushStlcSyntaxMatchH;
+       repeat crushUtlcSyntaxMatchH;
+       repeat crushUtlcScopingMatchH;
+       try subst;
+       destruct_conjs;
+       repeat match goal with 
+                  [ |- _ ∧ _ ] => split
+              end;
+       eauto 
+      ); try omega.
+
+  Lemma valrel_ptprod_inversion {d w τ₁ τ₂ vs vu} :
+    valrel d w (ptprod τ₁ τ₂) vs vu →
+    exists vs₁ vs₂ vu₁ vu₂,
+      (vs = S.pair vs₁ vs₂ ∧ vu = U.pair vu₁ vu₂ ∧ 
+       OfType τ₁ vs₁ vu₁ ∧
+       OfType τ₂ vs₂ vu₂ ∧
+       ∀ w', w' < w → valrel d w' τ₁ vs₁ vu₁ ∧ valrel d w' τ₂ vs₂ vu₂).
+  Proof.
+    intros vr.
+    destruct (valrel_implies_Value vr).
+    destruct (valrel_implies_OfType vr) as [ots otu].
+    rewrite -> valrel_fixp in vr; unfold valrel', prod_rel in vr.
+    destruct vs; crush; exists H5, H9, H8, H10; crush;
+    destruct ots as [vv typ]; 
+    repeat match goal with
+      | [ |- _ ∧ _ ] => split
+      | [ |- OfType _ _ _ ] => unfold OfType, OfTypeStlc, OfTypeUtlc
+      | [ H: OfType _ _ _  |- _ ] => destruct H as [[? ?] ?]
+      | [ H: OfTypeStlc _ _  |- _ ] => destruct H as [? ?]
+    end; crush.
+  Qed.
+
+  Lemma valrel_ptsum_inversion {d w τ₁ τ₂ vs vu} :
+    valrel d w (ptsum τ₁ τ₂) vs vu →
+    exists vs' vu',
+      (vs = S.inl vs' ∧ vu = U.inl vu' ∧ 
+       OfType τ₁ vs' vu' ∧
+       ∀ w', w' < w → valrel d w' τ₁ vs' vu') ∨
+      (vs = S.inr vs' ∧ vu = U.inr vu' ∧ 
+       OfType τ₂ vs' vu' ∧
+       ∀ w', w' < w → valrel d w' τ₂ vs' vu').
+  Proof.
+    intros vr.
+    destruct (valrel_implies_Value vr).
+    destruct (valrel_implies_OfType vr) as [ots otu].
+    rewrite -> valrel_fixp in vr; unfold valrel', sum_rel in vr.
+    destruct vs; crush; exists vs, vu; [left|right]; crush;
+    destruct ots as [vv typ]; 
+    repeat match goal with
+      | [ |- _ ∧ _ ] => split
+      | [ |- OfType _ _ _ ] => unfold OfType, OfTypeStlc, OfTypeUtlc
+      | [ H: OfType _ _ _  |- _ ] => destruct H as [[? ?] ?]
+      | [ H: OfTypeStlc _ _  |- _ ] => destruct H as [? ?]
+    end; crush.
+  Qed.
+
+  Lemma valrel_ptarr_inversion {d w τ₁ τ₂ vs vu} :
+    valrel d w (ptarr τ₁ τ₂) vs vu →
+    exists tsb tub,
+      vs = S.abs (repEmul τ₁) tsb ∧ vu = U.abs tub ∧ 
+       ∀ w' vs' vu', w' < w → valrel d w' τ₁ vs' vu' → termrel d w' τ₂ (tsb[beta1 vs']) (tub[beta1 vu']).
+  Proof.
+    intros vr.
+    destruct (valrel_implies_Value vr).
+    destruct (valrel_implies_OfType vr) as [ots otu].
+    rewrite -> valrel_fixp in vr; unfold valrel', arr_rel in vr.
+    destruct vs; crush. 
+    exists H, H1; crush.
+    refine (H0 w' H2 vs' vu' H3).
+  Qed.
+End ValrelInversion.
+      
 
 Section OpenLR.
 
