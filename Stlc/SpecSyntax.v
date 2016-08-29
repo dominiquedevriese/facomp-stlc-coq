@@ -196,6 +196,9 @@ Ltac crushStlcSyntaxMatchH :=
     | [ H: seq _ _      = seq _ _      |- _ ] => inversion H; clear H
     | [ H: fixt _ _ _   = fixt _ _ _   |- _ ] => inversion H; clear H
 
+    | [ H: inl _       = inr _         |- _ ] => inversion H
+    | [ H: inr _       = inl _         |- _ ] => inversion H
+
     | [ |- S _          = S _          ] => f_equal
     | [ |- var _        = var _        ] => f_equal
     | [ |- abs _ _      = abs _ _      ] => f_equal

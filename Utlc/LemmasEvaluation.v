@@ -338,6 +338,15 @@ Section CtxEval.
     induction ce;
     eauto using extend_ctxeval with eval.
   Qed.
+
+  Lemma extend_ctxevalStar' {tu1 tu2 tu1' tu2' Cu} : 
+    ctxevalStar tu1 tu2 → 
+    tu1' = pctx_app tu1 Cu →
+    tu2' = pctx_app tu2 Cu →
+    ECtx Cu → ctxevalStar tu1' tu2'.
+  Proof.
+    intros; subst; eauto using extend_ctxevalStar.
+  Qed.
 End CtxEval.
 
 Section EvalN.

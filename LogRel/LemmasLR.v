@@ -299,6 +299,16 @@ Section ClosedLR.
     refine (contrel_mono fw' cr').
   Qed.
 
+  Lemma termrel_ectx' {d w τ₁ τ₂ ts Cs tu ts' tu' Cu} :
+    termrel d w τ₁ ts tu →
+    (forall w' (fw' : w' ≤ w) vs vu, valrel d w' τ₁ vs vu → termrel d w' τ₂ (S.pctx_app vs Cs) (U.pctx_app vu Cu)) →
+    ts' = S.pctx_app ts Cs →
+    tu' = U.pctx_app tu Cu →
+    S.ECtx Cs → U.ECtx Cu →
+    termrel d w τ₂ ts' tu'.
+  Proof.
+    intros; subst; eauto using termrel_ectx.
+  Qed.
 
 End ClosedLR.
 

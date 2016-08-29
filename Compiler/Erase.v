@@ -159,6 +159,14 @@ Section CompatibilityLemmas.
     crush.
   Qed.
 
+  Lemma valrel_pair' {d w τ₁ τ₂ ts₁ ts₂ tu₁ tu₂} :
+    valrel d w τ₁ ts₁ tu₁ →
+    valrel d w τ₂ ts₂ tu₂ →
+    valrel d (S w) (ptprod τ₁ τ₂) (S.pair ts₁ ts₂) (U.pair tu₁ tu₂).
+  Proof.
+    crush.
+  Qed.
+
   Lemma valrel_pair {d w τ₁ τ₂ ts₁ ts₂ tu₁ tu₂} :
     valrel d w τ₁ ts₁ tu₁ →
     valrel d w τ₂ ts₂ tu₂ →

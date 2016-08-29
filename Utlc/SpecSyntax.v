@@ -216,6 +216,9 @@ Ltac crushUtlcSyntaxMatchH :=
     | [ H: seq _ _      = unit         |- _ ] => inversion H
     | [ H: caseof _ _ _ = unit         |- _ ] => inversion H
 
+    | [ H: inl _        = inr _        |- _ ] => inversion H
+    | [ H: inr _        = inl _        |- _ ] => inversion H
+
     | [ H: (unit         = true) ∨ (unit         = false) |- _ ] => (destruct H as [Ht|Hf]; [inversion Ht|inversion Hf])
     | [ H: (wrong        = true) ∨ (wrong        = false) |- _ ] => (destruct H as [Ht|Hf]; [inversion Ht|inversion Hf])
     | [ H: (false        = true) ∨ (false        = false) |- _ ] => (destruct H as [Ht|Hf]; [inversion Ht|inversion Hf])

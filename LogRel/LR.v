@@ -156,6 +156,8 @@ Definition termrel
            (d : Direction) (w : World) : PTRel :=
   termrel' d w (fun w fw => valrel d w).
 
+Arguments termrel d w τ t₁ t₂ : simpl never.
+
 Lemma termrel_fixp {d} :
   forall w, termrel d w = termrel' d w (fun w _ => valrel' d w (fun w _ => valrel d w)).
 Proof.
