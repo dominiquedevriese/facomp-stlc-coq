@@ -132,23 +132,6 @@ Proof.
   extensionality w'.
   extensionality fw.
   trivial.
-  (* (* We simply assume functional extensionality and crush the proof... *) *)
-  (* intros hyp. *)
-  (* repeat ( *)
-  (*     try rewrite -> hyp; *)
-  (*     try reflexivity; *)
-  (*     try unfold prod_rel, sum_rel, arr_rel; *)
-  (*     repeat (match goal with *)
-  (*         [ |- (fun x => _) = (fun _ => _) ] => let x' := (fresh x) in extensionality x' *)
-  (*       | [ |- valrel' _ _ _ = valrel' _ _ _] => unfold valrel' *)
-  (*       | [ |- (_ ∧ _) = (_ ∧ _)] => f_equal *)
-  (*       | [ |- (_ ∨ _) = (_ ∨ _)] => f_equal *)
-  (*       | [ |- (match ?τ with | _  => _ end) = (match ?τ with | _ => _ end )] => destruct τ eqn: ? *)
-  (*       | [ |- (exists t, _) = (exists _, _)] => f_equal *)
-  (*       | [ |- (forall t, _) = (forall _, _)] => let x' := (fresh t) in extensionality x' *)
-  (*       | [ |- termrel' _ _ _ _ _ _ = termrel' _ _ _ _ _ _] => f_equal *)
-  (*     end) *)
-  (*   ). *)
 Qed.
 
 Lemma valrel_fixp {d} :
