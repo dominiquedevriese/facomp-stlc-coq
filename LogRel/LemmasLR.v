@@ -21,6 +21,26 @@ Section Obs.
     destruct d; simpl; intuition.
   Qed.
 
+  Lemma S_Observe_Terminating_value {n ts} :
+    S.Value ts → Observe (S n) (S.TerminatingN ts).
+  Proof.
+    intros vts. simpl. eauto using S.values_terminateN.
+  Qed.
+
+  Lemma U_Observe_Terminating_value {n tu} :
+    U.Value tu → Observe (S n) (U.TerminatingN tu).
+  Proof.
+    intros vtu. simpl. eauto using U.values_terminateN.
+  Qed.
+
+  Lemma obs_value {d n ts tu} :
+    S.Value ts → U.Value tu → Obs d n ts tu.
+  Proof.
+    intros vs vu.
+    destruct d; simpl; intros _; 
+    eauto using S.values_terminate, U.values_terminate.
+  Qed.
+
   Lemma obs_mono {d W' W ts tu} :
     lev W' ≤ lev W →
     Obs d W ts tu →
@@ -131,6 +151,15 @@ Section Obs.
         enough (min i j ≤ j) by omega.
         auto using le_min_r.
   Qed.
+
+  Lemma S_ObserveTerminating_Value {w vs} :
+    S.Value vs →
+    Observe (S w) (S.TerminatingN vs).
+  Proof.
+    intros vvs; simpl.
+    apply S.values_terminateN; trivial.
+  Qed.
+    
 End Obs.
 
 Section ClosedLR.
@@ -138,6 +167,14 @@ Section ClosedLR.
     valrel d W τ ts tu → OfType τ ts tu.
   Proof.
     rewrite -> valrel_fixp. unfold valrel'. intuition.
+  Qed.
+
+  Lemma envrel_triv {d w γs γu} :
+    envrel d w pempty γs γu.
+  Proof.
+    unfold envrel.
+    intros i τ i_τ.
+    depind i_τ.
   Qed.
   
   Lemma envrel_implies_WtSub {d W Γ γs γu} :
@@ -268,6 +305,14 @@ Section ClosedLR.
     exact (OfType_implies_Value ot).
   Qed.
 
+  Lemma contrel_triv {d w τ} :
+    contrel d w τ S.phole U.phole.
+  Proof.
+    unfold contrel, contrel'; intros w' fw ts tu vr; simpl.
+    destruct (valrel_implies_Value vr).
+    apply obs_value; trivial.
+  Qed.
+
   Lemma extend_envrel {d w Γ γs γu τ ts tu} :
     valrel d w τ ts tu →
     envrel d w Γ γs γu →
@@ -312,6 +357,38 @@ Section ClosedLR.
     termrel d w τ₂ ts' tu'.
   Proof.
     intros; subst; eauto using termrel_ectx.
+  Qed.
+
+  Lemma termrel_adequacy_lt {w m ts vs tu τ} :
+    termrel dir_lt w τ ts tu →
+    S.evaln ts vs m →
+    S.Value vs →
+    lev w > m →
+    U.Terminating tu.
+  Proof.
+    intros tr es vvs ineq.
+    specialize (tr S.phole U.phole I I contrel_triv).
+    simpl in tr. unfold lev in *.
+    destruct (lt_inv_plus ineq) as [r eq]; subst.
+    rewrite <- (S_Observe_TerminatingN_evaln (S r) es) in tr.
+    apply tr.
+    apply S_Observe_Terminating_value; trivial.
+  Qed.
+
+  Lemma termrel_adequacy_gt {w m tu vu ts τ} :
+    termrel dir_gt w τ ts tu →
+    U.evaln tu vu m →
+    U.Value vu →
+    lev w > m →
+    S.Terminating ts.
+  Proof.
+    intros tr es vvu ineq.
+    specialize (tr S.phole U.phole I I contrel_triv).
+    simpl in tr. unfold lev in *.
+    destruct (lt_inv_plus ineq) as [r eq]; subst.
+    apply tr.
+    rewrite <- (U_Observe_TerminatingN_evaln (S r) es).
+    apply U_Observe_Terminating_value; trivial.
   Qed.
 
 End ClosedLR.
@@ -403,5 +480,38 @@ Section OpenLR.
       refine (er _ _ iτ).
   Qed.
 
+  Lemma adequacy_lt {n m ts vs tu τ} :
+    ⟪ pempty ⊩ ts ⟦ dir_lt , n ⟧ tu : τ ⟫ →
+    S.evaln ts vs m → 
+    S.Value vs →
+    n > m →
+    U.Terminating tu.
+  Proof.
+    intros lr es vvs ineq.
+    destruct lr as [ty lr].
+    set (w := n).
+    assert (le_w : lev w ≤ n) by (unfold lev, w; omega).
+    assert (er : envrel dir_lt w pempty (idm S.Tm) (idm U.UTm)) by apply envrel_triv.
+    pose proof (lr w le_w (idm S.Tm) (idm U.UTm) er) as tr.
+    rewrite -> ?ap_id in tr.
+    eapply (termrel_adequacy_lt tr es); trivial.
+  Qed.
+
+  Lemma adequacy_gt {n m tu vu ts τ} :
+    ⟪ pempty ⊩ ts ⟦ dir_gt , n ⟧ tu : τ ⟫ →
+    U.evaln tu vu m → 
+    U.Value vu →
+    n > m →
+    S.Terminating ts.
+  Proof.
+    intros lr es vvs ineq.
+    destruct lr as [ty lr].
+    set (w := n).
+    assert (le_w : lev w ≤ n) by (unfold lev, w; omega).
+    assert (er : envrel dir_lt w pempty (idm S.Tm) (idm U.UTm)) by apply envrel_triv.
+    pose proof (lr w le_w (idm S.Tm) (idm U.UTm) er) as tr.
+    rewrite -> ?ap_id in tr.
+    eapply (termrel_adequacy_gt tr es); trivial.
+  Qed.
+
 End OpenLR.
-      

@@ -685,3 +685,44 @@ Proof.
     + (* ptsum τ1 τ2 *)
       apply confine_tsum_transp; crush.
 Qed.
+
+Lemma protect_transp' {d w τ vs vu} :
+  valrel d w (embed τ) vs vu →
+  termrel d w (embed τ) vs (U.app (protect τ) vu).
+Proof.
+  intros vr.
+  destruct (protect_transp vr) as (vu' & vvu' & eu & vr').
+  refine (termrel_antired_star _ eu _); 
+  eauto using valrel_in_termrel with eval.
+Qed.
+
+Lemma protect_transp'' {d w τ ts tu} :
+  termrel d w (embed τ) ts tu →
+  termrel d w (embed τ) ts (U.app (protect τ) tu).
+Proof.
+  intros tr.
+  Check termrel_ectx'.
+  assert (U.Value (protect τ)) by apply protect_Value.
+  eapply (termrel_ectx' (Cs := S.phole) tr); inferContext; crush.
+  apply protect_transp'; crush.
+Qed.
+
+(* Lemma confine_transp' {d w τ vs vu} : *)
+(*   valrel d w (embed τ) vs vu → *)
+(*   termrel d w (embed τ) vs (U.app (confine τ) vu). *)
+(* Proof. *)
+(*   intros vr. *)
+(*   destruct (confine_transp vr) as (vu' & vvu' & eu & vr'). *)
+(*   refine (termrel_antired_star _ eu _);  *)
+(*   eauto using valrel_in_termrel with eval. *)
+(* Qed. *)
+
+Lemma protect_transp_open {d n τ ts tu Γ} :
+  ⟪ Γ ⊩ ts ⟦ d , n ⟧ tu : embed τ ⟫ →
+  ⟪ Γ ⊩ ts ⟦ d , n ⟧ U.app (protect τ) tu : embed τ ⟫.
+Proof.
+  destruct 1 as [ot lr]. 
+  unfold OpenLRN; crush.
+  rewrite -> (wsClosed_invariant protect_closed γu).
+  eapply protect_transp''; crush.
+Qed.

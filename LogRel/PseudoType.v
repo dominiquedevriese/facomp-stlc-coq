@@ -1,6 +1,7 @@
 Require Import Stlc.LemmasEvaluation.
 Require Import Stlc.LemmasTyping.
 Require Import Stlc.SpecEvaluation.
+Require Import Stlc.SpecEquivalent.
 Require Import Stlc.SpecSyntax.
 Require Import Stlc.SpecTyping.
 Require Import Utlc.Fix.
@@ -15,6 +16,7 @@ Module S.
   Include Stlc.LemmasEvaluation.
   Include Stlc.LemmasTyping.
   Include Stlc.SpecEvaluation.
+  Include Stlc.SpecEquivalent.
   Include Stlc.SpecSyntax.
   Include Stlc.SpecTyping.
 End S.

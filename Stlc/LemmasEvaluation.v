@@ -120,6 +120,11 @@ Proof.
   intros ? ? (); eauto.
 Qed.
 
+Lemma values_terminateN {t n} : Value t → t ⇓_ n.
+Proof.
+  intros v. constructor. trivial.
+Qed.
+
 Ltac crushImpossibleEvals :=
   match goal with
           [ H : abs _ _ --> _ |- _ ] => exfalso; refine (values_are_normal' _ _ H); crush
@@ -147,6 +152,14 @@ Proof.
   intros t' e'. exfalso. refine (values_are_normal H _).
   exists t'. auto.
 Qed.
+
+Lemma values_terminate {t : Tm} : Value t → t ⇓.
+Proof.
+  intros v.
+  enough (t ⇓_ 0) as t0 by (apply (TerminatingN_Terminating t0)).
+  apply values_terminateN; trivial.
+Qed.
+
 
 Lemma determinacy' {t t' t'' t'''} : t --> t' → t'' --> t''' → t = t'' → t' = t'''.
 Proof.
