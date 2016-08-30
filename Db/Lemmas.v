@@ -412,6 +412,8 @@ Ltac crushDbLemmasMatchH :=
       replace (@ap X X vrX _ ξ (@vr X vrX i)) with (ξ i) in H by
           refine (eq_sym (ap_vr ξ i))
 
+    | |- context[@up ?X ?vrX ?wkX ?ζ O        ] =>
+      change (@up X vrX wkX ζ O) with (@vr X vrX O)
     | |- context[@up _ _ ?wkX (idm _)         ] => rewrite (@up_idm _ _ wkX)
     | |- context[@ups _ _ ?wkX (idm _) ?δ     ] => rewrite (@ups_idm _ _ wkX δ)
     | |- context[@ap ?X ?X ?vrX _ ?ξ (@vr ?X ?vrX ?i)] =>

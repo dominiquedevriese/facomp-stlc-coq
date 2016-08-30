@@ -53,8 +53,8 @@ Section Obs.
     S.evaln t t' n → Observe n' (S.TerminatingN t') ↔ Observe (n + n') (S.TerminatingN t).
   Proof.
     destruct n'; 
-    try replace (n + 0) with n by omega;
-    try replace (n + S n') with (S n + n') by omega;
+      [ replace (n + 0) with n by omega
+      | replace (n + S n') with (S n + n') by omega ];
     simpl in *; eauto using S.TerminatingN_evaln, S_ObserveTerminatingN_xor_evaln.
   Qed.    
 
@@ -86,7 +86,9 @@ Section Obs.
   Lemma U_Observe_TerminatingN_evaln {t t' n } n' :
     U.evaln t t' n → Observe n' (U.TerminatingN t') ↔ Observe (n + n') (U.TerminatingN t).
   Proof.
-    destruct n'; try replace (n + 0) with n by omega; try replace (n + S n') with (S n + n') by omega;
+    destruct n';
+      [ replace (n + 0) with n by omega
+      | replace (n + S n') with (S n + n') by omega ];
     simpl in *; eauto using U.TerminatingN_evaln, U_ObserveTerminatingN_xor_evaln.
   Qed.    
 
@@ -341,17 +343,12 @@ Section ValrelInversion.
        ∀ w', w' < w → valrel d w' τ₁ vs₁ vu₁ ∧ valrel d w' τ₂ vs₂ vu₂).
   Proof.
     intros vr.
-    destruct (valrel_implies_Value vr).
-    destruct (valrel_implies_OfType vr) as [ots otu].
-    rewrite -> valrel_fixp in vr; unfold valrel', prod_rel in vr.
-    destruct vs; crush; exists H5, H9, H8, H10; crush;
-    destruct ots as [vv typ]; 
-    repeat match goal with
-      | [ |- _ ∧ _ ] => split
-      | [ |- OfType _ _ _ ] => unfold OfType, OfTypeStlc, OfTypeUtlc
-      | [ H: OfType _ _ _  |- _ ] => destruct H as [[? ?] ?]
-      | [ H: OfTypeStlc _ _  |- _ ] => destruct H as [? ?]
-    end; crush.
+    destruct (valrel_implies_Value vr) as [vvs vvu].
+    destruct (OfType_inversion_ptprod (valrel_implies_OfType vr))
+      as (ts1' & tu1' & ts2' & tu2' & Hvs & Hvu & oft1 & oft2).
+    exists ts1', ts2', tu1', tu2'; do 4 (split; auto).
+    rewrite -> valrel_fixp in vr; subst vs vu.
+    unfold valrel' in vr; crush.
   Qed.
 
   Lemma valrel_ptsum_inversion {d w τ₁ τ₂ vs vu} :
@@ -365,32 +362,29 @@ Section ValrelInversion.
        ∀ w', w' < w → valrel d w' τ₂ vs' vu').
   Proof.
     intros vr.
-    destruct (valrel_implies_Value vr).
-    destruct (valrel_implies_OfType vr) as [ots otu].
-    rewrite -> valrel_fixp in vr; unfold valrel', sum_rel in vr.
-    destruct vs; crush; exists vs, vu; [left|right]; crush;
-    destruct ots as [vv typ]; 
-    repeat match goal with
-      | [ |- _ ∧ _ ] => split
-      | [ |- OfType _ _ _ ] => unfold OfType, OfTypeStlc, OfTypeUtlc
-      | [ H: OfType _ _ _  |- _ ] => destruct H as [[? ?] ?]
-      | [ H: OfTypeStlc _ _  |- _ ] => destruct H as [? ?]
-    end; crush.
+    rewrite -> valrel_fixp in vr; destruct vr as [oft sumrel];
+    cbn in *; apply OfType_inversion_ptsum in oft;
+    destruct oft as (tsb & tub & Hvs); intuition; crush.
+    - exists tsb, tub; crush.
+    - exists tsb, tub; crush.
   Qed.
 
   Lemma valrel_ptarr_inversion {d w τ₁ τ₂ vs vu} :
     valrel d w (ptarr τ₁ τ₂) vs vu →
-    exists tsb tub,
-      vs = S.abs (repEmul τ₁) tsb ∧ vu = U.abs tub ∧ 
-       ∀ w' vs' vu', w' < w → valrel d w' τ₁ vs' vu' → termrel d w' τ₂ (tsb[beta1 vs']) (tub[beta1 vu']).
+    ∃ tsb tub,
+      vs = S.abs (repEmul τ₁) tsb ∧ vu = U.abs tub ∧
+      ⟪ empty ▻ repEmul τ₁ ⊢ tsb : repEmul τ₂ ⟫ ∧
+      ∀ w' vs' vu',
+        w' < w → valrel d w' τ₁ vs' vu' →
+        termrel d w' τ₂ (tsb[beta1 vs']) (tub[beta1 vu']).
   Proof.
     intros vr.
-    destruct (valrel_implies_Value vr).
-    destruct (valrel_implies_OfType vr) as [ots otu].
-    rewrite -> valrel_fixp in vr; unfold valrel', arr_rel in vr.
-    destruct vs; crush. 
-    exists H, H1; crush.
-    refine (H0 w' H2 vs' vu' H3).
+    destruct (valrel_implies_Value vr) as [vvs vvu].
+    destruct (OfType_inversion_ptarr (valrel_implies_OfType vr))
+      as (tsb & tub & Hvs & Hvu & wtsb).
+    exists tsb, tub; do 2 (split; auto).
+    rewrite -> valrel_fixp in vr; subst vs vu.
+    unfold valrel' in vr; unfold termrel; crush.
   Qed.
 End ValrelInversion.
       

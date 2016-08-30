@@ -127,11 +127,11 @@ Ltac crushOfType :=
       | [ H: OfType (ptprod _ _) _ _ |- _ ] => apply OfType_inversion_ptprod in H
       | [ H: OfType (ptarr _ _) _ _ |- _ ] => apply OfType_inversion_ptarr in H
       | [ H: OfType (pEmulDV _ _) _ _ |- _ ] => apply OfType_inversion_pEmulDV in H
-      | [ H: OfTypeUtlc (ptprod _ _) ?t  |- _ ] => (destruct t; unfold OfTypeUtlc in H; fold OfTypeUtlc in *)
-      | [ H: OfTypeUtlc (ptsum _ _) ?t  |- _ ] => (destruct t; unfold OfTypeUtlc in H; fold OfTypeUtlc in *)
-      | [ H: OfTypeUtlc ptbool ?t  |- _ ] => (assert (t = true ∨ t = false) by (destruct t; unfold OfTypeUtlc in H; try inversion H; intuition))
-      | [ H: OfTypeUtlc ptunit ?t  |- _ ] => (destruct t; unfold OfTypeUtlc in H)
-      | [ H: OfTypeUtlc (ptarr _ _) ?t  |- _ ] => (destruct t; unfold OfTypeUtlc in H)
+      (* | [ H: OfTypeUtlc (ptprod _ _) ?t  |- _ ] => destruct t; cbn in H; try discriminate *)
+      (* | [ H: OfTypeUtlc (ptsum _ _) ?t  |- _ ] => destruct t; cbn in H; try discriminate *)
+      (* | [ H: OfTypeUtlc ptbool ?t  |- _ ] =>  change (OfTypeUtlc ptbool t) with (t = U.true ∨ t = U.false) in H *)
+      (* | [ H: OfTypeUtlc ptunit ?t  |- _ ] => change (OfTypeUtlc ptunit t) with (t = U.unit) in H; subst t *)
+      (* | [ H: OfTypeUtlc (ptarr _ _) ?t  |- _ ] => destruct t; cbn in H; try discriminate *)
       | [ |- OfType ptunit S.unit U.unit ] => apply OfType_unit
       | [ |- OfType ptbool S.true U.true ] => apply OfType_true
       | [ |- OfType ptbool S.false U.false ] => apply OfType_false
@@ -139,11 +139,4 @@ Ltac crushOfType :=
       | [ |- OfType (ptsum _ _) (S.inr _) (U.inr _)] => apply OfType_inr
       | [ |- OfType (ptprod _ _) (S.pair _ _) (U.pair _ _) ] => apply OfType_pair
       | [ |- OfType (ptarr _ _) (S.abs _ _) (U.abs _) ] => apply OfType_lambda
-      | [ |- OfTypeUtlc (ptarr _ _) (U.abs _) ] => (unfold OfTypeUtlc; simpl; trivial)
-      | [ |- OfTypeUtlc ptunit U.unit ] => (unfold OfTypeUtlc; simpl; trivial)
-      | [ |- OfTypeUtlc ptbool U.true ] => (unfold OfTypeUtlc; simpl; trivial)
-      | [ |- OfTypeUtlc ptbool U.false ] => (unfold OfTypeUtlc; simpl; trivial)
-      | [ |- OfTypeUtlc (ptprod _ _) (U.pair _ _)] => (unfold OfTypeUtlc; simpl; split; try assumption)
-      | [ |- OfTypeUtlc (ptsum _ _) (U.inl _ _)] => (unfold OfTypeUtlc; simpl; split; try assumption)
-      | [ |- OfTypeUtlc (ptsum _ _) (U.inr _ _)] => (unfold OfTypeUtlc; simpl; split; try assumption)
     end.

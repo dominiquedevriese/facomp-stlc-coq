@@ -55,7 +55,8 @@ Local Ltac crush :=
           repeat rewrite
             ?protect_wkm_beta1, ?protect_wkm2_beta1,
             ?confine_wkm_beta1, ?confine_wkm2_beta1,
-            ?apply_up_def_O, ?apply_up_def_S;
+            ?apply_wkm_beta1_up_cancel,
+            ?apply_up_def_S;
           repeat crushUtlcScoping;
           repeat crushUtlcSyntaxMatchH;
           repeat crushUtlcEvaluationMatchH;
@@ -63,9 +64,9 @@ Local Ltac crush :=
           crushOfType;
           repeat match goal with
                      [ |- _ ∧ _ ] => split
-                   | [ |- OfType _ _ _ ] => unfold OfType, OfTypeStlc, OfTypeUtlc
-                   | [ H: OfType _ _ _  |- _ ] => destruct H as [[? ?] ?]
-                   | [ H: OfTypeStlc _ _  |- _ ] => destruct H as [? ?]
+                   (* | [ |- OfType _ _ _ ] => unfold OfType, OfTypeStlc *)
+                   (* | [ H: OfType _ _ _  |- _ ] => destruct H as [[? ?] ?] *)
+                   (* | [ H: OfTypeStlc _ _  |- _ ] => destruct H as [? ?] *)
                  end;
           S.crushTyping;
           trivial
@@ -78,14 +79,12 @@ Local Opaque up.
 
 Lemma protect_Value {τ} : Value (protect τ).
 Proof.
-  (* quite annoying that I have to crush here... *)
-  destruct τ; crush.
+  destruct τ; now cbn.
 Qed.
 
 Lemma confine_Value {τ} : Value (confine τ).
 Proof.
-  (* quite annoying that I have to crush here... *)
-  destruct τ; crush.
+  destruct τ; now cbn.
 Qed.
 
 
@@ -117,7 +116,7 @@ Proof.
   apply (evalStepStar
            (pair (app (protect τ1) vu1)
                  (app (protect τ2) (proj₂ (U.pair vu1 vu2))))).
-  
+
   assert (e₀ : U.proj₁ (U.pair vu1 vu2) -->₀ vu1) by (eauto with eval).
   eapply (ctxeval_from_eval₀ e₀); repeat inferContext; crush; eauto using protect_Value.
 
@@ -128,14 +127,14 @@ Proof.
   apply (evalStepStar (pair vu1' (app (protect τ2) vu2))).
   assert (e₀ : U.proj₂ (U.pair vu1 vu2) -->₀ vu2) by (eauto with eval).
   eapply (ctxeval_from_eval₀ e₀); repeat inferContext; crush; eauto using protect_Value.
-  
+
   assert (eC' : ECtx (ppair₂ vu1' phole)) by crush.
   pose (hyp2' := extend_ctxevalStar (ppair₂ vu1' phole) eC' hyp2).
   simpl in hyp2'.
   exact hyp2'.
 
 Qed.
-    
+
 Lemma protect_inl {τ1 τ2 vu vu' } :
       Value vu → Value vu' →
       ctxevalStar (app (protect τ1) vu) vu' →
@@ -195,7 +194,7 @@ Proof.
   apply (evalStepStar
            (pair (app (confine τ1) vu1)
                  (app (confine τ2) (proj₂ (U.pair vu1 vu2))))).
-  
+
   assert (e₀ : U.proj₁ (U.pair vu1 vu2) -->₀ vu1) by (eauto with eval).
   eapply (ctxeval_from_eval₀ e₀); repeat inferContext; crush; eauto using confine_Value.
 
@@ -206,14 +205,14 @@ Proof.
   apply (evalStepStar (pair vu1' (app (confine τ2) vu2))).
   assert (e₀ : U.proj₂ (U.pair vu1 vu2) -->₀ vu2) by (eauto with eval).
   eapply (ctxeval_from_eval₀ e₀); repeat inferContext; crush; eauto using confine_Value.
-  
+
   assert (eC' : ECtx (ppair₂ vu1' phole)) by crush.
   pose (hyp2' := extend_ctxevalStar (ppair₂ vu1' phole) eC' hyp2).
   simpl in hyp2'.
   exact hyp2'.
 
 Qed.
-    
+
 Lemma confine_inl {τ1 τ2 vu vu' } :
       Value vu → Value vu' →
       ctxevalStar (app (confine τ1) vu) vu' →
@@ -256,6 +255,9 @@ Proof.
   refine (extend_ctxevalStar (pinr phole) I hyp).
 Qed.
 
+
+Hint Unfold OfType.
+
 Lemma protect_terminates {τ vu} :
   OfTypeUtlc (embed τ) vu →
   ∃ vu', U.Value vu' ∧
@@ -263,72 +265,65 @@ Lemma protect_terminates {τ vu} :
          OfTypeUtlc (embed τ) vu'.
 Proof.
   revert vu.
-  induction τ; crush.
-  - exists
+  induction τ; intros vu oft_vu; crush;
+    pose proof (OfTypeUtlc_implies_Value oft_vu) as vvu.
+  - (* ptarr *)
+    exists
       (abs
          (app
             (protect τ2)[wkm]
             (app
-               (abs vu[wkm↑])
+               vu[wkm]
                (app (confine τ1)[wkm] (var 0))))).
     crush.
     apply evalToStar, U.eval₀_ctxeval; crush.
     apply U.eval_beta''; crush.
-    
+
   - (* ptunit *)
     exists U.unit.
     crush.
     apply evalToStar, U.eval₀_ctxeval; crush.
     apply U.eval_beta''; crush.
   - (* ptbool *)
-    (* why isn't this included in crush through crushOfType *)
-    match goal with 
-      | [ H: OfTypeUtlc ptbool ?t  |- _ ] => (assert (t = true ∨ t = false) by (destruct t; unfold OfTypeUtlc in H; try inversion H; intuition))
-    end.
-    assert (Value vu) by (destruct H; subst; crush).
-    exists vu.
-    crush.
+    exists vu; crush.
     apply evalToStar, U.eval₀_ctxeval; crush.
     apply U.eval_beta''; crush.
   - (* ptprod *)
+    destruct vu; crush.
 
-    pose (OfTypeUtlc_implies_Value H).
-    pose (OfTypeUtlc_implies_Value H0).
-    
-    specialize (IHτ1 vu1 H); destruct IHτ1 as (vu1' & vvu1' & hyp1).
-    specialize (IHτ2 vu2 H0); destruct IHτ2 as (vu2' & vvu2' & hyp2).
+    specialize (IHτ1 vu1 H1); destruct IHτ1 as (vu1' & vvu1' & hyp1).
+    specialize (IHτ2 vu2 H2); destruct IHτ2 as (vu2' & vvu2' & hyp2).
     exists (U.pair vu1' vu2'); crush.
 
     refine (protect_prod _ _ _ _ _ _); crush.
 
-  - (* ptsum, inl *)
-    specialize (IHτ1 vu H); destruct IHτ1 as (vu' & vvu' & hyp).
-    assert (vvu: Value vu) by eauto using OfTypeUtlc_implies_Value.
-    exists (inl vu'); crush.
-    refine (protect_inl _ _ _); crush.
-
-  - (* ptsum, inr *)
-    specialize (IHτ2 vu H); destruct IHτ2 as (vu' & vvu' & hyp).
-    assert (vvu: Value vu) by eauto using OfTypeUtlc_implies_Value.
-    exists (inr vu'); crush.
-    refine (protect_inr _ _ _); crush.
+  - (* ptsum *)
+    destruct vu; crush.
+    + (* inl *)
+      specialize (IHτ1 vu oft_vu); destruct IHτ1 as (vu' & vvu' & hyp).
+      exists (inl vu'); crush.
+      refine (protect_inl _ _ _); crush.
+    + (* inr *)
+      specialize (IHτ2 vu oft_vu); destruct IHτ2 as (vu' & vvu' & hyp).
+      exists (inr vu'); crush.
+      refine (protect_inr _ _ _); crush.
 Qed.
 
 
 Lemma confine_terminates {τ vu} :
   OfTypeUtlc (embed τ) vu →
-  ∃ vu', U.Value vu' ∧ 
+  ∃ vu', U.Value vu' ∧
          ctxevalStar (U.app (confine τ) vu) vu' ∧
          OfTypeUtlc (embed τ) vu'.
 Proof.
   revert vu.
-  induction τ; crush.
-  - exists
-      (abs
+  induction τ; intros vu oft_vu; crush;
+    pose proof (OfTypeUtlc_implies_Value oft_vu) as vvu.
+  - exists (abs
          (app
             (confine τ2)[wkm]
             (app
-               (abs vu[wkm↑])
+               (vu[wkm])
                (app (protect τ1)[wkm] (var 0))))).
     crush.
     apply evalToStar, U.eval₀_ctxeval; crush.
@@ -336,46 +331,37 @@ Proof.
   - (* ptunit *)
     exists U.unit.
     crush.
-    apply (evalStepStar (seq unit unit)). 
+    apply (evalStepStar (seq unit unit)).
     apply U.eval₀_ctxeval; crush.
     apply U.eval_beta''; crush.
     apply evalToStar, eval₀_ctxeval; crush.
     apply U.eval_seq_next.
   - (* ptbool *)
-    (* why isn't this included in crush through crushOfType *)
-    match goal with 
-      | [ H: OfTypeUtlc ptbool ?t  |- _ ] => (assert (t = true ∨ t = false) by (destruct t; unfold OfTypeUtlc in H; try inversion H; intuition))
-    end.
-    assert (Value vu) by (destruct H; subst; crush).
     exists vu.
     crush.
-    apply (evalStepStar (ite vu true false)). 
+    apply (evalStepStar (ite vu true false)).
     apply U.eval₀_ctxeval; crush.
     apply U.eval_beta''; crush.
     apply evalToStar, U.eval₀_ctxeval; crush.
-    destruct H0; subst; [apply eval_ite_true|apply eval_ite_false]; crush.
+    destruct oft_vu; subst; [apply eval_ite_true|apply eval_ite_false]; crush.
   - (* ptprod *)
+    destruct vu; crush.
 
-    pose (OfTypeUtlc_implies_Value H).
-    pose (OfTypeUtlc_implies_Value H0).
-    
-    specialize (IHτ1 vu1 H); destruct IHτ1 as (vu1' & vvu1' & hyp1).
-    specialize (IHτ2 vu2 H0); destruct IHτ2 as (vu2' & vvu2' & hyp2).
+    specialize (IHτ1 vu1 H1); destruct IHτ1 as (vu1' & vvu1' & hyp1).
+    specialize (IHτ2 vu2 H2); destruct IHτ2 as (vu2' & vvu2' & hyp2).
     exists (U.pair vu1' vu2'); crush.
     refine (confine_prod _ _ _ _ _ _); crush.
 
-
-  - (* ptsum, inl *)
-    specialize (IHτ1 vu H); destruct IHτ1 as (vu' & vvu' & hyp).
-    assert (vvu: Value vu) by eauto using OfTypeUtlc_implies_Value.
-    exists (inl vu'); crush.
-    refine (confine_inl _ _ _); crush.
-
-  - (* ptsum, inr *)
-    specialize (IHτ2 vu H); destruct IHτ2 as (vu' & vvu' & hyp).
-    assert (vvu: Value vu) by eauto using OfTypeUtlc_implies_Value.
-    exists (inr vu'); crush.
-    refine (confine_inr _ _ _); crush.
+  - (* ptsum *)
+    destruct vu; crush.
+    + (* inl *)
+      specialize (IHτ1 vu oft_vu); destruct IHτ1 as (vu' & vvu' & hyp).
+      exists (inl vu'); crush.
+      refine (confine_inl _ _ _); crush.
+    + (* inr *)
+      specialize (IHτ2 vu oft_vu); destruct IHτ2 as (vu' & vvu' & hyp).
+      exists (inr vu'); crush.
+      refine (confine_inr _ _ _); crush.
 Qed.
 
 (* domi: I should really refactor this to share the common parts with protect_tsum_transp... *)
@@ -392,33 +378,31 @@ Lemma confine_tsum_transp {d w τ₁ τ₂ vs vu} :
          valrel d w (embed (S.tsum τ₁ τ₂)) vs vu'.
 Proof.
   intros vr hyp₁ hyp₂.
+  pose proof (valrel_implies_Value vr) as vvu.
+
   destruct (valrel_ptsum_inversion vr) as [vs' [vu' [[? [? [[ots otu] hyp]]]|[? [? [[ots otu] hyp]]]]]]; subst;
-  rewrite -> valrel_fixp; unfold valrel', sum_rel; crush;
+  rewrite -> valrel_fixp; unfold valrel'; crush;
   destruct w.
-  * pose (OfTypeUtlc_implies_Value otu).
-    destruct (confine_terminates otu) as [vu'' [vvu'' eu]].
+  * destruct (confine_terminates otu) as [vu'' [vvu'' eu]].
     exists (inl vu''); crush.
     eapply confine_inl; crush.
-    match goal with [ H : _ < 0 |- _] => inversion H end.
+    omega.
   * assert (fw : w < S w) by omega.
     specialize (hyp w fw).
-    destruct (valrel_implies_Value hyp).
     destruct (hyp₁ w _ _ hyp) as [vu1' [vvu1' [e1 vr1]]].
-    pose (valrel_implies_OfType vr1).
+    pose proof (valrel_implies_OfType vr1).
     exists (inl vu1'); crush.
     apply confine_inl; crush.
 
     refine (valrel_mono _ vr1); omega.
-  * pose (OfTypeUtlc_implies_Value otu).
-    destruct (confine_terminates otu) as [vu'' [vvu'' eu]].
+  * destruct (confine_terminates otu) as [vu'' [vvu'' eu]].
     exists (inr vu''); crush.
     eapply confine_inr; crush.
-    match goal with [ H : _ < 0 |- _] => inversion H end.
+    omega.
   * assert (fw : w < S w) by omega.
     specialize (hyp w fw).
-    pose (valrel_implies_Value hyp).
     destruct (hyp₂ w  _ _ hyp) as [vu2' [vvu2' [e2 vr2]]].
-    pose (valrel_implies_OfType vr2).
+    pose proof (valrel_implies_OfType vr2).
     exists (inr vu2'); crush.
     apply confine_inr; crush.
 
@@ -439,29 +423,27 @@ Lemma protect_tprod_transp {d w τ₁ τ₂ vs vu} :
          valrel d w (embed (S.tprod τ₁ τ₂)) vs vu'.
 Proof.
   intros vr hyp₁ hyp₂.
-  destruct (valrel_ptprod_inversion vr) as [vs₁ [vs₂ [vu₁ [vu₂ [? [? [ot₁ [ot₂ hyp]]]]]]]]; subst.
+  pose proof (valrel_implies_Value vr) as vvu.
+
+  apply valrel_ptprod_inversion in vr.
+  destruct vr as [vs₁ [vs₂ [vu₁ [vu₂ [? [? [ot₁ [ot₂ hyp]]]]]]]].
   destruct w.
   * (* w = 0 *)
-    destruct (OfType_implies_Value ot₁).
-    destruct (OfType_implies_Value ot₂).
     destruct ot₁ as [ots₁ otu₁].
     destruct ot₂ as [ots₂ otu₂].
     destruct (protect_terminates otu₁) as [vu₁' [vvu₁' eu₁]].
     destruct (protect_terminates otu₂) as [vu₂' [vvu₂' eu₂]].
     exists (pair vu₁' vu₂'); crush.
     eapply protect_prod; crush.
-    rewrite -> valrel_fixp; unfold valrel', prod_rel; crush;
-    match goal with [ H : _ < 0 |- _] => inversion H end.
+    rewrite -> valrel_fixp; unfold valrel';
+      crush; try omega; constructor; eauto.
   * assert (fw : w < S w) by omega.
     destruct (hyp w fw) as [vr₁ vr₂].
-    destruct (valrel_implies_Value vr₁).
-    destruct (valrel_implies_Value vr₂).
     destruct (hyp₁ w  _ _ vr₁) as [vu1' [vvu1' [e1 vr1]]].
     destruct (hyp₂ w  _ _ vr₂) as [vu2' [vvu2' [e2 vr2]]].
+
     exists (pair vu1' vu2'); crush.
-
-    apply protect_prod; crush. 
-
+    apply protect_prod; crush.
     apply valrel_pair'; crush.
 Qed.
 
@@ -480,29 +462,28 @@ Lemma confine_tprod_transp {d w τ₁ τ₂ vs vu} :
          valrel d w (embed (S.tprod τ₁ τ₂)) vs vu'.
 Proof.
   intros vr hyp₁ hyp₂.
-  destruct (valrel_ptprod_inversion vr) as [vs₁ [vs₂ [vu₁ [vu₂ [? [? [ot₁ [ot₂ hyp]]]]]]]]; subst.
+  pose proof (valrel_implies_Value vr) as vvu.
+
+  apply valrel_ptprod_inversion in vr.
+  destruct vr as [vs₁ [vs₂ [vu₁ [vu₂ [? [? [ot₁ [ot₂ hyp]]]]]]]]; subst.
   destruct w.
   * (* w = 0 *)
-    destruct (OfType_implies_Value ot₁).
-    destruct (OfType_implies_Value ot₂).
     destruct ot₁ as [ots₁ otu₁].
     destruct ot₂ as [ots₂ otu₂].
     destruct (confine_terminates otu₁) as [vu₁' [vvu₁' eu₁]].
     destruct (confine_terminates otu₂) as [vu₂' [vvu₂' eu₂]].
+
     exists (pair vu₁' vu₂'); crush.
     eapply confine_prod; crush.
-    rewrite -> valrel_fixp; unfold valrel', prod_rel; crush;
-    match goal with [ H : _ < 0 |- _] => inversion H end.
+    rewrite -> valrel_fixp; unfold valrel'; crush; omega.
+
   * assert (fw : w < S w) by omega.
     destruct (hyp w fw) as [vr₁ vr₂].
-    destruct (valrel_implies_Value vr₁).
-    destruct (valrel_implies_Value vr₂).
     destruct (hyp₁ w  _ _ vr₁) as [vu1' [vvu1' [e1 vr1]]].
     destruct (hyp₂ w  _ _ vr₂) as [vu2' [vvu2' [e2 vr2]]].
+
     exists (pair vu1' vu2'); crush.
-
-    apply confine_prod; crush. 
-
+    apply confine_prod; crush.
     apply valrel_pair'; crush.
 Qed.
 
@@ -519,33 +500,30 @@ Lemma protect_tsum_transp {d w τ₁ τ₂ vs vu} :
          valrel d w (embed (S.tsum τ₁ τ₂)) vs vu'.
 Proof.
   intros vr hyp₁ hyp₂.
-  destruct (valrel_ptsum_inversion vr) as [vs' [vu' [[? [? [[ots otu] hyp]]]|[? [? [[ots otu] hyp]]]]]]; subst;
-  rewrite -> valrel_fixp; unfold valrel', sum_rel; crush;
+  pose proof (valrel_implies_Value vr) as vvu.
+
+  apply valrel_ptsum_inversion in vr.
+  destruct vr as [vs' [vu' [[? [? [[ots otu] hyp]]]|[? [? [[ots otu] hyp]]]]]];
+  rewrite -> valrel_fixp; unfold valrel'; crush;
   destruct w.
-  * pose (OfTypeUtlc_implies_Value otu).
-    destruct (protect_terminates otu) as [vu'' [vvu'' eu]].
-    exists (inl vu''); crush.
+  * destruct (protect_terminates otu) as [vu'' [vvu'' eu]].
+    exists (inl vu''); crush; try omega.
     eapply protect_inl; crush.
-    match goal with [ H : _ < 0 |- _] => inversion H end.
   * assert (fw : w < S w) by omega.
     specialize (hyp w fw).
-    destruct (valrel_implies_Value hyp).
     destruct (hyp₁ w _ _ hyp) as [vu1' [vvu1' [e1 vr1]]].
-    pose (valrel_implies_OfType vr1).
+    pose proof (valrel_implies_OfType vr1).
     exists (inl vu1'); crush.
     apply protect_inl; crush.
 
     refine (valrel_mono _ vr1); omega.
-  * pose (OfTypeUtlc_implies_Value otu).
-    destruct (protect_terminates otu) as [vu'' [vvu'' eu]].
-    exists (inr vu''); crush.
+  * destruct (protect_terminates otu) as [vu'' [vvu'' eu]].
+    exists (inr vu''); crush; try omega.
     eapply protect_inr; crush.
-    match goal with [ H : _ < 0 |- _] => inversion H end.
   * assert (fw : w < S w) by omega.
     specialize (hyp w fw).
-    pose (valrel_implies_Value hyp).
     destruct (hyp₂ w  _ _ hyp) as [vu2' [vvu2' [e2 vr2]]].
-    pose (valrel_implies_OfType vr2).
+    pose proof (valrel_implies_OfType vr2).
     exists (inr vu2'); crush.
     apply protect_inr; crush.
 
@@ -564,49 +542,44 @@ Lemma protect_tarr_transp {d w τ₁ τ₂ vs vu} :
          ctxevalStar (U.app (protect (S.tarr τ₁ τ₂)) vu) vu' ∧
          valrel d w (embed (S.tarr τ₁ τ₂)) vs vu'.
 Proof.
-  intros vr hyp₁ hyp₂.
-  destruct (valrel_implies_Value vr).
+  cbn; intros vr hyp₁ hyp₂.
+  pose proof (valrel_implies_Value vr) as vvu.
+
+  apply valrel_ptarr_inversion in vr.
+  destruct vr as (tsb & tub & ? & ? & wtsb & bodyrel).
   exists (abs
-            (app
-               (protect τ₂)[wkm]
-               (app vu[wkm]
-                    (app (confine τ₁)[wkm] (var 0))))).
+       (app
+          (protect τ₂)[wkm]
+          (app vu[wkm]
+               (app (confine τ₁)[wkm] (var 0))))).
   crush.
-  apply evalToStar, eval₀_ctxeval; crush.
-  apply eval_beta''; crush.
+  - apply evalToStar, eval₀_ctxeval; crush.
+    apply eval_beta''; crush.
+  - rewrite -> valrel_fixp; unfold valrel'; crush.
+    destruct (hyp₁ _ _ _ H) as [vu'' [vvu'' [eu'' vr'']]].
+    assert (Value (protect τ₂)) by apply protect_Value.
 
-  destruct (valrel_implies_OfType vr).
-  destruct (valrel_ptarr_inversion vr) as [tsb [tub [? [? bodyrel]]]]; crush.
-  rewrite -> valrel_fixp; unfold valrel'; crush.
+    enough (termrel d w' (embed τ₂) tsb[beta1 ts']
+                    (app (protect τ₂) (app (abs tub) vu'')))
+      by (refine (termrel_antired_star _ (extend_ctxevalStar' eu'' _ _ _) _);
+          eauto with eval; inferContext; crush).
 
-  change (abs tub[wkm↑][(beta1 tu')↑]) with ((abs tub)[wkm][beta1 tu']).
-  rewrite -> apply_wkm_beta1_cancel.
+    enough (termrel d w' (embed τ₂) tsb[beta1 ts']
+                    (app (protect τ₂) tub[beta1 vu''])) by
+        (refine (termrel_antired_star (rt1n_refl _ _ _) (evalToStar _) _); crush;
+         assert (e₀ : app (abs tub) vu'' -->₀ tub[beta1 vu'']) by eauto with eval;
+         eapply (ctxeval_from_eval₀ e₀); inferContext; crush;
+         inferContext; crush).
 
-  assert (Value (protect τ₂)) by apply protect_Value.
+    specialize (bodyrel w' ts' vu'' fw vr'').
+    eapply (termrel_ectx' (Cs := S.phole) bodyrel); inferContext; crush.
 
-  destruct (hyp₁ _ _ _ H) as [vu'' [vvu'' [eu'' vr'']]].
-  enough (termrel d w' (embed τ₂) tsb[beta1 ts']
-                  (app (protect τ₂) (app (abs tub) vu'')))
-    by (refine (termrel_antired_star _ (extend_ctxevalStar' eu'' _ _ _) _);
-        eauto with eval; inferContext; crush).
-
-  enough (termrel d w' (embed τ₂) tsb[beta1 ts']
-                  (app (protect τ₂) tub[beta1 vu''])) by
-      (refine (termrel_antired_star (rt1n_refl _ _ _) (evalToStar _) _); crush;
-       assert (e₀ : app (abs tub) vu'' -->₀ tub[beta1 vu'']) by eauto with eval;
-       eapply (ctxeval_from_eval₀ e₀); inferContext; crush;
-       inferContext; crush).
-
-  specialize (bodyrel w' ts' vu'' fw vr'').
-  eapply (termrel_ectx' (Cs := S.phole) bodyrel); inferContext; crush.
-  
-  destruct (hyp₂ _ _ _ H2) as [vu0' [vvu0' [e0 vr0]]].
-  enough (termrel d w'0 (embed τ₂) vs vu0')
-    by (refine (termrel_antired_star _ (extend_ctxevalStar' e0 _ _ _) _);
-        eauto with eval; inferContext; crush).
-  apply valrel_in_termrel; crush.
+    destruct (hyp₂ _ _ _ H1) as [vu0' [vvu0' [e0 vr0]]].
+    enough (termrel d w'0 (embed τ₂) vs vu0')
+      by (refine (termrel_antired_star _ (extend_ctxevalStar' e0 _ _ _) _);
+          eauto with eval; inferContext; crush).
+    apply valrel_in_termrel; crush.
 Qed.
- 
 
 Lemma confine_tarr_transp {d w τ₁ τ₂ vs vu} :
   valrel d w (embed (S.tarr τ₁ τ₂)) vs vu →
@@ -620,51 +593,46 @@ Lemma confine_tarr_transp {d w τ₁ τ₂ vs vu} :
          ctxevalStar (U.app (confine (S.tarr τ₁ τ₂)) vu) vu' ∧
          valrel d w (embed (S.tarr τ₁ τ₂)) vs vu'.
 Proof.
-  intros vr hyp₁ hyp₂.
+  cbn; intros vr hyp₁ hyp₂.
+  pose proof (valrel_implies_Value vr) as vvu.
+
   exists (abs
             (app
                (confine τ₂)[wkm]
                (app vu[wkm]
                     (app (protect τ₁)[wkm] (var 0))))).
-  destruct (valrel_implies_Value vr).
+  apply valrel_ptarr_inversion in vr.
+  destruct vr as (tsb & tub & ? & ? & wtsb & bodyrel).
   crush.
-  apply evalToStar, eval₀_ctxeval; crush.
-  apply eval_beta''; crush.
+  - apply evalToStar, eval₀_ctxeval; crush.
+    apply eval_beta''; crush.
+  - rewrite -> valrel_fixp; unfold valrel'; split; [crush|].
+    intros w' fw vs' vu' vr'; crush.
+    unfold termrel in bodyrel.
 
-  destruct (valrel_implies_OfType vr).
-  rewrite -> valrel_fixp; unfold valrel'; crush.
-  rewrite -> valrel_fixp in vr; unfold valrel' in vr.
-  destruct vr as [[[vvs tvs] _] bodyrel].
-  destruct (can_form_tarr vvs tvs) as [tsb [eq ttsb]]; subst. 
-  unfold arr_rel in *; simpl in *. 
+    assert (Value (confine τ₂)) by apply confine_Value.
 
-  intros vs' vu' vr'; crush.
-  change (abs vu[wkm↑][(beta1 vu')↑]) with ((abs vu)[wkm][beta1 vu']).
-  rewrite -> apply_wkm_beta1_cancel.
+    destruct (hyp₁ _ _ _ vr') as [vu'' [vvu'' [eu'' vr'']]].
+    enough (termrel d w' (embed τ₂) tsb[beta1 vs']
+                    (app (confine τ₂) (app (abs tub) vu'')))
+      by (refine (termrel_antired_star _ (extend_ctxevalStar' eu'' _ _ _) _);
+            eauto with eval; inferContext; crush).
 
-  assert (Value (confine τ₂)) by apply confine_Value.
+    enough (termrel d w' (embed τ₂) tsb[beta1 vs']
+                    (app (confine τ₂) tub[beta1 vu''])) by
+        (refine (termrel_antired_star (rt1n_refl _ _ _) (evalToStar _) _); crush;
+         assert (e₀ : app (abs tub) vu'' -->₀ tub[beta1 vu'']) by eauto with eval;
+         eapply (ctxeval_from_eval₀ e₀); inferContext; crush;
+         inferContext; crush).
 
-  destruct (hyp₁ _ _ _ vr') as [vu'' [vvu'' [eu'' vr'']]].
-  enough (termrel d w' (embed τ₂) tsb[beta1 vs']
-                  (app (confine τ₂) (app (abs vu) vu'')))
-    by (refine (termrel_antired_star _ (extend_ctxevalStar' eu'' _ _ _) _);
-        eauto with eval; inferContext; crush).
+    specialize (bodyrel w' vs' vu'' fw vr'').
+    eapply (termrel_ectx' (Cs := S.phole) bodyrel); inferContext; crush.
 
-  enough (termrel d w' (embed τ₂) tsb[beta1 vs']
-                  (app (confine τ₂) vu[beta1 vu''])) by
-      (refine (termrel_antired_star (rt1n_refl _ _ _) (evalToStar _) _); crush;
-       assert (e₀ : app (abs vu) vu'' -->₀ vu[beta1 vu'']) by eauto with eval;
-       eapply (ctxeval_from_eval₀ e₀); inferContext; crush;
-       inferContext; crush).
-
-  specialize (bodyrel w' fw vs' vu'' vr'').
-  eapply (termrel_ectx' (Cs := S.phole) bodyrel); inferContext; crush.
-  
-  destruct (hyp₂ _ _ _ H1) as [vu0' [vvu0' [e0 vr0]]].
-  enough (termrel d w'0 (embed τ₂) vs vu0')
-    by (refine (termrel_antired_star _ (extend_ctxevalStar' e0 _ _ _) _);
-        eauto with eval; inferContext; crush).
-  apply valrel_in_termrel; crush.
+    destruct (hyp₂ _ _ _ H0) as [vu0' [vvu0' [e0 vr0]]].
+    enough (termrel d w'0 (embed τ₂) vs vu0')
+      by (refine (termrel_antired_star _ (extend_ctxevalStar' e0 _ _ _) _);
+          eauto with eval; inferContext; crush).
+    apply valrel_in_termrel; crush.
 Qed.
 
 
@@ -680,16 +648,14 @@ Lemma protect_transp {d w τ vs vu} :
                 valrel d w (embed τ) vs vu'.
 Proof.
   - destruct τ; intros vr; crush.
-    destruct (valrel_implies_Value vr).
     + (* ptarr τ1 τ2 *)
       apply protect_tarr_transp; crush.
     + (* ptunit *)
-      exists vu.
-      pose (valrel_implies_OfType vr).
-      crush.
+      pose proof (valrel_implies_Value vr).
+      exists vu; crush.
       eapply evalToStar, eval₀_ctxeval, eval_beta''; crush.
     + (* ptbool *)
-      pose (valrel_implies_Value vr).
+      pose proof (valrel_implies_Value vr).
       exists vu; crush.
       eapply evalToStar, eval₀_ctxeval, eval_beta''; crush.
     + (* ptprod τ1 τ2 *)
@@ -698,18 +664,16 @@ Proof.
       apply protect_tsum_transp; crush.
   - (* confine *)
     destruct τ; intros vr; crush.
-    destruct (valrel_implies_Value vr).
     + (* ptarr τ1 τ2 *)
       apply confine_tarr_transp; crush.
     + (* ptunit *)
-      exists vu.
       pose (valrel_implies_OfType vr).
-      crush.
+      exists vu; crush.
       eapply (evalStepStar (seq unit unit)).
       eapply eval₀_ctxeval, eval_beta''; crush.
       eapply evalToStar, eval₀_ctxeval, eval_seq_next; crush.
     + (* ptbool *)
-      pose (valrel_implies_Value vr).
+      pose proof (valrel_implies_Value vr).
       exists vu; crush.
       eapply (evalStepStar (ite vu true false)).
       eapply eval₀_ctxeval, eval_beta''; crush.
@@ -721,4 +685,3 @@ Proof.
     + (* ptsum τ1 τ2 *)
       apply confine_tsum_transp; crush.
 Qed.
-        

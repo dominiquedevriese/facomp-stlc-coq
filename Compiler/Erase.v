@@ -555,7 +555,7 @@ Section CompatibilityLemmas.
 
     (* prove valrel for values being substituted into tsb and tub *)
     rewrite -> valrel_fixp.
-    unfold valrel', arr_rel; split; intros.
+    unfold valrel'; cbn; split; intros.
     - (* first the OfType relation *)
       crush.
     - (* prove the termrel of the body of the abstractions *)
