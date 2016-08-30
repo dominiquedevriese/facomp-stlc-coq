@@ -7,4 +7,4 @@ Definition PCtxEquivalent (Γ: Env) (t₁ t₂: Tm) (τ: Ty) : Prop :=
     (pctx_app t₁ C)⇓ ↔ (pctx_app t₂ C)⇓.
 Notation "⟪  Γ ⊢ t₁ ≃ t₂ : τ  ⟫" :=
   (PCtxEquivalent Γ t₁ t₂ τ)
-  (at level 0, Γ at level 10, t₁ at level 10, t₂ at level 10, τ at level 10).
+  (at level 0, Γ at level 98, t₁ at level 98, t₂ at level 98, τ at level 98).
