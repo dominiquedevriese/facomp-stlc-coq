@@ -71,73 +71,75 @@ Reserved Notation "⟪ ⊢ C : Γ₀ , τ₀ → Γ , τ ⟫"
    Γ₀ at level 98, τ₀ at level 98,
    Γ at level 98, τ at level 98,
    format "⟪  ⊢  C  :  Γ₀ ,  τ₀  →  Γ ,  τ  ⟫").
-Inductive PCtxTyping (Γ₀: Env) (τ₀: Ty) (Γ: Env) : PCtx → Ty → Prop :=
-  | WtPAbs {C τ₁ τ₂} :
+Inductive PCtxTyping (Γ₀: Env) (τ₀: Ty) : Env → PCtx → Ty → Prop :=
+  | WtPHole :
+      ⟪ ⊢ phole : Γ₀, τ₀ → Γ₀, τ₀ ⟫
+  | WtPAbs {Γ C τ₁ τ₂} :
       ⟪ ⊢ C : Γ₀, τ₀ → Γ ▻ τ₁, τ₂ ⟫ →
       ⟪ ⊢ pabs τ₁ C : Γ₀, τ₀ → Γ, tarr τ₁ τ₂ ⟫
-  | WtPAppl {C t₂ τ₁ τ₂} :
+  | WtPAppl {Γ C t₂ τ₁ τ₂} :
       ⟪ ⊢ C : Γ₀, τ₀ → Γ, tarr τ₁ τ₂ ⟫ →
       ⟪ Γ ⊢ t₂ : τ₁ ⟫ →
       ⟪ ⊢ papp₁ C t₂ : Γ₀, τ₀ → Γ, τ₂ ⟫
-  | WtPAppr {t₁ C τ₁ τ₂} :
+  | WtPAppr {Γ t₁ C τ₁ τ₂} :
       ⟪ Γ ⊢ t₁ : tarr τ₁ τ₂ ⟫ →
       ⟪ ⊢ C : Γ₀, τ₀ → Γ, τ₁ ⟫ →
       ⟪ ⊢ papp₂ t₁ C : Γ₀, τ₀ → Γ, τ₂ ⟫
-  | WtPIteI {C t₂ t₃ T} :
+  | WtPIteI {Γ C t₂ t₃ T} :
       ⟪ ⊢ C : Γ₀, τ₀ → Γ , tbool ⟫ →
       ⟪ Γ ⊢ t₂ : T ⟫ →
       ⟪ Γ ⊢ t₃ : T ⟫ →
       ⟪ ⊢ pite₁ C t₂ t₃ : Γ₀ , τ₀ → Γ , T ⟫
-  | WtPIteT {t₁ C t₃ T} :
+  | WtPIteT {Γ t₁ C t₃ T} :
       ⟪ Γ ⊢ t₁ : tbool ⟫ →
       ⟪ ⊢ C : Γ₀ , τ₀ → Γ , T ⟫ →
       ⟪ Γ ⊢ t₃ : T ⟫ →
       ⟪ ⊢ pite₂ t₁ C t₃ : Γ₀ , τ₀ → Γ , T ⟫
-  | WtPIteE {t₁ t₂ C T} :
+  | WtPIteE {Γ t₁ t₂ C T} :
       ⟪ Γ ⊢ t₁ : tbool ⟫ →
       ⟪ Γ ⊢ t₂ : T ⟫ →
       ⟪ ⊢ C : Γ₀ , τ₀ → Γ , T ⟫ →
       ⟪ ⊢ pite₃ t₁ t₂ C : Γ₀ , τ₀ → Γ , T ⟫
-  | WtPPair₁ {C t₂ τ₁ τ₂} :
+  | WtPPair₁ {Γ C t₂ τ₁ τ₂} :
       ⟪ ⊢ C : Γ₀, τ₀ → Γ, τ₁ ⟫ →
       ⟪ Γ ⊢ t₂ : τ₂ ⟫ →
       ⟪ ⊢ ppair₁ C t₂ : Γ₀, τ₀ → Γ, tprod τ₁ τ₂ ⟫
-  | WtPPair₂ {t₁ C τ₁ τ₂} :
+  | WtPPair₂ {Γ t₁ C τ₁ τ₂} :
       ⟪ Γ ⊢ t₁ : τ₁ ⟫ →
       ⟪ ⊢ C : Γ₀, τ₀ → Γ, τ₂ ⟫ →
       ⟪ ⊢ ppair₂ t₁ C : Γ₀, τ₀ → Γ, tprod τ₁ τ₂ ⟫
-  | WtPProj₁ {C τ₁ τ₂} :
+  | WtPProj₁ {Γ C τ₁ τ₂} :
       ⟪ ⊢ C : Γ₀, τ₀ → Γ, tprod τ₁ τ₂ ⟫ →
       ⟪ ⊢ pproj₁ C : Γ₀, τ₀ → Γ, τ₁ ⟫
-  | WtPProj₂ {C τ₁ τ₂} :
+  | WtPProj₂ {Γ C τ₁ τ₂} :
       ⟪ ⊢ C : Γ₀, τ₀ → Γ, tprod τ₁ τ₂ ⟫ →
       ⟪ ⊢ pproj₂ C : Γ₀, τ₀ → Γ, τ₂ ⟫
-  | WtPInl {C τ₁ τ₂} :
+  | WtPInl {Γ C τ₁ τ₂} :
       ⟪ ⊢ C : Γ₀, τ₀ → Γ, τ₁ ⟫ →
       ⟪ ⊢ pinl C : Γ₀, τ₀ → Γ, tsum τ₁ τ₂ ⟫
-  | WtPInr {C τ₁ τ₂} :
+  | WtPInr {Γ C τ₁ τ₂} :
       ⟪ ⊢ C : Γ₀, τ₀ → Γ, τ₂ ⟫ →
       ⟪ ⊢ pinr C : Γ₀, τ₀ → Γ, tsum τ₁ τ₂ ⟫
-  | WtPCaseof₁ {C t₂ t₃ τ₁ τ₂ T} :
+  | WtPCaseof₁ {Γ C t₂ t₃ τ₁ τ₂ T} :
       ⟪ ⊢ C : Γ₀, τ₀ → Γ, tsum τ₁ τ₂ ⟫ →
       ⟪ Γ ▻ τ₁ ⊢ t₂ : T ⟫ →
       ⟪ Γ ▻ τ₂ ⊢ t₃ : T ⟫ →
       ⟪ ⊢ pcaseof₁ C t₂ t₃ : Γ₀, τ₀ → Γ, T ⟫
-  | WtPCaseof₂ {t₁ C t₃ τ₁ τ₂ T} :
+  | WtPCaseof₂ {Γ t₁ C t₃ τ₁ τ₂ T} :
       ⟪ Γ ⊢ t₁ : tsum τ₁ τ₂ ⟫ →
       ⟪ ⊢ C : Γ₀, τ₀ → Γ ▻ τ₁, T ⟫ →
       ⟪ Γ ▻ τ₂ ⊢ t₃ : T ⟫ →
       ⟪ ⊢ pcaseof₂ t₁ C t₃ : Γ₀, τ₀ → Γ, T ⟫
-  | WtPCaseof₃ {t₁ t₂ C τ₁ τ₂ T} :
+  | WtPCaseof₃ {Γ t₁ t₂ C τ₁ τ₂ T} :
       ⟪ Γ ⊢ t₁ : tsum τ₁ τ₂ ⟫ →
       ⟪ Γ ▻ τ₁ ⊢ t₂ : T ⟫ →
       ⟪ ⊢ C : Γ₀, τ₀ → Γ ▻ τ₂, T ⟫ →
       ⟪ ⊢ pcaseof₃ t₁ t₂ C : Γ₀, τ₀ → Γ, T ⟫
-  | WtPSeq₁ {C t₂ T} :
+  | WtPSeq₁ {Γ C t₂ T} :
       ⟪ ⊢ C : Γ₀, τ₀ → Γ, tunit ⟫ →
       ⟪ Γ ⊢ t₂ : T ⟫ →
       ⟪ ⊢ pseq₁ C t₂ : Γ₀, τ₀ → Γ, T ⟫
-  | WtPFixt {τ₁ τ₂ C} :
+  | WtPFixt {Γ τ₁ τ₂ C} :
       ⟪ ⊢ C : Γ₀, τ₀ → Γ, tarr (tarr τ₁ τ₂) (tarr τ₁ τ₂) ⟫ →
       ⟪ ⊢ pfixt τ₁ τ₂ C : Γ₀, τ₀ → Γ, tarr τ₁ τ₂ ⟫
 where "⟪ ⊢ C : Γ₀ , τ₀ → Γ , τ ⟫" := (PCtxTyping Γ₀ τ₀ Γ C τ).
@@ -146,7 +148,7 @@ Lemma pctxtyping_app {Γ₀ t₀ τ₀ Γ C τ} :
   ⟪ Γ₀ ⊢ t₀ : τ₀ ⟫ → ⟪ ⊢ C : Γ₀, τ₀ → Γ , τ ⟫ → ⟪ Γ ⊢ pctx_app t₀ C : τ ⟫.
 Proof.
   intros wt₀ wC;
-  induction wC; cbn; eauto using Typing.
+  induction wC; cbn; subst; eauto using Typing.
 Qed.
 
 Lemma pctxtyping_cat {Γ₀ τ₀ C₁ Γ₁ τ₁ C₂ Γ₂ τ₂} :

@@ -185,8 +185,20 @@ Notation "⟪ Γ ⊩ ts ⟦ d ⟧ tu : τ ⟫" := (OpenLR d Γ ts tu τ)
    Γ at level 98, τ at level 98,
    format "⟪ Γ ⊩  ts ⟦ d ⟧ tu  :  τ  ⟫").
 
+Definition OpenLRCtxN (d : Direction) (n : nat) (Cs : S.PCtx) (Cu : U.PCtx) (Γ' : PEnv) (τ' : PTy) (Γ : PEnv) (τ : PTy) : Prop :=
+  ⟪ ⊢ Cs : repEmulCtx Γ' , repEmul τ' → repEmulCtx Γ , repEmul τ ⟫ ∧
+  forall ts tu, OpenLRN d n Γ' ts tu τ' -> OpenLRN d n Γ (S.pctx_app ts Cs) (U.pctx_app tu Cu) τ.
+
+Notation "⟪ ⊩ Cs ⟦ d , n ⟧ Cu : Γ₀ , τ₀ → Γ , τ ⟫" := (OpenLRCtxN d n Cs Cu Γ₀ τ₀ Γ τ)
+  (at level 0, Cs at level 98, 
+   d at level 98, n at level 98,
+   Cu at level 98,
+   Γ₀ at level 98, τ₀ at level 98,
+   Γ at level 98, τ at level 98,
+   format "⟪  ⊩  Cs ⟦ d , n ⟧ Cu  :  Γ₀ ,  τ₀  →  Γ ,  τ  ⟫").
+
 Definition OpenLRCtx (d : Direction) (Cs : S.PCtx) (Cu : U.PCtx) (Γ' : PEnv) (τ' : PTy) (Γ : PEnv) (τ : PTy) : Prop :=
-  ⟪ ⊢ Cs : repEmulCtx Γ' , repEmul τ' → repEmulCtx Γ' , repEmul τ ⟫ ∧
+  ⟪ ⊢ Cs : repEmulCtx Γ' , repEmul τ' → repEmulCtx Γ , repEmul τ ⟫ ∧
   forall ts tu, OpenLR d Γ' ts tu τ' -> OpenLR d Γ (S.pctx_app ts Cs) (U.pctx_app tu Cu) τ.
 
 Notation "⟪ ⊩ Cs ⟦ d ⟧ Cu : Γ₀ , τ₀ → Γ , τ ⟫" := (OpenLRCtx d Cs Cu Γ₀ τ₀ Γ τ)

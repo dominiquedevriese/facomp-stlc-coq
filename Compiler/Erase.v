@@ -622,4 +622,22 @@ Section CompatibilityLemmas.
     induction 1; simpl; eauto using compat_inl, compat_inr, compat_pair, compat_lambda_embed, compat_app, compat_false, compat_true, compat_var, compat_unit, embedCtx_works, compat_seq, compat_ite, compat_proj₁, compat_proj₂, compat_caseof, compat_fix'.
   Qed. 
 
+  Lemma erase_ctx_correct {Γ Γ' d n C τ τ'} :
+    ⟪ ⊢ C : Γ , τ → Γ' , τ'⟫ →
+    ⟪ ⊩ C ⟦ d , n ⟧ erase_pctx C : embedCtx Γ , embed τ → embedCtx Γ' , embed τ' ⟫.
+  Proof.
+    intros ty; unfold OpenLRCtxN; split.
+    - rewrite -> ?repEmulCtx_embedCtx_leftinv.
+      rewrite -> ?repEmul_embed_leftinv.
+      trivial.
+    - induction ty; 
+      simpl; intros ts tu lr;
+      try assumption; (* deal with phole *)
+      repeat match goal with
+               | [ H : ⟪ _ ⊢ _ : _ ⟫ |- _ ] => eapply erase_correct in H
+             end;
+      specialize (IHty ts tu lr);
+      eauto using compat_inl, compat_inr, compat_pair, compat_lambda_embed, compat_app, compat_false, compat_true, compat_var, compat_unit, embedCtx_works, compat_seq, compat_ite, compat_proj₁, compat_proj₂, compat_caseof, compat_fix'.
+  Qed. 
+
 End CompatibilityLemmas.

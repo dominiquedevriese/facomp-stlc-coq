@@ -6,7 +6,9 @@ Lemma ws_pctx_app {γ₀ t₀ γ C} :
   ⟨ γ₀ ⊢ t₀ ⟩ → ⟨ ⊢ C : γ₀ → γ ⟩ → ⟨ γ ⊢ pctx_app t₀ C ⟩.
 Proof.
   intros wt₀ wC;
-  induction wC; constructor; eauto using wsUTm.
+  induction wC; 
+  try assumption; (* deal with phole *)
+  constructor; eauto using wsUTm.
 Qed.
 
 Lemma ws_pctx_cat {γ₀ C₁ γ₁ C₂ γ₂} :

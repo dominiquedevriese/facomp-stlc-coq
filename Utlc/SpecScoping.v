@@ -31,69 +31,71 @@ Instance WsUTm : Ws UTm := wsUTm.
 Reserved Notation "⟨ ⊢ C : γ₀ → γ ⟩"
   (at level 0, C at level 98, γ₀ at level 98, γ at level 98,
    format "⟨  ⊢  C  :  γ₀  →  γ  ⟩").
-Inductive WsPCtx (γ₀: Dom) (γ: Dom) : PCtx → Prop :=
-  | WsPAbs {C} :
+Inductive WsPCtx (γ₀: Dom) : Dom → PCtx → Prop :=
+  | WsPHole :
+      ⟨ ⊢ phole : γ₀ → γ₀ ⟩
+  | WsPAbs {γ C} :
       ⟨ ⊢ C : γ₀ → S γ ⟩ →
       ⟨ ⊢ pabs C : γ₀ → γ ⟩
-  | WsPAppl {C t₂} :
+  | WsPAppl {γ C t₂} :
       ⟨ ⊢ C : γ₀ → γ ⟩ →
       ⟨ γ ⊢ t₂ ⟩ →
       ⟨ ⊢ papp₁ C t₂ : γ₀ → γ ⟩
-  | WsPAppr {t₁ C} :
+  | WsPAppr {γ t₁ C} :
       ⟨ γ ⊢ t₁ ⟩ →
       ⟨ ⊢ C : γ₀ → γ ⟩ →
       ⟨ ⊢ papp₂ t₁ C : γ₀ → γ ⟩
-  | WsPIteI {C t₂ t₃} :
+  | WsPIteI {γ C t₂ t₃} :
       ⟨ ⊢ C : γ₀ → γ ⟩ →
       ⟨ γ ⊢ t₂ ⟩ →
       ⟨ γ ⊢ t₃ ⟩ →
       ⟨ ⊢ pite₁ C t₂ t₃ : γ₀  → γ ⟩
-  | WsPIteT {t₁ C t₃} :
+  | WsPIteT {γ t₁ C t₃} :
       ⟨ γ ⊢ t₁ ⟩ →
       ⟨ ⊢ C : γ₀ → γ ⟩ →
       ⟨ γ ⊢ t₃ ⟩ →
       ⟨ ⊢ pite₂ t₁ C t₃ : γ₀ → γ ⟩
-  | WsPIteE {t₁ t₂ C} :
+  | WsPIteE {γ t₁ t₂ C} :
       ⟨ γ ⊢ t₁ ⟩ →
       ⟨ γ ⊢ t₂ ⟩ →
       ⟨ ⊢ C : γ₀ → γ ⟩ →
       ⟨ ⊢ pite₃ t₁ t₂ C : γ₀ → γ ⟩
-  | WsPPair₁ {C t₂} :
+  | WsPPair₁ {γ C t₂} :
       ⟨ ⊢ C : γ₀ → γ ⟩ →
       ⟨ γ ⊢ t₂ ⟩ →
       ⟨ ⊢ ppair₁ C t₂ : γ₀ → γ ⟩
-  | WsPPair₂ {t₁ C} :
+  | WsPPair₂ {γ t₁ C} :
       ⟨ γ ⊢ t₁ ⟩ →
       ⟨ ⊢ C : γ₀ → γ ⟩ →
       ⟨ ⊢ ppair₂ t₁ C : γ₀ → γ ⟩
-  | WsPProj₁ {C} :
+  | WsPProj₁ {γ C} :
       ⟨ ⊢ C : γ₀ → γ ⟩ →
       ⟨ ⊢ pproj₁ C : γ₀ → γ ⟩
-  | WsPProj₂ {C} :
+  | WsPProj₂ {γ C} :
       ⟨ ⊢ C : γ₀ → γ ⟩ →
       ⟨ ⊢ pproj₂ C : γ₀ → γ ⟩
-  | WsPInl {C} :
+  | WsPInl {γ C} :
       ⟨ ⊢ C : γ₀ → γ ⟩ →
       ⟨ ⊢ pinl C : γ₀ → γ ⟩
-  | WsPInr {C} :
+  | WsPInr {γ C} :
       ⟨ ⊢ C : γ₀ → γ ⟩ →
       ⟨ ⊢ pinr C : γ₀ → γ ⟩
-  | WsPCaseof₁ {C t₂ t₃} :
+  | WsPCaseof₁ {γ C t₂ t₃} :
       ⟨ ⊢ C : γ₀ → γ ⟩ →
       ⟨ S γ ⊢ t₂ ⟩ →
       ⟨ S γ ⊢ t₃ ⟩ →
       ⟨ ⊢ pcaseof₁ C t₂ t₃ : γ₀ → γ ⟩
-  | WsPCaseof₂ {t₁ C t₃} :
+  | WsPCaseof₂ {γ t₁ C t₃} :
       ⟨ γ ⊢ t₁ ⟩ →
       ⟨ ⊢ C : γ₀ → S γ ⟩ →
       ⟨ S γ ⊢ t₃ ⟩ →
       ⟨ ⊢ pcaseof₂ t₁ C t₃ : γ₀ → γ ⟩
-  | WsPCaseof₃ {t₁ t₂ C} :
+  | WsPCaseof₃ {γ t₁ t₂ C} :
       ⟨ γ ⊢ t₁ ⟩ →
       ⟨ S γ ⊢ t₂ ⟩ →
       ⟨ ⊢ C : γ₀ → S γ ⟩ →
       ⟨ ⊢ pcaseof₃ t₁ t₂ C : γ₀ → γ ⟩
-  | WsPSeq₁ {C t₂} :
+  | WsPSeq₁ {γ C t₂} :
       ⟨ ⊢ C : γ₀ → γ ⟩ →
       ⟨ γ ⊢ t₂ ⟩ →
       ⟨ ⊢ pseq₁ C t₂ : γ₀ → γ ⟩
