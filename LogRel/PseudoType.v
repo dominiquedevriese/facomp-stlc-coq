@@ -142,24 +142,3 @@ Proof.
   - destruct (IHΓ _ _ H3) as [τ'' [eq ty]].
     exists τ''; intuition; eauto using GetEvarP. 
 Qed.
-
-Lemma repEmul_embed_leftinv τ :
-  repEmul (embed τ) = τ.
-Proof.
-  induction τ; simpl; try f_equal; intuition.
-Qed.
-
-Lemma repEmulCtx_embedCtx_leftinv Γ :
-  repEmulCtx (embedCtx Γ) = Γ.
-Proof.
-  induction Γ; simpl; try f_equal; eauto using repEmul_embed_leftinv.
-Qed.
-
-Lemma getevar_repEmulCtx {i τ Γ} :
-  ⟪ i : τ ∈ repEmulCtx Γ ⟫ →
-  exists τ', ⟪ i : τ' p∈ Γ ⟫ ∧ τ = repEmul τ'.
-Proof.
-  revert i. induction Γ as [|Γ IHΓ τ'']; 
-  inversion 1; [idtac| destruct (IHΓ _ H4) as [? [? ?]]];
-  eauto using GetEvarP.
-Qed.

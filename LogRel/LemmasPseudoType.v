@@ -3,6 +3,36 @@ Require Import Stlc.LemmasTyping.
 Require Export LogRel.PseudoType.
 Require Import UVal.UVal.
 
+Section RepEmul.
+  Lemma repEmul_embed_leftinv τ :
+    repEmul (embed τ) = τ.
+  Proof.
+    induction τ; simpl; try f_equal; intuition.
+  Qed.
+
+  Lemma repEmulCtx_embedCtx_leftinv Γ :
+    repEmulCtx (embedCtx Γ) = Γ.
+  Proof.
+    induction Γ; simpl; try f_equal; eauto using repEmul_embed_leftinv.
+  Qed.
+
+End RepEmul.
+
+Ltac crushRepEmulEmbed :=
+  match goal with
+      [ |- context[ repEmul( embed ?τ) ] ] => rewrite -> (repEmul_embed_leftinv τ)
+    | [ |- context[ repEmulCtx( embedCtx ?Γ) ] ] => rewrite -> (repEmulCtx_embedCtx_leftinv Γ)
+  end.
+
+Lemma getevar_repEmulCtx {i τ Γ} :
+  ⟪ i : τ ∈ repEmulCtx Γ ⟫ →
+  exists τ', ⟪ i : τ' p∈ Γ ⟫ ∧ τ = repEmul τ'.
+Proof.
+  revert i. induction Γ as [|Γ IHΓ τ'']; 
+  inversion 1; [idtac| destruct (IHΓ _ H4) as [? [? ?]]];
+  eauto using GetEvarP.
+Qed.
+
 Section OfType.
 
   Local Ltac crush :=

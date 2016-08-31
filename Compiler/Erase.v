@@ -107,6 +107,7 @@ Local Ltac crush :=
      repeat crushLRMatch;
      crushOfType;
      crushTyping;
+     repeat crushRepEmulEmbed;
      repeat crushUtlcSyntaxMatchH;
      repeat crushUtlcScopingMatchH;
      subst;
@@ -269,12 +270,9 @@ Section CompatibilityLemmas.
     ⟪ ⊢ C : Γ , τ → Γ' , τ'⟫ →
     ⟪ ⊩ C ⟦ d , n ⟧ erase_pctx C : embedCtx Γ , embed τ → embedCtx Γ' , embed τ' ⟫.
   Proof.
-    intros ty; unfold OpenLRCtxN; split.
-    - rewrite -> ?repEmulCtx_embedCtx_leftinv.
-      rewrite -> ?repEmul_embed_leftinv.
-      trivial.
-    - induction ty; 
-      simpl; intros ts tu lr;
+    intros ty; unfold OpenLRCtxN; split; [crush|idtac].
+    induction ty; simpl; 
+    intros ts tu lr;
       try assumption; (* deal with phole *)
       repeat match goal with
                | [ H : ⟪ _ ⊢ _ : _ ⟫ |- _ ] => eapply erase_correct in H
