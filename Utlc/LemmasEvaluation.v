@@ -133,6 +133,10 @@ Section Termination.
     eauto using Terminating, values_terminate with eval.
   Qed.
 
+  (* doesn't hold, but should *)
+  Lemma Terminating_TerminatingN {t : UTm} : t ⇓ → ∃ n, t ⇓_ n.
+  Admitted.
+
 End Termination.
 
 Section SubstEval.

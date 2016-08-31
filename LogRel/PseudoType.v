@@ -8,6 +8,7 @@ Require Import Utlc.Fix.
 Require Import Utlc.LemmasEvaluation.
 Require Import Utlc.LemmasScoping.
 Require Import Utlc.SpecEvaluation.
+Require Import Utlc.SpecEquivalent.
 Require Import Utlc.SpecScoping.
 Require Import Utlc.SpecSyntax.
 Require Import UVal.UVal.
@@ -26,6 +27,7 @@ Module U.
   Include Utlc.LemmasEvaluation.
   Include Utlc.LemmasScoping.
   Include Utlc.SpecEvaluation.
+  Include Utlc.SpecEquivalent.
   Include Utlc.SpecScoping.
   Include Utlc.SpecSyntax.
 End U.

@@ -331,36 +331,32 @@ Section ClosedLR.
       rewrite -> apply_wkm_beta1_cancel; intuition.
   Qed.
 
-  Lemma termrel_adequacy_lt {w m ts vs tu τ} :
+  Lemma termrel_adequacy_lt {w m ts tu τ} :
     termrel dir_lt w τ ts tu →
-    S.evaln ts vs m →
-    S.Value vs →
+    S.TerminatingN ts m →
     lev w > m →
     U.Terminating tu.
   Proof.
-    intros tr es vvs ineq.
+    intros tr term ineq.
     specialize (tr S.phole U.phole I I contrel_triv).
     simpl in tr. unfold lev in *.
-    destruct (lt_inv_plus ineq) as [r eq]; subst.
-    rewrite <- (S_Observe_TerminatingN_evaln (S r) es) in tr.
+    destruct (le_inv_plus ineq) as [r eq]; subst.
     apply tr.
-    apply S_Observe_Terminating_value; trivial.
+    apply (S.TerminatingN_lt term); omega.
   Qed.
 
-  Lemma termrel_adequacy_gt {w m tu vu ts τ} :
+  Lemma termrel_adequacy_gt {w m tu ts τ} :
     termrel dir_gt w τ ts tu →
-    U.evaln tu vu m →
-    U.Value vu →
+    U.TerminatingN tu m →
     lev w > m →
     S.Terminating ts.
   Proof.
-    intros tr es vvu ineq.
+    intros tr term ineq.
     specialize (tr S.phole U.phole I I contrel_triv).
     simpl in tr. unfold lev in *.
-    destruct (lt_inv_plus ineq) as [r eq]; subst.
+    destruct (le_inv_plus ineq) as [r eq]; subst.
     apply tr.
-    rewrite <- (U_Observe_TerminatingN_evaln (S r) es).
-    apply U_Observe_Terminating_value; trivial.
+    apply (U.TerminatingN_lt term); omega.
   Qed.
 
 End ClosedLR.
@@ -381,38 +377,36 @@ Section OpenLR.
       refine (er _ _ iτ).
   Qed.
 
-  Lemma adequacy_lt {n m ts vs tu τ} :
+  Lemma adequacy_lt {n m ts tu τ} :
     ⟪ pempty ⊩ ts ⟦ dir_lt , n ⟧ tu : τ ⟫ →
-    S.evaln ts vs m → 
-    S.Value vs →
+    S.TerminatingN ts m → 
     n > m →
     U.Terminating tu.
   Proof.
-    intros lr es vvs ineq.
+    intros lr term ineq.
     destruct lr as [ty lr].
     set (w := n).
     assert (le_w : lev w ≤ n) by (unfold lev, w; omega).
     assert (er : envrel dir_lt w pempty (idm S.Tm) (idm U.UTm)) by apply envrel_triv.
     pose proof (lr w le_w (idm S.Tm) (idm U.UTm) er) as tr.
     rewrite -> ?ap_id in tr.
-    eapply (termrel_adequacy_lt tr es); trivial.
+    eapply (termrel_adequacy_lt tr term); trivial.
   Qed.
 
-  Lemma adequacy_gt {n m tu vu ts τ} :
+  Lemma adequacy_gt {n m tu ts τ} :
     ⟪ pempty ⊩ ts ⟦ dir_gt , n ⟧ tu : τ ⟫ →
-    U.evaln tu vu m → 
-    U.Value vu →
+    U.TerminatingN tu m → 
     n > m →
     S.Terminating ts.
   Proof.
-    intros lr es vvs ineq.
+    intros lr term ineq.
     destruct lr as [ty lr].
     set (w := n).
     assert (le_w : lev w ≤ n) by (unfold lev, w; omega).
     assert (er : envrel dir_lt w pempty (idm S.Tm) (idm U.UTm)) by apply envrel_triv.
     pose proof (lr w le_w (idm S.Tm) (idm U.UTm) er) as tr.
     rewrite -> ?ap_id in tr.
-    eapply (termrel_adequacy_gt tr es); trivial.
+    eapply (termrel_adequacy_gt tr term); trivial.
   Qed.
 
 End OpenLR.

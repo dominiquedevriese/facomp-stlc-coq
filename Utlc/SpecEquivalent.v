@@ -8,3 +8,11 @@ Definition PCtxEquivalent (γ: Dom) (t₁ t₂: UTm) : Prop :=
 Notation "⟨  γ ⊢ t₁ ≃ t₂ ⟩" :=
   (PCtxEquivalent γ t₁ t₂)
   (at level 0, γ at level 10, t₁ at level 10, t₂ at level 10).
+
+Lemma pctx_equiv_symm {γ t₁ t₂} :
+  ⟨ γ ⊢ t₁ ≃ t₂ ⟩ → ⟨ γ ⊢ t₂ ≃ t₁ ⟩.
+Proof.
+  unfold PCtxEquivalent.
+  intros equiv C wsc; split;  
+  apply (equiv C wsc).
+Qed.

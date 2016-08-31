@@ -153,6 +153,11 @@ Proof.
   exists t'. auto.
 Qed.
 
+(* This should hold, but doesn't? *)
+Lemma Terminating_TerminatingN {t : Tm} : t ⇓ -> ∃ n, t ⇓_ n.
+Admitted.
+
+
 Lemma values_terminate {t : Tm} : Value t → t ⇓.
 Proof.
   intros v.
