@@ -11,6 +11,8 @@ Db/Tactics.v
 Db/WellScoping.v
 LogRel/LR.v
 LogRel/LemmasLR.v
+LogRel/LemmasIntro.v
+LogRel/LemmasInversion.v
 LogRel/LemmasPseudoType.v
 LogRel/PseudoType.v
 Stlc/CanForm.v
