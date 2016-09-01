@@ -54,19 +54,10 @@ Section Obs.
     eauto using S.TerminatingN_lt, U.TerminatingN_lt.
   Qed.
   
-  Lemma S_TerminatingN_xor_evaln {t t' n} :
-    S.TerminatingN t n → S.evaln t t' (S n) → False.
-  Proof.
-    induction 1 as [?|? ? ? indHyp];
-    inversion 1 as [|? ? ? e es]; subst.
-    - refine (S.values_are_normal _ _); eauto.
-    - refine (indHyp _ e es).
-  Qed.
-
   Lemma S_ObserveTerminatingN_xor_evaln {t t' n} :
     S.evaln t t' n → False ↔ Observe n (S.TerminatingN t).
   Proof.
-    destruct n; simpl in *; intuition; eauto using S_TerminatingN_xor_evaln.
+    destruct n; simpl in *; intuition; eauto using S.TerminatingN_xor_evaln.
   Qed.
 
   Lemma S_Observe_TerminatingN_evaln {t t' n } n' :

@@ -73,30 +73,12 @@ Inductive eval : Tm → Tm → Prop :=
     t -->₀ t' → ECtx C → pctx_app t C --> pctx_app t' C
 where "t₁ --> t₂" := (eval t₁ t₂).
 
-Inductive Terminating (t: Tm) : Prop :=
-  | TerminatingI : (∀ t', t --> t' → Terminating t') → Terminating t.
-Notation "t ⇓" := (Terminating t) (at level 8, format "t ⇓").
-
-Lemma TerminatingD (t: Tm) (m: t⇓) :
-  ∀ t', t --> t' → Terminating t'.
-Proof. inversion m; auto. Qed.
-
-Notation "t ⇑" := (not (Terminating t)) (at level 8, format "t ⇑").
-Notation "t₁ -->* t₂" := (clos_refl_trans_1n Tm eval t₁ t₂) (at level 80).
-Notation "t₁ -->+ t₂" := (clos_trans_1n Tm eval t₁ t₂) (at level 80).
-
 Hint Constructors eval : eval.
 Hint Constructors eval₀ : eval.
 Hint Constructors clos_refl_trans_1n : eval.
 Hint Constructors clos_trans_1n : eval.
 
 Definition normal (t : Tm) := not (exists t', t --> t').
-
-(* Terminates in maximum n steps *)
-Inductive TerminatingN (t: Tm) : nat -> Prop :=
-  | TerminatingIV : forall n, Value t -> TerminatingN t n
-  | TerminatingIS : forall n, (∀ t', t --> t' → TerminatingN t' n) → TerminatingN t (S n).
-Notation "t ⇓_ n" := (TerminatingN t n) (at level 8, format "t ⇓_ n").
 
 (* Alternative induction principle without program contexts. *)
 Lemma eval_ind' (P: Tm → Tm → Prop) :
@@ -153,3 +135,19 @@ Proof.
 Qed.
 
 Definition evaln := stepRel eval.
+
+Notation "t₁ -->* t₂" := (clos_refl_trans_1n Tm eval t₁ t₂) (at level 80).
+Notation "t₁ -->+ t₂" := (clos_trans_1n Tm eval t₁ t₂) (at level 80).
+
+Inductive Terminating (t: Tm) : Prop :=
+  | TerminatingI : ∀ v, Value v → t -->* v → Terminating t.
+
+Notation "t ⇓" := (Terminating t) (at level 8, format "t ⇓").
+Notation "t ⇑" := (not (Terminating t)) (at level 8, format "t ⇑").
+
+(* Terminates in maximum n steps *)
+Inductive TerminatingN (t: Tm) (n : nat) : Prop :=
+  | TerminatingIN : ∀ v m, Value v → m ≤ n → evaln t v m -> TerminatingN t n.
+Notation "t ⇓_ n" := (TerminatingN t n) (at level 8, format "t ⇓_ n").
+
+Hint Constructors stepRel : eval.

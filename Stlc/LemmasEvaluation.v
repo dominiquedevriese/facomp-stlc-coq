@@ -57,57 +57,75 @@ Proof.
   induction 1; unfold evaln; eauto using eval_ctx with eval.
 Qed.
 
+Lemma termination_closed_under_antireduction {t t'} :
+  t --> t' → t'⇓ → t⇓.
+Proof.
+  intros e m. 
+  destruct m as [v vv es].
+  refine (TerminatingI t v vv _). 
+  crush.
+Qed.
+
+
+Lemma terminationN_closed_under_antireduction {t t' n} :
+  t --> t' → TerminatingN t' n → TerminatingN t (S n).
+Proof.
+  intros e term.
+  destruct term as [v m].
+  apply (TerminatingIN t (S n) v (S m)); crush; try omega.
+  eapply stepRel_step; crush.
+Qed.
+
+
+Lemma termination_closed_under_antireductionStar {t t'} :
+  t -->* t' → t'⇓ → t⇓.
+Proof.
+  intros e m. induction e; 
+  eauto using termination_closed_under_antireduction.
+Qed.
+
+Lemma eval_ectx_inv C t (ec : ECtx C) t' :
+  pctx_app t C --> t' →
+  Value t ∨ exists t'', t' = pctx_app t'' C ∧ t --> t''.
+Admitted.
+
+Lemma value_ectx_inv C t (ec : ECtx C) :
+  Value (pctx_app t C) → Value t.
+Proof.
+  intros v; induction C; crush.
+Qed.
+
+Lemma evalStar_ectx_inv C t (ec : ECtx C) v :
+  pctx_app t C -->* v → Value v →
+  exists v', Value v' ∧ t -->* v' ∧ pctx_app v' C -->* v.
+Proof.
+  intros es vv; depind es.
+  - exists t; eauto using value_ectx_inv with eval.
+  - destruct (eval_ectx_inv C t ec _ H) as [vt|[t'' [eq e]]].
+    + exists t; crush.
+    + subst.
+      destruct (IHes t'' C ec eq_refl vv) as (v' & vv' & es1' & es2').
+      exists v'; crush.
+Qed.
+         
+Lemma values_terminate {t : Tm} : Value t → t ⇓.
+Proof.
+  intros v.
+  refine (TerminatingI t t v _).
+  crush.
+Qed.
+
 Lemma inversion_termination_evalcontext C t (ec: ECtx C) :
   Terminating (pctx_app t C) → Terminating t.
 Proof.
   intro term; depind term.
-  constructor.
-  eauto using eval_ctx.
+  destruct (evalStar_ectx_inv C t ec v H0) as (v' & vv & es1 & es2); subst; crush.
+  refine (TerminatingI t v' vv es1).
 Qed.
-
-Lemma termination_closed_under_evalplus {t t'} :
-  t -->+ t' → t⇓ → t'⇓.
-Proof. intros e m; induction e; inversion m; auto. Qed.
-
-Lemma termination_closed_under_evalstar {t t'} :
-  t -->* t' → t⇓ → t'⇓.
-Proof.
-  intros e; destruct (inversion_evalStar e); subst;
-    eauto using termination_closed_under_evalplus.
-Qed.
-
-Corollary divergence_closed_under_eval {t t'} :
-  t --> t' → t'⇑ → t⇑.
-Proof. eauto using TerminatingD with eval. Qed.
-
-Corollary divergence_closed_under_evalplus {t t'} :
-  t -->+ t' → t'⇑ → t⇑.
-Proof. eauto using termination_closed_under_evalplus. Qed.
-
-Corollary divergence_closed_under_evalstar {t t'} :
-  t -->* t' → t'⇑ → t⇑.
-Proof. eauto using termination_closed_under_evalstar. Qed.
 
 Corollary divergence_closed_under_evalcontex t :
   t⇑ → ∀ p, ECtx p → (pctx_app t p)⇑.
 Proof. eauto using inversion_termination_evalcontext. Qed.
-
-(* Stronger induction principle *)
-Lemma Terminating_ind' (P: Tm → Prop)
- (step: ∀ t,
-   (∀ t', t -->+ t' → t'⇓) →
-   (∀ t', t -->+ t' → P t') → P t) :
-  ∀ t, t⇓ → P t.
-Proof.
-  pose proof @termination_closed_under_evalplus.
-  intros t m.
-  apply step; eauto.
-  induction m; inversion 1; eauto.
-Qed.
-
-Lemma cycles_dont_terminate {t} :
-  t -->+ t → t⇑.
-Proof. induction 2 using Terminating_ind'; eauto. Qed.
 
 Definition normal' (t : Tm) := ∀ t', ¬ (t --> t').
 Lemma values_are_normal' {t : Tm} : Value t -> normal' t.
@@ -122,7 +140,8 @@ Qed.
 
 Lemma values_terminateN {t n} : Value t → t ⇓_ n.
 Proof.
-  intros v. constructor. trivial.
+  intros v. refine (TerminatingIN _ n _ 0 v _ _); 
+    [omega| apply stepRel_zero].
 Qed.
 
 Ltac crushImpossibleEvals :=
@@ -137,39 +156,36 @@ Ltac crushImpossibleEvals :=
         | [ Hx : Value ?x,  H' : inr ?x --> _ |- _ ] => exfalso; refine (values_are_normal' _ _ H'); crush
   end.
 
-Lemma TerminatingDN (t: Tm) n (m: t ⇓_ (S n)) :
-  ∀ t', t --> t' → TerminatingN t' n.
-Proof. 
-  depind m; intros t' e'; eauto using values_are_normal.
-  exfalso.
-  refine (values_are_normal H _); exists t'; auto.
+Lemma evaln_to_evalStar {t t' n} : evaln t t' n → t -->* t'.
+Proof.
+  induction 1; crush.
 Qed.
-
 
 Lemma TerminatingN_Terminating {t : Tm} {n} : t ⇓_ n -> t ⇓.
 Proof.
-  induction 1; constructor; try assumption.
-  intros t' e'. exfalso. refine (values_are_normal H _).
-  exists t'. auto.
+  induction 1; econstructor; eauto using evaln_to_evalStar.
+Qed.
+
+Lemma evalStar_to_evaln {t t'} : t -->* t' → exists n, evaln t t' n.
+Proof.
+  induction 1.
+  - exists 0; apply stepRel_zero.
+  - destruct (IHclos_refl_trans_1n) as (n & en).
+    exists (S n); eapply stepRel_step; crush.
 Qed.
 
 (* This should hold, but doesn't? *)
 Lemma Terminating_TerminatingN {t : Tm} : t ⇓ -> ∃ n, t ⇓_ n.
-Admitted.
-
-
-Lemma values_terminate {t : Tm} : Value t → t ⇓.
 Proof.
-  intros v.
-  enough (t ⇓_ 0) as t0 by (apply (TerminatingN_Terminating t0)).
-  apply values_terminateN; trivial.
+  induction 1.
+  destruct (evalStar_to_evaln H0) as [n en].
+  exists n; econstructor; crush.
 Qed.
-
 
 Lemma determinacy' {t t' t'' t'''} : t --> t' → t'' --> t''' → t = t'' → t' = t'''.
 Proof.
   intros e₁.
-  revert t'' t'''. 
+  revert t'' t'''.
   induction e₁ using eval_ind';
   induction 1 using eval_ind'; crush; try crushImpossibleEvals.
 Qed.
@@ -179,49 +195,72 @@ Proof.
   eauto using determinacy'.
 Qed.
 
-Lemma termination_closed_under_antireduction {t t'} :
-  t --> t' → t'⇓ → t⇓.
-Proof.
-  intros e m. constructor. intros t'' e'.
-  rewrite <- (determinacy e e').
-  assumption.
+Lemma TerminatingD (t: Tm) (m: t⇓) :
+  ∀ t', t --> t' → Terminating t'.
+Proof. 
+  inversion m as [v vv]; destruct H; 
+  intros t' e; try crushImpossibleEvals.
+  destruct (determinacy H e).
+  refine (TerminatingI _ _ vv H0).
 Qed.
 
-Lemma termination_closed_under_antireductionStar {t t'} :
-  t -->* t' → t'⇓ → t⇓.
-Proof.
-  intros e m. induction e. 
-  - assumption.
-  - eauto using termination_closed_under_antireduction.
+Lemma TerminatingDN (t: Tm) n (term: t ⇓_ (S n)) :
+  ∀ t', t --> t' → TerminatingN t' n.
+Proof. 
+  inversion term as [v m]. intros t' e.
+  destruct H1; try crushImpossibleEvals.
+  destruct (determinacy H1 e).
+  refine (TerminatingIN _ _ _ _ H _ H2); omega.
 Qed.
 
-Lemma evaln_to_evalStar {t t' n} : evaln t t' n → t -->* t'.
-Proof.
-  induction 1; crush.
-Qed.
+Lemma termination_closed_under_evalplus {t t'} :
+  t -->+ t' → t⇓ → t'⇓.
+Proof. intros e m; induction e; eauto using TerminatingD. Qed.
+
+Lemma termination_closed_under_evalstar {t t'} :
+  t -->* t' → t⇓ → t'⇓.
+Proof. intros e m; induction e; eauto using TerminatingD. Qed.
+
+Corollary divergence_closed_under_eval {t t'} :
+  t --> t' → t'⇑ → t⇑.
+Proof. eauto using TerminatingD with eval. Qed.
+
+Corollary divergence_closed_under_evalplus {t t'} :
+  t -->+ t' → t'⇑ → t⇑.
+Proof. eauto using termination_closed_under_evalplus. Qed.
+
+Corollary divergence_closed_under_evalstar {t t'} :
+  t -->* t' → t'⇑ → t⇑.
+Proof. eauto using termination_closed_under_evalstar. Qed.
+
+Lemma cycles_dont_terminate {t} :
+  t -->+ t → t⇑.
+Admitted.
 
 Lemma TerminatingN_lt {t n n'} :
   TerminatingN t n → n ≤ n' → TerminatingN t n'.
 Proof.
-  intros term. revert n'.
-  induction term; [ constructor; auto | idtac].
-  intros n' le.
-  destruct (S_le le); destruct_conjs; subst.
-  apply TerminatingIS.
-  auto.
+  destruct 1.
+  intros ineq.
+  refine (TerminatingIN _ _ _ _ H _ H1); omega.
 Qed.
+
+(* Lemma TerminatingN_eval1 {t t' n} : *)
+(*   t --> t' → TerminatingN t' n → TerminatingN t (S n). *)
+(* Proof. *)
+(*   intros e term. *)
+(*   destruct term as [v m]. *)
+(*   apply (TerminatingIN t (S n) v (S m)); crush; try omega. *)
+(*   eapply stepRel_step; crush. *)
+(* Qed. *)
 
 Lemma TerminatingN_eval {t t' n} :
   t --> t' → TerminatingN t' n ↔ TerminatingN t (S n).
 Proof.
-  intros e.
-  constructor; intros term.
-  - apply TerminatingIS.
-    intros t'' e'.
-    rewrite <- (determinacy e e').
-    assumption.
-  - depind term; try crushImpossibleEvals;
-    eauto.
+  intros term.
+  split; intros; 
+  [eapply terminationN_closed_under_antireduction | eapply TerminatingDN];
+  crush.
 Qed.
     
 Lemma TerminatingN_evaln {t t' n } n' :
@@ -233,19 +272,29 @@ Proof.
   apply IHstepRel; auto.
 Qed.
 
-(* This should not hold. *)
-Lemma terminatingn_app_unit_unit :
-  TerminatingN (app unit unit) 1.
+Lemma evaln_split {t t' } n n':
+  evaln t t' (n + n') → exists t'', evaln t t'' n ∧ evaln t'' t' n'.
 Proof.
-  constructor 2; intros; exfalso.
-  cut (∀ t t', t --> t' → t = app unit unit → False); eauto.
-  clear.
-  induction 1 using eval_ind'; crush;
-    apply (@values_are_normal unit); crush.
+  revert t; induction n.
+  - intros; exists t; simpl in *; split; [apply stepRel_zero|assumption].
+  - intros t esn; depind esn; clear IHesn.
+    destruct (IHn t' esn) as (t3 & es1 & es2).
+    exists t3; split; try assumption.
+    eapply stepRel_step; crush.
 Qed.
 
-(* This should hold, but doesn't. *)
-Lemma terminatingN_value {t n} :
-  TerminatingN t n → ∃ v, t -->* v ∧ Value v.
-Abort.
 
+Lemma TerminatingN_xor_evaln {t t' n} :
+  TerminatingN t n → evaln t t' (S n) → False.
+Proof.
+  intros term esn.
+  replace (S n) with (n + 1) in esn by omega.
+  destruct (evaln_split n 1 esn) as (t'' & en & e1).
+  replace n with (n + 0) in term by omega.
+  rewrite <- (TerminatingN_evaln 0 en) in term.
+  inversion term.
+  assert (m = 0) by omega; subst.
+  inversion H1; subst.
+  inversion e1.
+  crushImpossibleEvals.
+Qed.
