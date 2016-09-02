@@ -137,15 +137,6 @@ Hint Resolve eval_beta' : eval.
 Hint Resolve eval_case_inl' : eval.
 Hint Resolve eval_case_inr' : eval.
 
-Inductive Terminating (t: UTm) : Prop :=
-  | TerminatingI : (∀ t', t --> t' → Terminating t') → Terminating t.
-Notation "t ⇓" := (Terminating t) (at level 8, format "t ⇓").
-
-Lemma TerminatingD (t: UTm) (m: t⇓) :
-  ∀ t', t --> t' → Terminating t'.
-Proof. inversion m; auto. Qed.
-
-Notation "t ⇑" := (not (Terminating t)) (at level 8, format "t ⇑").
 Notation "t₁ -->* t₂" := (clos_refl_trans_1n UTm eval t₁ t₂) (at level 80).
 Notation "t₁ -->+ t₂" := (clos_trans_1n UTm eval t₁ t₂) (at level 80).
 
@@ -154,24 +145,9 @@ Hint Constructors eval : eval.
 Hint Constructors clos_refl_trans_1n : eval.
 Hint Constructors clos_trans_1n : eval.
 
-Definition normal (t : UTm) := ∀ t', ¬ (t --> t').
-
-(* Terminates in maximum n steps *)
-Inductive TerminatingN (t: UTm) : nat -> Prop :=
-  | TerminatingIV : forall n, Value t -> TerminatingN t n
-  | TerminatingIS : forall n, (∀ t', t --> t' → TerminatingN t' n) → TerminatingN t (S n).
-Notation "t ⇓_ n" := (TerminatingN t n) (at level 8, format "t ⇓_ n").
-
 Hint Constructors stepRel : eval.
 
 Definition evaln := stepRel eval.
-
-Ltac crushUtlcEvaluationMatchH :=
-  match goal with
-    | [ H: exists tub', ?tu = abs tub' |- Value ?tu ] => (destruct H as [? ?]; subst)
-  end.
-
-
 
 Inductive ctxeval : UTm → UTm → Prop :=
 | mkCtxEval : forall Cu t₀ t₀', ECtx Cu → t₀ -->₀ t₀' → ctxeval (pctx_app t₀ Cu) (pctx_app t₀' Cu).
@@ -180,3 +156,22 @@ Definition ctxevalStar := clos_refl_trans_1n UTm ctxeval.
 Definition ctxevaln := stepRel ctxeval.
 
 Arguments ctxevaln /.
+
+Definition normal (t : UTm) := ∀ t', ¬ (t --> t').
+
+Definition Terminating (t: UTm) : Prop :=
+  ∃ v, Value v ∧ t -->* v.
+Notation "t ⇓" := (Terminating t) (at level 8, format "t ⇓").
+
+Notation "t ⇑" := (not (Terminating t)) (at level 8, format "t ⇑").
+
+(* Terminates in maximum n steps *)
+Definition TerminatingN (t: UTm) (n : nat) : Prop :=
+  ∃ v m, Value v ∧ m ≤ n ∧ evaln t v m.
+
+Notation "t ⇓_ n" := (TerminatingN t n) (at level 8, format "t ⇓_ n").
+
+Ltac crushUtlcEvaluationMatchH :=
+  match goal with
+    | [ H: exists tub', ?tu = abs tub' |- Value ?tu ] => (destruct H as [? ?]; subst)
+  end.

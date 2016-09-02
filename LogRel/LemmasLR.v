@@ -79,19 +79,10 @@ Section Obs.
   Qed.
     
 
-  Lemma U_TerminatingN_xor_evaln {t t' n} :
-    U.TerminatingN t n → U.evaln t t' (S n) → False.
-  Proof.
-    induction 1 as [?|? ? ? indHyp];
-    inversion 1 as [|? ? ? e es]; subst.
-    - refine (U.values_are_normal _ _); eauto.
-    - refine (indHyp _ e es).
-  Qed.
-
   Lemma U_ObserveTerminatingN_xor_evaln {t t' n} :
     U.evaln t t' n → False ↔ Observe n (U.TerminatingN t).
   Proof.
-    destruct n; simpl in *; intuition; eauto using U_TerminatingN_xor_evaln.
+    destruct n; simpl in *; intuition; eauto using U.TerminatingN_xor_evaln.
   Qed.
 
   Lemma U_Observe_TerminatingN_evaln {t t' n } n' :

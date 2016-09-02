@@ -60,20 +60,19 @@ Qed.
 Lemma termination_closed_under_antireduction {t t'} :
   t --> t' → t'⇓ → t⇓.
 Proof.
-  intros e m. 
-  destruct m as [v vv es].
-  refine (TerminatingI t v vv _). 
-  crush.
+  destruct 2 as [v ?].
+  exists v; crush.
 Qed.
 
 
 Lemma terminationN_closed_under_antireduction {t t' n} :
   t --> t' → TerminatingN t' n → TerminatingN t (S n).
 Proof.
-  intros e term.
-  destruct term as [v m].
-  apply (TerminatingIN t (S n) v (S m)); crush; try omega.
-  eapply stepRel_step; crush.
+  destruct 2 as (v & m & ? & ? & ?).
+  exists v, (S m); repeat split.
+  - crush.
+  - omega.
+  - eapply stepRel_step; crush.
 Qed.
 
 
@@ -108,19 +107,17 @@ Proof.
       exists v'; crush.
 Qed.
          
-Lemma values_terminate {t : Tm} : Value t → t ⇓.
+Lemma values_terminate {v : Tm} : Value v → v ⇓.
 Proof.
-  intros v.
-  refine (TerminatingI t t v _).
-  crush.
+  intros vv. exists v; crush.
 Qed.
 
 Lemma inversion_termination_evalcontext C t (ec: ECtx C) :
   Terminating (pctx_app t C) → Terminating t.
 Proof.
-  intro term; depind term.
-  destruct (evalStar_ectx_inv C t ec v H0) as (v' & vv & es1 & es2); subst; crush.
-  refine (TerminatingI t v' vv es1).
+  destruct 1 as (v & vv & es).
+  destruct (evalStar_ectx_inv C t ec v es) as (v' & vv' & es1 & es2); subst; crush.
+  exists v'; crush.
 Qed.
 
 Corollary divergence_closed_under_evalcontex t :
@@ -140,8 +137,10 @@ Qed.
 
 Lemma values_terminateN {t n} : Value t → t ⇓_ n.
 Proof.
-  intros v. refine (TerminatingIN _ n _ 0 v _ _); 
-    [omega| apply stepRel_zero].
+  intros v. exists t, 0; repeat split.
+  - crush.
+  - omega.
+  - eapply stepRel_zero.
 Qed.
 
 Ltac crushImpossibleEvals :=
@@ -163,7 +162,8 @@ Qed.
 
 Lemma TerminatingN_Terminating {t : Tm} {n} : t ⇓_ n -> t ⇓.
 Proof.
-  induction 1; econstructor; eauto using evaln_to_evalStar.
+  destruct 1 as (v & m & vv & ineq & es).
+  exists v; eauto using evaln_to_evalStar.
 Qed.
 
 Lemma evalStar_to_evaln {t t'} : t -->* t' → exists n, evaln t t' n.
@@ -177,8 +177,8 @@ Qed.
 (* This should hold, but doesn't? *)
 Lemma Terminating_TerminatingN {t : Tm} : t ⇓ -> ∃ n, t ⇓_ n.
 Proof.
-  induction 1.
-  destruct (evalStar_to_evaln H0) as [n en].
+  destruct 1 as (v & vv & es).
+  destruct (evalStar_to_evaln es) as [n en].
   exists n; econstructor; crush.
 Qed.
 
@@ -198,19 +198,24 @@ Qed.
 Lemma TerminatingD (t: Tm) (m: t⇓) :
   ∀ t', t --> t' → Terminating t'.
 Proof. 
-  inversion m as [v vv]; destruct H; 
+  destruct m as (v & vv & es). 
+  destruct es; 
   intros t' e; try crushImpossibleEvals.
   destruct (determinacy H e).
-  refine (TerminatingI _ _ vv H0).
+  exists z; crush.
 Qed.
 
 Lemma TerminatingDN (t: Tm) n (term: t ⇓_ (S n)) :
   ∀ t', t --> t' → TerminatingN t' n.
 Proof. 
-  inversion term as [v m]. intros t' e.
-  destruct H1; try crushImpossibleEvals.
-  destruct (determinacy H1 e).
-  refine (TerminatingIN _ _ _ _ H _ H2); omega.
+  destruct term as (v & m & vv & ineq & esn). 
+  intros t' e.
+  destruct esn; try crushImpossibleEvals.
+  destruct (determinacy H e).
+  exists t'', n0; repeat split.
+  - crush.
+  - omega.
+  - crush.
 Qed.
 
 Lemma termination_closed_under_evalplus {t t'} :
@@ -240,9 +245,10 @@ Admitted.
 Lemma TerminatingN_lt {t n n'} :
   TerminatingN t n → n ≤ n' → TerminatingN t n'.
 Proof.
-  destruct 1.
-  intros ineq.
-  refine (TerminatingIN _ _ _ _ H _ H1); omega.
+  destruct 1 as (v & m & vv & ineq & esm).
+  intros ineq'.
+  exists v, m; repeat split; crush.
+  omega.
 Qed.
 
 (* Lemma TerminatingN_eval1 {t t' n} : *)
@@ -292,9 +298,9 @@ Proof.
   destruct (evaln_split n 1 esn) as (t'' & en & e1).
   replace n with (n + 0) in term by omega.
   rewrite <- (TerminatingN_evaln 0 en) in term.
-  inversion term.
+  destruct term as (v & m & vv & ineq & esm).
   assert (m = 0) by omega; subst.
-  inversion H1; subst.
+  inversion esm; subst.
   inversion e1.
   crushImpossibleEvals.
 Qed.

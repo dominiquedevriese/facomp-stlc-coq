@@ -4,6 +4,8 @@ Require Export Utlc.SpecEvaluation.
 Require Import Common.Common.
 Require Import Common.Relations.
 
+Require Import Omega.
+
 Local Ltac crush :=
   intros;
   repeat
@@ -14,6 +16,12 @@ Local Ltac crush :=
      repeat crushUtlcEvaluationMatchH;
      (* repeat crushDbLemmasMatchH; *)
      repeat crushDbLemmasRewriteH;
+     repeat match goal with
+                [ |- _ ∧ _ ] => split
+              | [ |- evaln ?t ?t 0 ] => eapply stepRel_zero
+              | [ H : eval ?t ?t', H' : evaln ?t' ?t'' ?n |- evaln ?t ?t'' (S ?n) ] => refine (stepRel_step eval _ _ _ _ H H')
+              | [ |- _ ≤ _ ] => omega
+            end;
      try subst);
   try discriminate;
   eauto.
@@ -106,6 +114,94 @@ Section Values.
 
 End Values.
 
+Section CtxEval.
+  Lemma eval₀_ctxeval {t t'} : t -->₀ t' → ctxeval t t'.
+  Proof.
+    apply (mkCtxEval phole _ _ I).
+  Qed.
+
+  Lemma ctxeval_eval {t t'} : ctxeval t t' → t --> t'.
+  Proof.
+    destruct 1.
+    refine (eval_ctx₀ _ _ _); assumption.
+  Qed.
+
+  Lemma ctxevaln_evaln {t t' n} : ctxevaln t t' n → evaln t t' n.
+  Proof.
+  Admitted.
+
+  (* The following implication is actually an equivalence, but we don't need that. *)
+  Lemma ctxeval_eval_ctx {t t'} : ctxeval t t' → forall Cu, ECtx Cu → pctx_app t Cu --> pctx_app t' Cu.
+  Proof.
+    destruct 1; intros; rewrite <- ?pctx_cat_app; eauto using ectx_cat with eval.
+  Qed.
+
+  Lemma extend_ctxeval tu tu' Cu : ECtx Cu → ctxeval tu tu' → ctxeval (pctx_app tu Cu) (pctx_app tu' Cu).
+  Proof.
+    intros eCu ce. 
+    induction ce.
+    rewrite <- ?pctx_cat_app.
+    eauto using ctxeval, ectx_cat.
+  Qed.
+
+  Lemma extend_ctxevalStar {tu tu'} Cu : ECtx Cu → ctxevalStar tu tu' → ctxevalStar (pctx_app tu Cu) (pctx_app tu' Cu).
+  Proof.
+    intros eCu ce. 
+    unfold ctxevalStar.
+    induction ce;
+    eauto using extend_ctxeval with eval.
+  Qed.
+
+  Lemma extend_ctxevalStar' {tu1 tu2 tu1' tu2' Cu} : 
+    ctxevalStar tu1 tu2 → 
+    tu1' = pctx_app tu1 Cu →
+    tu2' = pctx_app tu2 Cu →
+    ECtx Cu → ctxevalStar tu1' tu2'.
+  Proof.
+    intros; subst; eauto using extend_ctxevalStar.
+  Qed.
+End CtxEval.
+
+Section EvalN.
+  Lemma evaln_to_evalStar {t t' n} :
+    evaln t t' n → t -->* t'.
+  Proof.
+    induction 1; crush.
+  Qed.
+
+  Lemma evalStar_to_evaln {t t'} :
+    t -->* t' → exists n, evaln t t' n.
+  Proof.
+    induction 1; 
+    [exists 0|destruct IHclos_refl_trans_1n as (n & en); exists (S n)];
+    crush.
+  Qed.
+
+  Lemma evaln_to_evalPlus {t t' n} :
+    evaln t t' (S n) → t -->+ t'.
+  Proof.
+    inversion 1; subst;
+      eauto using evalStepStarToPlus, evaln_to_evalStar.
+  Qed.
+
+  Lemma ctxevaln_ctx {t t' n} :
+    ctxevaln t t' n -> forall C, ECtx C → evaln (pctx_app t C) (pctx_app t' C) n.
+  Proof.
+    intros ec C eC; unfold evaln.
+    induction ec; eauto using ctxeval_eval_ctx with eval.
+  Qed.
+
+  Lemma evaln_split {t t' } n n':
+    evaln t t' (n + n') → exists t'', evaln t t'' n ∧ evaln t'' t' n'.
+  Proof.
+    revert t; induction n.
+    - intros; exists t; crush.
+    - intros t esn; depind esn; clear IHesn.
+      destruct (IHn t' esn) as (t3 & es1 & es2).
+      exists t3; crush.
+  Qed.
+End EvalN.
+
 Section Termination.
 
   Lemma TerminatingI' (t: UTm) (vt: Value t) :
@@ -118,25 +214,26 @@ Section Termination.
 
   Lemma values_terminate (t: UTm) (vt: Value t) :
     t ⇓.
-  Proof. constructor; eauto using TerminatingI'. Qed.
+  Proof. exists t; crush. Qed.
 
   Lemma values_terminateN (t: UTm) (vt: Value t) :
     ∀ n, t ⇓_ n.
-  Proof. constructor; eauto. Qed.
-
-  Lemma TerminatingDN (t: UTm) n (m: t ⇓_ (S n)) :
-    ∀ t' : UTm, t --> t' → t'⇓_n.
-  Proof. depind m; eauto using TerminatingIV'. Qed.
-
-  Lemma TerminatingN_Terminating {t : UTm} {n} : t ⇓_ n -> t ⇓.
-  Proof. induction 1;
-    eauto using Terminating, values_terminate with eval.
+  Proof.
+    exists t, 0; crush.
   Qed.
 
-  (* doesn't hold, but should *)
-  Lemma Terminating_TerminatingN {t : UTm} : t ⇓ → ∃ n, t ⇓_ n.
-  Admitted.
+  Lemma TerminatingN_Terminating {t : UTm} {n} : t ⇓_ n -> t ⇓.
+  Proof. 
+    destruct 1 as (v & m & vv & ineq & esm).
+    exists v; eauto using evaln_to_evalStar with eval.
+  Qed.
 
+  Lemma Terminating_TerminatingN {t : UTm} : t ⇓ -> exists n, t ⇓_ n.
+  Proof. 
+    destruct 1 as (v & vv & es).
+    destruct (evalStar_to_evaln es) as (n & esn).
+    exists n; exists v, n; crush.
+  Qed.
 End Termination.
 
 Section SubstEval.
@@ -289,12 +386,34 @@ End Determinacy.
 
 Section Termination'.
 
+  Lemma TerminatingD (t: UTm) (m: t⇓) :
+    ∀ t', t --> t' → Terminating t'.
+  Proof. 
+    destruct m as (v & vv & es). 
+    intros t' e.
+    depind es.
+    - elim (values_are_normal vv e). 
+    - rewrite -> (determinacy e H).
+      exists z; crush.
+  Qed.
+
+  Lemma TerminatingDN (t: UTm) n (m: t ⇓_ (S n)) :
+    ∀ t' : UTm, t --> t' → t'⇓_n.
+  Proof. 
+    destruct m as (v & m & vv & ineq & es). 
+    intros t' e.
+    depind es.
+    - elim (values_are_normal vv e). 
+    - rewrite -> (determinacy e H).
+      assert (n0 ≤ n) by omega.
+      exists t'', n0; crush.
+  Qed.
+
   Lemma termination_closed_under_antireduction {t t'} :
     t --> t' → t' ⇓ → t ⇓.
   Proof.
-    intros e term. constructor. intros t'' e'.
-    assert (t' = t'') by exact (determinacy e e').
-    subst; assumption.
+    destruct 2 as (v & vv & es).
+    exists v; eauto with eval.
   Qed.
 
   Lemma termination_closed_under_antireductionStar {t t'} :
@@ -303,78 +422,17 @@ Section Termination'.
     intros e term.
     induction e; eauto using termination_closed_under_antireduction.
   Qed.
-End Termination'.
-
-Section CtxEval.
-  Lemma eval₀_ctxeval {t t'} : t -->₀ t' → ctxeval t t'.
-  Proof.
-    apply (mkCtxEval phole _ _ I).
-  Qed.
-
-  Lemma ctxeval_eval {t t'} : ctxeval t t' → t --> t'.
-  Proof.
-    destruct 1.
-    refine (eval_ctx₀ _ _ _); assumption.
-  Qed.
-
-  Lemma ctxevaln_evaln {t t' n} : ctxevaln t t' n → evaln t t' n.
-  Proof.
-  Admitted.
-
-  (* The following implication is actually an equivalence, but we don't need that. *)
-  Lemma ctxeval_eval_ctx {t t'} : ctxeval t t' → forall Cu, ECtx Cu → pctx_app t Cu --> pctx_app t' Cu.
-  Proof.
-    destruct 1; intros; rewrite <- ?pctx_cat_app; eauto using ectx_cat with eval.
-  Qed.
-
-  Lemma extend_ctxeval tu tu' Cu : ECtx Cu → ctxeval tu tu' → ctxeval (pctx_app tu Cu) (pctx_app tu' Cu).
-  Proof.
-    intros eCu ce. 
-    induction ce.
-    rewrite <- ?pctx_cat_app.
-    eauto using ctxeval, ectx_cat.
-  Qed.
-
-  Lemma extend_ctxevalStar {tu tu'} Cu : ECtx Cu → ctxevalStar tu tu' → ctxevalStar (pctx_app tu Cu) (pctx_app tu' Cu).
-  Proof.
-    intros eCu ce. 
-    unfold ctxevalStar.
-    induction ce;
-    eauto using extend_ctxeval with eval.
-  Qed.
-
-  Lemma extend_ctxevalStar' {tu1 tu2 tu1' tu2' Cu} : 
-    ctxevalStar tu1 tu2 → 
-    tu1' = pctx_app tu1 Cu →
-    tu2' = pctx_app tu2 Cu →
-    ECtx Cu → ctxevalStar tu1' tu2'.
-  Proof.
-    intros; subst; eauto using extend_ctxevalStar.
-  Qed.
-End CtxEval.
-
-Section EvalN.
-  Lemma evaln_to_evalStar {t t' n} :
-    evaln t t' n → t -->* t'.
-  Proof.
-    induction 1; crush.
-  Qed.
-
-  Lemma evaln_to_evalPlus {t t' n} :
-    evaln t t' (S n) → t -->+ t'.
-  Proof.
-    inversion 1; subst;
-      eauto using evalStepStarToPlus, evaln_to_evalStar.
-  Qed.
 
   Lemma TerminatingN_eval {t t' n } :
     t --> t' → t' ⇓_ n ↔ t ⇓_ (S n).
   Proof.
-    intros e. constructor.
-    - intros term. apply TerminatingIS. intros t'' e'.
-      replace t'' with t' by apply (determinacy e e').
-      assumption.
-    - intro term. refine (TerminatingDN _ _ term _ e).
+    intros e. constructor; 
+      destruct 1 as (v & m & vv & ineq & esm).
+    - exists v, (S m); crush.
+    - destruct esm.
+      + elim (values_are_normal vv e).
+      + rewrite -> (determinacy e H).
+        exists t'', n0; crush.
   Qed.
 
   Lemma TerminatingN_evaln {t t' n } n' :
@@ -383,24 +441,31 @@ Section EvalN.
     induction 1; eauto using iff_refl, iff_trans, TerminatingN_eval. 
   Qed.
 
+  Lemma TerminatingN_xor_evaln {t t' n} :
+    TerminatingN t n → evaln t t' (S n) → False.
+  Proof.
+    intros term essn.
+    replace (S n) with (n + 1) in essn by omega.
+    destruct (evaln_split n 1 essn) as (t'' & esn & es1).
+    replace n with (n + 0) in term by omega.
+    rewrite <- (TerminatingN_evaln 0 esn) in term.
+    destruct term as (v & m & vv & ineq & es0).
+    assert (m = 0) by omega; subst.
+    inversion es0; subst. 
+    depind es1.
+    elim (values_are_normal vv H).
+  Qed.
+
+
   Lemma TerminatingN_lt {t n n'} :
     TerminatingN t n → n ≤ n' → TerminatingN t n'.
   Proof.
-    intros term. revert n'.
-    induction term; [ constructor; auto | idtac].
-    intros n' le.
-    destruct (S_le le); destruct_conjs; subst.
-    apply TerminatingIS.
-    auto.
+    destruct 1 as (v & m & vv & ineq & esm).
+    intros ineq'.
+    exists v, m; crush.
   Qed.
 
-  Lemma ctxevaln_ctx {t t' n} :
-    ctxevaln t t' n -> forall C, ECtx C → evaln (pctx_app t C) (pctx_app t' C) n.
-  Proof.
-    intros ec C eC; unfold evaln.
-    induction ec; eauto using ctxeval_eval_ctx with eval.
-  Qed.
-End EvalN.
+End Termination'.
 
 Section EvalInContext.
   Lemma eval_from_eval₀ {t t' t₀ t₀' C} :

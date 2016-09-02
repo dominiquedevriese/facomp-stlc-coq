@@ -136,18 +136,18 @@ Qed.
 
 Definition evaln := stepRel eval.
 
+Hint Constructors stepRel : eval.
+
 Notation "t₁ -->* t₂" := (clos_refl_trans_1n Tm eval t₁ t₂) (at level 80).
 Notation "t₁ -->+ t₂" := (clos_trans_1n Tm eval t₁ t₂) (at level 80).
 
-Inductive Terminating (t: Tm) : Prop :=
-  | TerminatingI : ∀ v, Value v → t -->* v → Terminating t.
+Definition Terminating (t: Tm) : Prop :=
+  ∃ v, Value v ∧ t -->* v.
 
 Notation "t ⇓" := (Terminating t) (at level 8, format "t ⇓").
 Notation "t ⇑" := (not (Terminating t)) (at level 8, format "t ⇑").
 
 (* Terminates in maximum n steps *)
-Inductive TerminatingN (t: Tm) (n : nat) : Prop :=
-  | TerminatingIN : ∀ v m, Value v → m ≤ n → evaln t v m -> TerminatingN t n.
+Definition TerminatingN (t: Tm) (n : nat) : Prop :=
+  ∃ v m, Value v ∧ m ≤ n ∧ evaln t v m.
 Notation "t ⇓_ n" := (TerminatingN t n) (at level 8, format "t ⇓_ n").
-
-Hint Constructors stepRel : eval.
