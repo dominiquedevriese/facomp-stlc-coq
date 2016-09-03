@@ -57,4 +57,39 @@ Proof.
   unfold inSum. crushTyping.
 Qed.
 
+Definition caseV0 (case₁ : Tm) (case₂ : Tm) :=
+  caseof (var 0) (case₁ [wk↑]) (case₂[wk↑]).
 
+Definition caseUVal (n : nat) (tscrut tunk tcunit tcbool tcprod tcsum tcarr : Tm) :=
+  caseof tscrut
+         (tunk [wk])
+         (caseV0 tcunit
+                 (caseV0 tcbool
+                         (caseV0 tcprod
+                                 (caseV0 tcarr tcsum)))).
+
+Lemma caseV0_T {Γ τ₁ τ₂ τ case₁ case₂} :
+  ⟪ Γ ▻ τ₁ ⊢ case₁ : τ ⟫ →
+  ⟪ Γ ▻ τ₂ ⊢ case₂ : τ ⟫ →
+  ⟪ Γ ▻ (τ₁ ⊎ τ₂) ⊢ caseV0 case₁ case₂ : τ ⟫.
+Proof.
+  unfold caseV0.
+  crushTyping.
+Qed.
+
+
+Lemma caseUVal_T {Γ n tscrut tunk tcunit tcbool tcprod tcsum tcarr τ} :
+  ⟪ Γ ⊢ tscrut : UVal (S n) ⟫ →
+  ⟪ Γ ⊢ tunk : τ ⟫ →
+  ⟪ Γ ▻ tunit ⊢ tcunit : τ ⟫ →
+  ⟪ Γ ▻ tbool ⊢ tcbool : τ ⟫ →
+  ⟪ Γ ▻ (UVal n × UVal n) ⊢ tcprod : τ ⟫ →
+  ⟪ Γ ▻ (UVal n ⊎ UVal n) ⊢ tcsum : τ ⟫ →
+  ⟪ Γ ▻ (UVal n ⇒ UVal n) ⊢ tcarr : τ ⟫ →
+  ⟪ Γ ⊢ caseUVal n tscrut tunk tcunit tcbool tcprod tcsum tcarr : τ ⟫.
+Proof.
+  unfold caseUVal.
+  crushTyping.
+  repeat apply caseV0_T;
+  crushTyping.
+Qed.
