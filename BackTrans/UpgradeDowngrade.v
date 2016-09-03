@@ -1,12 +1,14 @@
 Require Import UVal.UVal.
 Require Import Stlc.SpecSyntax.
+Require Import Stlc.SpecTyping.
+Require Import Stlc.LemmasTyping.
 
 Fixpoint downgrade (n : nat) (d : nat) :=
   abs (UVal (n + d))
       (match n with
-         | 0 => unit
+         | 0 => unkUVal 0
          | S n => 
-           caseUVal n (var 0)
+           caseUVal (n + d) (var 0)
                     (unkUVal (S n))
                     (inUnit n (var 0))
                     (inBool n (var 0))
@@ -28,7 +30,7 @@ with
 upgrade (n : nat) (d : nat) :=
   abs (UVal n)
       (match n with
-         | 0 => unit
+         | 0 => unkUVal d
          | S n => 
            caseUVal n (var 0)
                     (unkUVal (S n + d))
@@ -48,3 +50,17 @@ upgrade (n : nat) (d : nat) :=
                                      (app (var 1) 
                                           (app (downgrade n d) (var 0))))))
        end).
+
+Lemma upgrade_T {Γ n d} :
+  ⟪ Γ ⊢ upgrade n d : UVal n ⇒ UVal (n + d) ⟫
+with 
+downgrade_T {Γ n d} :
+  ⟪ Γ ⊢ downgrade n d : UVal (n + d) ⇒ UVal n ⟫.
+Proof.
+  (* can I combine eauto and crushTyping somehow? *)
+  - induction n; unfold upgrade, downgrade;
+    auto with typing uval_typing.
+  - induction n; unfold upgrade, downgrade;
+    auto with typing uval_typing.
+Qed.
+ 

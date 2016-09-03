@@ -25,7 +25,6 @@ Definition inUnit (n : nat) (t : Tm) := inr (inl t).
 
 Lemma inUnitT {Γ n t} : ⟪ Γ ⊢ t : tunit ⟫ → ⟪ Γ ⊢ inUnit n t : UVal (S n) ⟫.
 Proof.
-  intros tt.
   unfold inUnit. crushTyping.
 Qed.
 
@@ -77,6 +76,7 @@ Proof.
   crushTyping.
 Qed.
 
+Hint Resolve caseV0_T : uval_typing.
 
 Lemma caseUVal_T {Γ n tscrut tunk tcunit tcbool tcprod tcsum tcarr τ} :
   ⟪ Γ ⊢ tscrut : UVal (S n) ⟫ →
@@ -88,8 +88,16 @@ Lemma caseUVal_T {Γ n tscrut tunk tcunit tcbool tcprod tcsum tcarr τ} :
   ⟪ Γ ▻ (UVal n ⇒ UVal n) ⊢ tcarr : τ ⟫ →
   ⟪ Γ ⊢ caseUVal n tscrut tunk tcunit tcbool tcprod tcsum tcarr : τ ⟫.
 Proof.
-  unfold caseUVal.
+  unfold caseUVal. 
   crushTyping.
-  repeat apply caseV0_T;
-  crushTyping.
+  eauto with typing uval_typing.
 Qed.
+
+Arguments UVal n : simpl never.
+Hint Resolve unkUValT : uval_typing.
+Hint Resolve inUnitT : uval_typing.
+Hint Resolve inBoolT : uval_typing.
+Hint Resolve inProd_T : uval_typing.
+Hint Resolve inSum_T : uval_typing.
+Hint Resolve inArr_T : uval_typing.
+Hint Resolve caseUVal_T : uval_typing.
