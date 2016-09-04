@@ -16,6 +16,8 @@ Hint Resolve getEvarInvThere : wsi.
 
 Ltac crushTypingMatchH :=
   match goal with
+    | [ H: ⟪ _ : _ ∈ empty ⟫         |- _ ] =>
+      inversion H
     | [ H: ⟪ 0 : _ ∈ _ ⟫         |- _ ] =>
       apply getEvarInvHere in H; repeat subst
     | [ H: ⟪ (S _) : _ ∈ (_ ▻ _) ⟫ |- _ ] =>
