@@ -32,17 +32,19 @@ Lemma can_form_tsum {Γ t τ₁ τ₂}
     (∃ t₂, t = inr t₂ ∧ ⟪  Γ ⊢ t₂ : τ₂ ⟫).
 Proof. depind wt; try contradiction; eauto. Qed.
 
+Ltac stlcCanForm1 :=
+  match goal with
+    | [ wt: ⟪ _ ⊢ ?t : tarr _ _ ⟫, vt: Value ?t |- _ ] =>
+      destruct (can_form_tarr vt wt); subst; clear wt
+    | [ wt: ⟪ _ ⊢ ?t : tunit ⟫, vt: Value ?t |- _ ] =>
+      pose proof (can_form_tunit vt wt); subst; clear wt
+    | [ wt: ⟪ _ ⊢ ?t : tbool ⟫, vt: Value ?t |- _ ] =>
+      destruct (can_form_tbool vt wt); subst; clear wt
+    | [ wt: ⟪ _ ⊢ ?t : tprod _ _ ⟫, vt: Value ?t |- _ ] =>
+      destruct (can_form_tprod vt wt); clear wt
+    | [ wt: ⟪ _ ⊢ ?t : tsum _ _ ⟫, vt: Value ?t |- _ ] =>
+      destruct (can_form_tsum vt wt) as [[? [? ?]]|[? [? ?]]]; subst; clear wt; simpl in vt
+  end.
+
 Ltac stlcCanForm :=
-  repeat
-    match goal with
-      | [ wt: ⟪ _ ⊢ ?t : tarr _ _ ⟫, vt: Value ?t |- _ ] =>
-        destruct (can_form_tarr vt wt); clear wt
-      | [ wt: ⟪ _ ⊢ ?t : tunit ⟫, vt: Value ?t |- _ ] =>
-        destruct (can_form_tunit vt wt); clear wt
-      | [ wt: ⟪ _ ⊢ ?t : tbool ⟫, vt: Value ?t |- _ ] =>
-        destruct (can_form_tbool vt wt); clear wt
-      | [ wt: ⟪ _ ⊢ ?t : tprod _ _ ⟫, vt: Value ?t |- _ ] =>
-        destruct (can_form_tprod vt wt); clear wt
-      | [ wt: ⟪ _ ⊢ ?t : tsum _ _ ⟫, vt: Value ?t |- _ ] =>
-        destruct (can_form_tsum vt wt); clear wt
-    end.
+  repeat stlcCanForm1.

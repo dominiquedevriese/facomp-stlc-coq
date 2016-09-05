@@ -172,7 +172,8 @@ Section Application.
       | seq t₁ t₂       => seq (apTm ζ t₁) (apTm ζ t₂)
       | fixt τ₁ τ₂ t    => fixt τ₁ τ₂ (apTm ζ t)
     end.
-  (* Global Arguments apTm ζ !t /. *)
+
+  Global Arguments apTm ζ !t /.
 
 End Application.
 

@@ -3,6 +3,8 @@ Require Import Stlc.SpecSyntax.
 Require Import Stlc.SpecTyping.
 Require Import Stlc.LemmasTyping.
 Require Import Stlc.LemmasEvaluation.
+Require Import Stlc.CanForm.
+Require Import Common.Relations.
 
 Fixpoint UVal (n : nat) : Ty :=
   match n with
@@ -27,6 +29,8 @@ Lemma inUnitT {Γ n t} : ⟪ Γ ⊢ t : tunit ⟫ → ⟪ Γ ⊢ inUnit n t : UV
 Proof.
   unfold inUnit. crushTyping.
 Qed.
+
+Arguments inUnit n t : simpl never.
 
 Definition inBool (n : nat) (t : Tm): Tm := inr (inr (inl t)).
 
@@ -57,11 +61,11 @@ Proof.
 Qed.
 
 Definition caseV0 (case₁ : Tm) (case₂ : Tm) :=
-  caseof (var 0) (case₁ [wk↑]) (case₂[wk↑]).
+  caseof (var 0) (case₁ [wkm↑]) (case₂[wkm↑]).
 
 Definition caseUVal (n : nat) (tscrut tunk tcunit tcbool tcprod tcsum tcarr : Tm) :=
   caseof tscrut
-         (tunk [wk])
+         (tunk [wkm])
          (caseV0 tcunit
                  (caseV0 tcbool
                          (caseV0 tcprod
@@ -101,3 +105,136 @@ Hint Resolve inProd_T : uval_typing.
 Hint Resolve inSum_T : uval_typing.
 Hint Resolve inArr_T : uval_typing.
 Hint Resolve caseUVal_T : uval_typing.
+
+Local Ltac crush :=
+  repeat (subst*;
+          repeat rewrite
+          (*   ?protect_wkm_beta1, ?protect_wkm2_beta1, *)
+          (*   ?confine_wkm_beta1, ?confine_wkm2_beta1, *)
+           ?apply_wkm_beta1_up_cancel;
+          (*   ?apply_up_def_S; *)
+          repeat crushDbLemmasMatchH;
+          repeat crushDbSyntaxMatchH;
+          repeat crushStlcSyntaxMatchH;
+          repeat crushTypingMatchH2;
+          repeat crushTypingMatchH;
+          repeat match goal with
+                     [ |- _ ∧ _ ] => split
+                 end;
+          trivial; 
+          eauto with ws typing uval_typing eval
+         ).
+
+Lemma caseV0_eval_inl {v case₁ case₂}:
+  Value v →
+  (caseV0 case₁ case₂)[beta1 (inl v)] --> case₁ [beta1 v].
+Proof.
+  intros vv.
+  unfold caseV0; apply eval₀_to_eval; crush.
+  change ((caseof (var 0) case₁[wkm↑] case₂ [wkm↑])[beta1 (inl v)]) with
+  (caseof (inl v) (case₁[wkm↑][(beta1 (inl v))↑]) (case₂[wkm↑][(beta1 (inl v))↑])).
+  crush.
+Qed.
+  
+Lemma caseV0_eval_inr {v case₁ case₂}:
+  Value v →
+  (caseV0 case₁ case₂)[beta1 (inr v)] --> case₂ [beta1 v].
+Proof.
+  intros vv.
+  unfold caseV0; apply eval₀_to_eval; crush.
+  change ((caseof (var 0) case₁[wkm↑] case₂ [wkm↑])[beta1 (inr v)]) with
+  (caseof (inr v) (case₁[wkm↑][(beta1 (inr v))↑]) (case₂[wkm↑][(beta1 (inr v))↑])).
+  crush.
+Qed.
+  
+Lemma caseV0_eval {v τ₁ τ₂ case₁ case₂}:
+  Value v → ⟪ empty ⊢ v : τ₁ ⊎ τ₂ ⟫ →
+  (exists v', v = inl v' ∧ (caseV0 case₁ case₂)[beta1 v] --> case₁ [beta1 v']) ∨
+  (exists v', v = inr v' ∧ (caseV0 case₁ case₂)[beta1 v] --> case₂ [beta1 v']).
+Proof.
+  intros vv ty.
+  stlcCanForm; [left|right]; exists x; 
+  crush; eauto using caseV0_eval_inl, caseV0_eval_inr.
+Qed.
+  
+
+Lemma caseUVal_eval {n v tunk tcunit tcbool tcprod tcsum tcarr} :
+  ⟪ empty ⊢ v : UVal (S n) ⟫ → Value v →
+  let t := caseUVal n v tunk tcunit tcbool tcprod tcsum tcarr in
+  (v = unkUVal (S n) ∧ t -->* tunk) ∨
+  (∃ v', v = inUnit n v' ∧ Value v' ∧ ⟪ empty ⊢ v' : tunit ⟫ ∧ t -->* tcunit[beta1 v']) ∨
+  (∃ v', v = inBool n v' ∧ Value v' ∧ ⟪ empty ⊢ v' : tbool ⟫ ∧ t -->* tcbool[beta1 v']) ∨
+  (∃ v', v = inProd n v' ∧ Value v' ∧ ⟪ empty ⊢ v' : UVal n × UVal n ⟫ ∧ t -->* tcprod[beta1 v']) ∨
+  (∃ v', v = inSum n v' ∧ Value v' ∧ ⟪ empty ⊢ v' : UVal n ⊎ UVal n ⟫ ∧ t -->* tcsum[beta1 v']) ∨
+  (∃ v', v = inArr n v' ∧ Value v' ∧ ⟪ empty ⊢ v' : UVal n ⇒ UVal n ⟫ ∧ t -->* tcarr[beta1 v']).
+Proof.
+  intros ty vv.
+  unfold UVal in ty; simpl; unfold caseUVal. 
+  (* Apply canonical form lemmas but only as far as we need. *)
+  stlcCanForm1; 
+    [stlcCanForm|stlcCanForm1;
+       [stlcCanForm|stlcCanForm1;
+          [|stlcCanForm1;[|stlcCanForm1]]]]. 
+  unfold caseUVal.
+  - left. crush.
+    apply evalToStar.
+    eapply (eval_ctx₀ phole); crush.
+    rewrite <- (apply_wkm_beta1_cancel tunk unit) at 2.
+    eapply eval_case_inl; crush.
+  - right; left; exists unit; crush.
+    apply (evalStepStar ((caseV0 tcunit (caseV0 tcbool (caseV0 tcprod (caseV0 tcarr tcsum)))) [beta1 (inl unit)])).
+    + apply eval₀_to_eval; crush. 
+    + apply evalToStar.
+      apply caseV0_eval_inl; crush.
+  - right; right; left; exists x; crush.
+    enough ((caseV0 tcunit (caseV0 tcbool (caseV0 tcprod (caseV0 tcarr tcsum)))) [beta1 (inr (inl x))] -->* tcbool[beta1 x]) as es
+        by (refine (evalStepStar _ _ es);
+            apply eval₀_to_eval; crush).
+    enough ((caseV0 tcbool (caseV0 tcprod (caseV0 tcarr tcsum))) [beta1 (inl x)] -->* tcbool[beta1 x]) as es
+        by (refine (evalStepStar _ _ es);
+            apply caseV0_eval_inr; crush).
+    apply evalToStar.
+    apply caseV0_eval_inl; crush.
+  - right; right; right; left. exists x0; crush.
+    enough ((caseV0 tcunit (caseV0 tcbool (caseV0 tcprod (caseV0 tcarr tcsum)))) [beta1 (inr (inr (inl x0)))] -->* tcprod[beta1 x0]) as es
+        by (refine (evalStepStar _ _ es);
+            apply eval₀_to_eval; crush).
+    enough ((caseV0 tcbool (caseV0 tcprod (caseV0 tcarr tcsum))) [beta1 (inr (inl x0))] -->* tcprod[beta1 x0]) as es
+        by (refine (evalStepStar _ _ es);
+            apply caseV0_eval_inr; crush).
+    enough ((caseV0 tcprod (caseV0 tcarr tcsum)) [beta1 (inl x0)] -->* tcprod[beta1 x0]) as es
+        by (refine (evalStepStar _ _ es);
+            apply caseV0_eval_inr; crush).
+    apply evalToStar.
+    apply caseV0_eval_inl; crush.
+  - right; right; right; right; right. exists x; crush.
+    enough ((caseV0 tcunit (caseV0 tcbool (caseV0 tcprod (caseV0 tcarr tcsum)))) [beta1 (inr (inr (inr (inl x))))] -->* tcarr[beta1 x]) as es
+        by (refine (evalStepStar _ _ es);
+            apply eval₀_to_eval; crush).
+    enough ((caseV0 tcbool (caseV0 tcprod (caseV0 tcarr tcsum))) [beta1 (inr (inr (inl x)))] -->* tcarr[beta1 x]) as es
+        by (refine (evalStepStar _ _ es);
+            apply caseV0_eval_inr; crush).
+    enough ((caseV0 tcprod (caseV0 tcarr tcsum)) [beta1 (inr (inl x))] -->* tcarr[beta1 x]) as es
+        by (refine (evalStepStar _ _ es);
+            apply caseV0_eval_inr; crush).
+    enough ((caseV0 tcarr tcsum) [beta1 (inl x)] -->* tcarr[beta1 x]) as es
+        by (refine (evalStepStar _ _ es);
+            apply caseV0_eval_inr; crush).
+    apply evalToStar.
+    apply caseV0_eval_inl; crush.
+  - right; right; right; right; left. exists x; crush.
+    enough ((caseV0 tcunit (caseV0 tcbool (caseV0 tcprod (caseV0 tcarr tcsum)))) [beta1 (inr (inr (inr (inr x))))] -->* tcsum[beta1 x]) as es
+        by (refine (evalStepStar _ _ es);
+            apply eval₀_to_eval; crush).
+    enough ((caseV0 tcbool (caseV0 tcprod (caseV0 tcarr tcsum))) [beta1 (inr (inr (inr x)))] -->* tcsum[beta1 x]) as es
+        by (refine (evalStepStar _ _ es);
+            apply caseV0_eval_inr; crush).
+    enough ((caseV0 tcprod (caseV0 tcarr tcsum)) [beta1 (inr (inr x))] -->* tcsum[beta1 x]) as es
+        by (refine (evalStepStar _ _ es);
+            apply caseV0_eval_inr; crush).
+    enough ((caseV0 tcarr tcsum) [beta1 (inr x)] -->* tcsum[beta1 x]) as es
+        by (refine (evalStepStar _ _ es);
+            apply caseV0_eval_inr; crush).
+    apply evalToStar.
+    apply caseV0_eval_inr; crush.
+Qed.

@@ -304,3 +304,56 @@ Proof.
   inversion e1.
   crushImpossibleEvals.
 Qed.
+
+Section EvalInContext.
+  Lemma eval₀_to_eval {t t'} :
+    t -->₀ t' →
+    t --> t'.
+  Proof.
+    intros e₀.
+    change (t --> t') with (pctx_app t phole --> pctx_app t' phole).  
+    eapply (eval_ctx₀ phole); crush.
+  Qed.
+
+  Lemma eval_from_eval₀ {t t' t₀ t₀' C} :
+    t₀ -->₀ t₀' →
+    t = pctx_app t₀ C →
+    t' = pctx_app t₀' C →
+    ECtx C →
+    t --> t'.
+  Proof.
+    intros; subst; eauto using eval_ctx₀.
+  Qed.
+
+End EvalInContext.
+
+Ltac inferContext :=
+  simpl; try reflexivity;
+  let rec inferC acc t t₀ :=
+      match t with
+        | t₀ => instantiate (1 := acc)
+        | app ?t1 ?t2 => inferC (pctx_cat (papp₁ phole t2) acc) t1 t₀ + inferC (pctx_cat (papp₂ t1 phole) acc) t2 t₀
+        | pair ?t1 ?t2 => inferC (pctx_cat (ppair₁ phole t2) acc) t1 t₀ + inferC (pctx_cat (ppair₂ t1 phole) acc) t2 t₀
+        | seq ?t1 ?t2 => inferC (pctx_cat (pseq₁ phole t2) acc) t1 t₀
+        | inl ?t1 => inferC (pctx_cat (pinl phole) acc) t1 t₀
+        | inr ?t1 => inferC (pctx_cat (pinl phole) acc) t1 t₀
+        | inr ?t1 => inferC (pctx_cat (pinl phole) acc) t1 t₀
+        | ite ?t1 ?t2 ?t3 => inferC (pctx_cat (pite₁ phole t2 t3) acc) t1 t₀
+        | caseof ?t1 ?t2 ?t3 => inferC (pctx_cat (pcaseof₁ phole t2 t3) acc) t1 t₀
+        | proj₁ ?t1 => inferC (pctx_cat (pproj₁ phole) acc) t1 t₀
+        | proj₂ ?t1 => inferC (pctx_cat (pproj₂ phole) acc) t1 t₀
+        | pctx_app ?t1 (pctx_cat ?C1 ?C2) => inferC (pctx_app (pctx_app t1 C1) C2) t₀
+        | pctx_app ?t1 ?C => inferC (pctx_cat C acc) t1 t₀
+      end
+  in repeat match goal with
+              | [ |- ?t = pctx_app ?t₀ (pctx_cat ?C1 ?C2) ] => (rewrite -> ?pctx_cat_app)
+              | [ |- pctx_app ?t0 ?C = pctx_app ?t' ?C ] => f_equal
+              | [ |- ?t = pctx_app ?t₀ ?C ] => (inferC phole t t₀; rewrite -> ?pctx_cat_app; simpl; rewrite -> ?pctx_cat_app in *; reflexivity)
+            end.
+  
+Lemma test_inferContext (t : Tm) (C' : PCtx): True.
+Proof.
+  assert (pctx_app (pair (inl t) unit) C' = pctx_app t (pctx_cat (ppair₁ (pinl phole) unit) C')).
+  inferContext.
+  trivial.
+Qed.
