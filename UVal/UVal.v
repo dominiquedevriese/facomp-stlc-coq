@@ -172,69 +172,46 @@ Proof.
   unfold UVal in ty; simpl; unfold caseUVal. 
   (* Apply canonical form lemmas but only as far as we need. *)
   stlcCanForm1; 
-    [stlcCanForm|stlcCanForm1;
-       [stlcCanForm|stlcCanForm1;
-          [|stlcCanForm1;[|stlcCanForm1]]]]. 
-  unfold caseUVal.
-  - left. crush.
+    [left|right;stlcCanForm1;
+       [left|right;stlcCanForm1;
+          [left|right;stlcCanForm1;
+                [left|right;stlcCanForm1;
+                      [right|left]]]]]. 
+  - stlcCanForm. crush.
     apply evalToStar.
     eapply (eval_ctx₀ phole); crush.
     rewrite <- (apply_wkm_beta1_cancel tunk unit) at 2.
     eapply eval_case_inl; crush.
-  - right; left; exists unit; crush.
-    apply (evalStepStar ((caseV0 tcunit (caseV0 tcbool (caseV0 tcprod (caseV0 tcarr tcsum)))) [beta1 (inl unit)])).
-    + apply eval₀_to_eval; crush. 
-    + apply evalToStar.
+  - stlcCanForm; exists unit; crush.
+    eapply (evalStepStar _).
+    + eapply eval₀_to_eval; crush. 
+    + eapply evalToStar.
       apply caseV0_eval_inl; crush.
-  - right; right; left; exists x; crush.
-    enough ((caseV0 tcunit (caseV0 tcbool (caseV0 tcprod (caseV0 tcarr tcsum)))) [beta1 (inr (inl x))] -->* tcbool[beta1 x]) as es
-        by (refine (evalStepStar _ _ es);
-            apply eval₀_to_eval; crush).
-    enough ((caseV0 tcbool (caseV0 tcprod (caseV0 tcarr tcsum))) [beta1 (inl x)] -->* tcbool[beta1 x]) as es
-        by (refine (evalStepStar _ _ es);
-            apply caseV0_eval_inr; crush).
-    apply evalToStar.
-    apply caseV0_eval_inl; crush.
-  - right; right; right; left. exists x0; crush.
-    enough ((caseV0 tcunit (caseV0 tcbool (caseV0 tcprod (caseV0 tcarr tcsum)))) [beta1 (inr (inr (inl x0)))] -->* tcprod[beta1 x0]) as es
-        by (refine (evalStepStar _ _ es);
-            apply eval₀_to_eval; crush).
-    enough ((caseV0 tcbool (caseV0 tcprod (caseV0 tcarr tcsum))) [beta1 (inr (inl x0))] -->* tcprod[beta1 x0]) as es
-        by (refine (evalStepStar _ _ es);
-            apply caseV0_eval_inr; crush).
-    enough ((caseV0 tcprod (caseV0 tcarr tcsum)) [beta1 (inl x0)] -->* tcprod[beta1 x0]) as es
-        by (refine (evalStepStar _ _ es);
-            apply caseV0_eval_inr; crush).
-    apply evalToStar.
-    apply caseV0_eval_inl; crush.
-  - right; right; right; right; right. exists x; crush.
-    enough ((caseV0 tcunit (caseV0 tcbool (caseV0 tcprod (caseV0 tcarr tcsum)))) [beta1 (inr (inr (inr (inl x))))] -->* tcarr[beta1 x]) as es
-        by (refine (evalStepStar _ _ es);
-            apply eval₀_to_eval; crush).
-    enough ((caseV0 tcbool (caseV0 tcprod (caseV0 tcarr tcsum))) [beta1 (inr (inr (inl x)))] -->* tcarr[beta1 x]) as es
-        by (refine (evalStepStar _ _ es);
-            apply caseV0_eval_inr; crush).
-    enough ((caseV0 tcprod (caseV0 tcarr tcsum)) [beta1 (inr (inl x))] -->* tcarr[beta1 x]) as es
-        by (refine (evalStepStar _ _ es);
-            apply caseV0_eval_inr; crush).
-    enough ((caseV0 tcarr tcsum) [beta1 (inl x)] -->* tcarr[beta1 x]) as es
-        by (refine (evalStepStar _ _ es);
-            apply caseV0_eval_inr; crush).
-    apply evalToStar.
-    apply caseV0_eval_inl; crush.
-  - right; right; right; right; left. exists x; crush.
-    enough ((caseV0 tcunit (caseV0 tcbool (caseV0 tcprod (caseV0 tcarr tcsum)))) [beta1 (inr (inr (inr (inr x))))] -->* tcsum[beta1 x]) as es
-        by (refine (evalStepStar _ _ es);
-            apply eval₀_to_eval; crush).
-    enough ((caseV0 tcbool (caseV0 tcprod (caseV0 tcarr tcsum))) [beta1 (inr (inr (inr x)))] -->* tcsum[beta1 x]) as es
-        by (refine (evalStepStar _ _ es);
-            apply caseV0_eval_inr; crush).
-    enough ((caseV0 tcprod (caseV0 tcarr tcsum)) [beta1 (inr (inr x))] -->* tcsum[beta1 x]) as es
-        by (refine (evalStepStar _ _ es);
-            apply caseV0_eval_inr; crush).
-    enough ((caseV0 tcarr tcsum) [beta1 (inr x)] -->* tcsum[beta1 x]) as es
-        by (refine (evalStepStar _ _ es);
-            apply caseV0_eval_inr; crush).
-    apply evalToStar.
-    apply caseV0_eval_inr; crush.
+  - exists x; crush.
+    eapply (evalStepStar _).
+    eapply eval₀_to_eval; crush.
+    repeat (eapply (evalStepStar _);
+            [eapply caseV0_eval_inr; crush|]).
+    eapply evalToStar.
+    eapply caseV0_eval_inl; crush.
+  - exists x0; crush.
+    eapply (evalStepStar _).
+    eapply eval₀_to_eval; crush.
+    repeat (eapply (evalStepStar _);
+            [eapply caseV0_eval_inr; crush|]).
+    eapply evalToStar.
+    eapply caseV0_eval_inl; crush.
+  - exists x; crush.
+    eapply (evalStepStar _).
+    eapply eval₀_to_eval; crush.
+    repeat (eapply (evalStepStar _);
+            [eapply caseV0_eval_inr; crush|]).
+    eapply evalToStar.
+    eapply caseV0_eval_inl; crush.
+  - exists x; crush.
+    eapply (evalStepStar _).
+    eapply eval₀_to_eval; crush.
+    repeat (eapply (evalStepStar _);
+            [eapply caseV0_eval_inr; crush|]).
+    eauto with eval.
 Qed.
