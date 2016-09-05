@@ -169,18 +169,17 @@ Local Ltac crushEvalsInCaseUVal :=
      try rewrite -> apply_wkm_beta1_cancel
     ).
 
-Lemma caseUVal_eval {n v tunk tcunit tcbool tcprod tcsum tcarr} :
+Lemma canonUVal {n v} :
   ⟪ empty ⊢ v : UVal (S n) ⟫ → Value v →
-  let t := caseUVal n v tunk tcunit tcbool tcprod tcsum tcarr in
-  (v = unkUVal (S n) ∧ t -->* tunk) ∨
-  (∃ v', v = inUnit n v' ∧ Value v' ∧ ⟪ empty ⊢ v' : tunit ⟫ ∧ t -->* tcunit[beta1 v']) ∨
-  (∃ v', v = inBool n v' ∧ Value v' ∧ ⟪ empty ⊢ v' : tbool ⟫ ∧ t -->* tcbool[beta1 v']) ∨
-  (∃ v', v = inProd n v' ∧ Value v' ∧ ⟪ empty ⊢ v' : UVal n × UVal n ⟫ ∧ t -->* tcprod[beta1 v']) ∨
-  (∃ v', v = inSum n v' ∧ Value v' ∧ ⟪ empty ⊢ v' : UVal n ⊎ UVal n ⟫ ∧ t -->* tcsum[beta1 v']) ∨
-  (∃ v', v = inArr n v' ∧ Value v' ∧ ⟪ empty ⊢ v' : UVal n ⇒ UVal n ⟫ ∧ t -->* tcarr[beta1 v']).
+  (v = unkUVal (S n)) ∨
+  (∃ v', v = inUnit n v' ∧ Value v' ∧ ⟪ empty ⊢ v' : tunit ⟫) ∨
+  (∃ v', v = inBool n v' ∧ Value v' ∧ ⟪ empty ⊢ v' : tbool ⟫) ∨
+  (∃ v', v = inProd n v' ∧ Value v' ∧ ⟪ empty ⊢ v' : UVal n × UVal n ⟫) ∨
+  (∃ v', v = inSum n v' ∧ Value v' ∧ ⟪ empty ⊢ v' : UVal n ⊎ UVal n ⟫) ∨
+  (∃ v', v = inArr n v' ∧ Value v' ∧ ⟪ empty ⊢ v' : UVal n ⇒ UVal n ⟫).
 Proof.
   intros ty vv.
-  unfold UVal in ty; simpl; unfold caseUVal. 
+  unfold UVal in ty; simpl. 
   (* Apply canonical form lemmas but only as far as we need. *)
   stlcCanForm1; 
     [left|right;stlcCanForm1;
@@ -188,16 +187,64 @@ Proof.
           [left|right;stlcCanForm1;
                 [left|right;stlcCanForm1;
                       [right|left]]]]]. 
-  - stlcCanForm. crush.
-    crushEvalsInCaseUVal.
-  - stlcCanForm; exists unit; crush.
-    crushEvalsInCaseUVal.
-  - exists x; crush.
-    crushEvalsInCaseUVal.
+  - stlcCanForm; crush.
   - exists x0; crush.
-    crushEvalsInCaseUVal.
   - exists x; crush.
-    crushEvalsInCaseUVal.
+  - exists x0; crush.
   - exists x; crush.
-    crushEvalsInCaseUVal.
+  - exists x; crush.
+Qed. 
+
+Lemma caseUVal_eval_unk {n tunk tcunit tcbool tcprod tcsum tcarr} :
+  caseUVal n (unkUVal (S n)) tunk tcunit tcbool tcprod tcsum tcarr -->* tunk.
+Proof.
+  unfold caseUVal, unkUVal.
+  (* why doesn't crush do the following? *)
+  assert (Value (inl unit)) by (simpl; trivial).
+  crushEvalsInCaseUVal.
+Qed.
+  
+Lemma caseUVal_eval_unit {n tunk tcunit tcbool tcprod tcsum tcarr v} :
+  Value v →
+  caseUVal n (inUnit n v) tunk tcunit tcbool tcprod tcsum tcarr -->* tcunit [beta1 v].
+Proof.
+  intros vv.
+  unfold caseUVal, inUnit.
+  crushEvalsInCaseUVal.
+Qed.
+  
+Lemma caseUVal_eval_bool {n tunk tcunit tcbool tcprod tcsum tcarr v} :
+  Value v →
+  caseUVal n (inBool n v) tunk tcunit tcbool tcprod tcsum tcarr -->* tcbool [beta1 v].
+Proof.
+  intros vv.
+  unfold caseUVal, inBool.
+  crushEvalsInCaseUVal.
+Qed.
+  
+Lemma caseUVal_eval_prod {n tunk tcunit tcbool tcprod tcsum tcarr v} :
+  Value v →
+  caseUVal n (inProd n v) tunk tcunit tcbool tcprod tcsum tcarr -->* tcprod [beta1 v].
+Proof.
+  intros vv.
+  unfold caseUVal, inProd.
+  crushEvalsInCaseUVal.
+Qed.
+
+Lemma caseUVal_eval_sum {n tunk tcunit tcbool tcprod tcsum tcarr v} :
+  Value v →
+  caseUVal n (inSum n v) tunk tcunit tcbool tcprod tcsum tcarr -->* tcsum [beta1 v].
+Proof.
+  intros vv.
+  unfold caseUVal, inSum.
+  crushEvalsInCaseUVal.
+Qed.
+
+Lemma caseUVal_eval_arr {n tunk tcunit tcbool tcprod tcsum tcarr v} :
+  Value v →
+  caseUVal n (inArr n v) tunk tcunit tcbool tcprod tcsum tcarr -->* tcarr [beta1 v].
+Proof.
+  intros vv.
+  unfold caseUVal, inArr.
+  crushEvalsInCaseUVal.
 Qed.
