@@ -157,6 +157,17 @@ Proof.
   crush; eauto using caseV0_eval_inl, caseV0_eval_inr.
 Qed.
   
+Local Ltac crushEvalsInCaseUVal :=
+  repeat 
+    (match goal with
+         [ |- caseof (inl _) _ _ -->* _ ] => (eapply (evalStepStar _); [eapply eval₀_to_eval; crush|])
+       | [ |- caseof (inr _) _ _ -->* _ ] => (eapply (evalStepStar _); [eapply eval₀_to_eval; crush|])
+       | [ |- (caseV0 _ _) [beta1 (inl _)] -->* _ ] => (eapply (evalStepStar _); [eapply caseV0_eval_inl; crush|])
+       | [ |- (caseV0 _ _) [beta1 (inr _)] -->* _ ] => (eapply (evalStepStar _); [eapply caseV0_eval_inr; crush|])
+       | [ |- ?t -->* ?t ] => eauto with eval
+     end;
+     try rewrite -> apply_wkm_beta1_cancel
+    ).
 
 Lemma caseUVal_eval {n v tunk tcunit tcbool tcprod tcsum tcarr} :
   ⟪ empty ⊢ v : UVal (S n) ⟫ → Value v →
@@ -178,40 +189,15 @@ Proof.
                 [left|right;stlcCanForm1;
                       [right|left]]]]]. 
   - stlcCanForm. crush.
-    apply evalToStar.
-    eapply (eval_ctx₀ phole); crush.
-    rewrite <- (apply_wkm_beta1_cancel tunk unit) at 2.
-    eapply eval_case_inl; crush.
+    crushEvalsInCaseUVal.
   - stlcCanForm; exists unit; crush.
-    eapply (evalStepStar _).
-    + eapply eval₀_to_eval; crush. 
-    + eapply evalToStar.
-      apply caseV0_eval_inl; crush.
+    crushEvalsInCaseUVal.
   - exists x; crush.
-    eapply (evalStepStar _).
-    eapply eval₀_to_eval; crush.
-    repeat (eapply (evalStepStar _);
-            [eapply caseV0_eval_inr; crush|]).
-    eapply evalToStar.
-    eapply caseV0_eval_inl; crush.
+    crushEvalsInCaseUVal.
   - exists x0; crush.
-    eapply (evalStepStar _).
-    eapply eval₀_to_eval; crush.
-    repeat (eapply (evalStepStar _);
-            [eapply caseV0_eval_inr; crush|]).
-    eapply evalToStar.
-    eapply caseV0_eval_inl; crush.
+    crushEvalsInCaseUVal.
   - exists x; crush.
-    eapply (evalStepStar _).
-    eapply eval₀_to_eval; crush.
-    repeat (eapply (evalStepStar _);
-            [eapply caseV0_eval_inr; crush|]).
-    eapply evalToStar.
-    eapply caseV0_eval_inl; crush.
+    crushEvalsInCaseUVal.
   - exists x; crush.
-    eapply (evalStepStar _).
-    eapply eval₀_to_eval; crush.
-    repeat (eapply (evalStepStar _);
-            [eapply caseV0_eval_inr; crush|]).
-    eauto with eval.
+    crushEvalsInCaseUVal.
 Qed.
