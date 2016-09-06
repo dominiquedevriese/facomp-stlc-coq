@@ -174,7 +174,7 @@ Local Ltac crushEvalsInCaseUVal :=
      try rewrite -> apply_wkm_beta1_cancel
     ).
 
-Lemma canonUVal {n v} :
+Lemma canonUValS {n v} :
   ⟪ empty ⊢ v : UVal (S n) ⟫ → Value v →
   (v = unkUVal (S n)) ∨
   (∃ v', v = inUnit n v' ∧ Value v' ∧ ⟪ empty ⊢ v' : tunit ⟫) ∨
@@ -199,6 +199,51 @@ Proof.
   - exists x; crush.
   - exists x; crush.
 Qed. 
+
+Lemma canonUVal {n v} :
+  ⟪ empty ⊢ v : UVal n ⟫ → Value v →
+  (v = unkUVal n) ∨
+  ∃ n', n = S n' ∧ 
+        ((∃ v', v = inUnit n' v' ∧ Value v' ∧ ⟪ empty ⊢ v' : tunit ⟫) ∨
+         (∃ v', v = inBool n' v' ∧ Value v' ∧ ⟪ empty ⊢ v' : tbool ⟫) ∨
+         (∃ v', v = inProd n' v' ∧ Value v' ∧ ⟪ empty ⊢ v' : UVal n' × UVal n' ⟫) ∨
+         (∃ v', v = inSum n' v' ∧ Value v' ∧ ⟪ empty ⊢ v' : UVal n' ⊎ UVal n' ⟫) ∨
+         (∃ v', v = inArr n' v' ∧ Value v' ∧ ⟪ empty ⊢ v' : UVal n' ⇒ UVal n' ⟫)).
+Proof.
+  intros ty vv.
+  destruct n.
+  - left. unfold UVal, unkUVal in *. stlcCanForm. trivial.
+  - destruct (canonUValS ty vv) as [? | ?].
+    + left; crush.
+    + right; crush. 
+Qed.
+
+Ltac canonUVal :=
+  match goal with
+      [ H : Value ?v, H' : ⟪ empty ⊢ ?v : UVal 0 ⟫ |- _ ] =>
+      (unfold UVal in H'; stlcCanForm; subst)
+    | [ H : Value ?v, H' : ⟪ empty ⊢ ?v : UVal (S _) ⟫ |- _ ] =>
+      (destruct (canonUValS H' H) as 
+          [?| [(? & ? & ? & ?)
+              |[(? & ? & ? & ?)
+               |[(? & ? & ? & ?)
+                |[(? & ? & ? & ?)
+                 |(? & ? & ? & ?)]]]]]; subst)
+    | [ H : Value ?v, H' : ⟪ empty ⊢ ?v : UVal (S _ + _) ⟫ |- _ ] =>
+      (destruct (canonUValS H' H) as 
+          [?| [(? & ? & ? & ?)
+              |[(? & ? & ? & ?)
+               |[(? & ? & ? & ?)
+                |[(? & ? & ? & ?)
+                 |(? & ? & ? & ?)]]]]]; subst)
+    | [ H : Value ?v, H' : ⟪ empty ⊢ ?v : UVal _ ⟫ |- _ ] =>
+      (destruct (canonUVal H' H) as 
+          [?| (? & ? & [(? & ? & ? & ?)
+                       |[(? & ? & ? & ?)
+                        |[(? & ? & ? & ?)
+                         |[(? & ? & ? & ?)
+                          |(? & ? & ? & ?)]]]])]; subst)
+  end.
 
 Lemma caseUVal_eval_unk {n tunk tcunit tcbool tcprod tcsum tcarr} :
   caseUVal n (unkUVal (S n)) tunk tcunit tcbool tcprod tcsum tcarr -->* tunk.
