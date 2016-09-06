@@ -339,3 +339,16 @@ Ltac crushTyping :=
 
 Hint Extern 20 (⟪ _ ⊢ _ : _ ⟫) =>
   crushTyping : typing.
+
+Lemma wtvar_implies_wsvar {Γ i τ} :
+  ⟪ i : τ ∈ Γ ⟫ → dom Γ ∋ i.
+Proof.
+  induction 1; eauto with ws.
+Qed.
+
+Lemma wt_implies_ws {Γ t τ} :
+  ⟪ Γ ⊢ t : τ ⟫ → ⟨ dom Γ ⊢ t ⟩.
+Proof.
+  induction 1; constructor; 
+  eauto using wtvar_implies_wsvar with ws.
+Qed.

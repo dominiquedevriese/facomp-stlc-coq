@@ -1,5 +1,6 @@
 Require Export Db.Inst.
 Require Export Db.Lemmas.
+Require Export Db.WellScoping.
 Require Export Stlc.SpecSyntax.
 
 Instance vrTm : Vr Tm := {| vr := var |}.
@@ -64,3 +65,36 @@ End TmKit.
 
 Module InstTm := Inst TmKit.
 Export InstTm. (* Export for shorter names. *)
+
+Section Application.
+
+  Context {Y: Type}.
+  Context {vrY : Vr Y}.
+  Context {wkY: Wk Y}.
+  Context {liftY: Lift Y Tm}.
+  Context {wsY: Ws Y}.
+  Context {wsVrY: WsVr Y}.
+  Context {wsWkY: WsWk Y}.
+  Context {wsLiftY: WsLift Y Tm}.
+
+  Hint Resolve wsLift : ws.
+  Hint Resolve wsSub_up : ws.
+
+
+  Global Instance wsApTm : WsAp Tm Y.
+  Proof.
+    constructor.
+    - intros ξ γ δ t wξ wt; revert ξ δ wξ.
+      induction wt; intros ξ δ wξ; crush;
+      try econstructor;
+      try match goal with
+            | |- wsTm ?δ ?t =>
+              change (wsTm δ t) with ⟨ δ ⊢ t ⟩
+          end; eauto with ws.
+    - intros γ t wt.
+      induction wt; crush.
+      + apply IHwt; inversion 1; crush.
+      + apply IHwt2; inversion 1; crush.
+      + apply IHwt3; inversion 1; crush.
+  Qed.
+End Application.
