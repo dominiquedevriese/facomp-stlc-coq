@@ -41,7 +41,7 @@ Ltac stlcCanForm1 :=
     | [ wt: ⟪ _ ⊢ ?t : tbool ⟫, vt: Value ?t |- _ ] =>
       destruct (can_form_tbool vt wt); subst; clear wt
     | [ wt: ⟪ _ ⊢ ?t : tprod _ _ ⟫, vt: Value ?t |- _ ] =>
-      destruct (can_form_tprod vt wt); clear wt
+      destruct (can_form_tprod vt wt) as (? & ? & ? & ? & ?); subst; clear wt
     | [ wt: ⟪ _ ⊢ ?t : tsum _ _ ⟫, vt: Value ?t |- _ ] =>
       destruct (can_form_tsum vt wt) as [[? [? ?]]|[? [? ?]]]; subst; clear wt; simpl in vt
   end.

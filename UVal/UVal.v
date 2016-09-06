@@ -18,6 +18,11 @@ Fixpoint unkUVal (n : nat) : Tm :=
     | S n => inl unit
   end.
 
+Lemma unkUVal_Value {n : nat} : Value (unkUVal n).
+Proof.
+  destruct n; simpl; trivial.
+Qed.
+
 Lemma unkUValT {Γ n} : ⟪ Γ ⊢ unkUVal n : UVal n ⟫.
 Proof.
   induction n; eauto using Typing.
@@ -248,3 +253,16 @@ Proof.
   unfold caseUVal, inArr.
   crushEvalsInCaseUVal.
 Qed.
+
+Lemma caseUVal_sub {n t tunk tcunit tcbool tcprod tcsum tcarr} γ :
+  (caseUVal n t tunk tcunit tcbool tcprod tcsum tcarr)[γ] =
+  caseUVal n (t[γ]) (tunk[γ]) (tcunit[γ↑]) (tcbool[γ↑]) (tcprod[γ↑]) (tcsum[γ↑]) (tcarr[γ↑]).
+Proof.
+  unfold caseUVal, caseV0. cbn. 
+  crush; 
+    rewrite <- ?apply_wkm_comm, <- ?(apply_wkm_up_comm); 
+    reflexivity.
+Qed.  
+
+
+Arguments caseUVal n tscrut tunk tcunit tcbool tcprod tcsum tcarr : simpl never.

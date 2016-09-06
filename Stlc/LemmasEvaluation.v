@@ -325,6 +325,16 @@ Section EvalInContext.
     intros; subst; eauto using eval_ctx₀.
   Qed.
 
+  Lemma evalstar_ctx' {t t' t₀ t₀' C} :
+    t₀ -->* t₀' →
+    t = pctx_app t₀ C →
+    t' = pctx_app t₀' C →
+    ECtx C →
+    t -->* t'.
+  Proof.
+    intros; subst; eauto using evalstar_ctx.
+  Qed.
+
 End EvalInContext.
 
 Ltac inferContext :=
