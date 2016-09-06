@@ -167,7 +167,7 @@ Proof.
       eapply evalStepTrans. eapply caseUVal_eval_prod; crush.
       (* downgrade under sub... *)
       simpl; crush.
-      rewrite -> ?upgrade_sub, ?downgrade_sub.
+      rewrite -> ?downgrade_sub.
 
       (* first projection *)
       eapply evalStepStar. 
@@ -188,7 +188,51 @@ Proof.
       (* ... and we're done. *)
       simpl; crush.
 
-    + admit.
-    + admit.
-Admitted.
+    + stlcCanForm;
+      [ destruct (IHn x H0 vv') as (vf & vvf & ex);
+        exists (inSum n (inl vf)); crush
+      | destruct (IHn x H0 vv') as (vf & vvf & ex);
+        exists (inSum n (inr vf)); crush];
+      
+      (* beta-reduce *)
+      (eapply evalStepStar; [eapply eval₀_to_eval; crush|]);
+      rewrite -> ?(caseUVal_sub (beta1 _)); simpl; crush;
+      rewrite -> ?upgrade_sub, ?downgrade_sub;
+
+      (* evaluate UVal pattern match *)
+      (eapply evalStepTrans; [eapply caseUVal_eval_sum; crush|]);
+      (* downgrade under sub... *)
+      simpl; crush;
+      rewrite -> ?downgrade_sub;
+
+      (* caseof *)
+      [assert (ec : caseof (inl x) (inl (app (downgrade n d) (var 0))) (inr (app (downgrade n d) (var 0))) -->₀ ((inl (app (downgrade n d) (var 0))) [beta1 x])) by crush
+      |assert (ec : caseof (inr x) (inl (app (downgrade n d) (var 0))) (inr (app (downgrade n d) (var 0))) -->₀ ((inr (app (downgrade n d) (var 0))) [beta1 x])) by crush
+      ];
+      (eapply evalStepStar;
+        [eapply (eval_from_eval₀ ec); inferContext; crush|]);
+      crushStlcSyntaxMatchH (* why is this needed? *);
+      rewrite -> ?downgrade_sub;
+
+      (* recursive call *)
+      (eapply evalStepTrans; [eapply (evalstar_ctx' ex); inferContext; crush|]);
+
+      (* ... and we're done. *)
+      simpl; crush.
+    + exists (inArr n (abs (UVal n) (app (downgrade n d) (app (v'[wk]) (app (upgrade n d) (var 0)))))); crush.
+
+      (* beta-reduce *)
+      (eapply evalStepStar; [eapply eval₀_to_eval; crush|]);
+      rewrite -> ?(caseUVal_sub (beta1 _)); simpl; crush;
+      rewrite -> ?upgrade_sub, ?downgrade_sub.
+
+      (* evaluate UVal pattern match *)
+      (eapply evalStepTrans; [eapply caseUVal_eval_arr; crush|]);
+      (* downgrade under sub... *)
+      simpl; crush;
+      rewrite -> ?downgrade_sub, ?upgrade_sub.
+
+      change (wk 0) with 1; simpl.
+      eauto with eval.
+Qed.
   
