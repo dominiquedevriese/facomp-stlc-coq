@@ -30,6 +30,11 @@ Qed.
 
 Definition inUnit (n : nat) (t : Tm) := inr (inl t).
 
+Lemma inUnit_Value {n v} : Value v → Value (inUnit n v).
+Proof.
+  simpl; trivial.
+Qed.
+
 Lemma inUnitT {Γ n t} : ⟪ Γ ⊢ t : tunit ⟫ → ⟪ Γ ⊢ inUnit n t : UVal (S n) ⟫.
 Proof.
   unfold inUnit. crushTyping.
@@ -44,11 +49,21 @@ Proof.
   unfold inBool. crushTyping.
 Qed.
 
+Lemma inBool_Value {n v} : Value v → Value (inBool n v).
+Proof.
+  simpl; trivial.
+Qed.
+
 Definition inProd (n : nat) (t : Tm) : Tm := inr (inr (inr (inl t))).
 
 Lemma inProd_T {Γ n t} : ⟪ Γ ⊢ t : UVal n × UVal n ⟫ → ⟪ Γ ⊢ inProd n t : UVal (S n) ⟫.
 Proof.
   unfold inProd. crushTyping.
+Qed.
+
+Lemma inProd_Value {n v} : Value v → Value (inProd n v).
+Proof.
+  simpl; trivial.
 Qed.
 
 Definition inArr (n : nat) (t : Tm) : Tm := inr (inr (inr (inr (inl t)))).
@@ -58,11 +73,22 @@ Proof.
   unfold inArr. crushTyping.
 Qed.
 
+Lemma inArr_Value {n v} : Value v → Value (inArr n v).
+Proof.
+  simpl; trivial.
+Qed.
+
+
 Definition inSum (n : nat) (t : Tm) : Tm := inr (inr (inr (inr (inr t)))).
 
 Lemma inSum_T {Γ n t} : ⟪ Γ ⊢ t : UVal n ⊎ UVal n ⟫ → ⟪ Γ ⊢ inSum n t : UVal (S n) ⟫.
 Proof.
   unfold inSum. crushTyping.
+Qed.
+
+Lemma inSum_Value {n v} : Value v → Value (inSum n v).
+Proof.
+  simpl; trivial.
 Qed.
 
 Definition caseV0 (case₁ : Tm) (case₂ : Tm) :=
