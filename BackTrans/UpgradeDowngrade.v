@@ -9,6 +9,7 @@ Require Import Stlc.CanForm.
 Require Import Db.Lemmas.
 Require Import Db.WellScoping.
 Require Import LogRel.LR.
+Require Import LogRel.LemmasLR.
 Require Import LogRel.PseudoType.
 
 Local Ltac crush :=
@@ -303,3 +304,78 @@ Proof.
       eauto using inArr_Value, downgrade_eval_inArr.
 Qed.
   
+Definition dir_world_prec (n : nat) (w : World) (d : Direction) (p : Prec) : Prop :=
+  (lev w < n ∧ p = precise) ∨ (d = dir_lt ∧ p = imprecise).
+
+Arguments dir_world_prec n w d p : simpl never.
+
+Lemma dwp_zero {w d p} : dir_world_prec 0 w d p → p = imprecise ∧ d = dir_lt.
+Proof.
+  destruct 1 as [[? ?]|[? ?]].
+  - depind H.
+  - auto.
+Qed.
+
+Lemma invert_valrel_pEmulDV_unk {dir w n d p vu} :
+  valrel dir w (pEmulDV (S (n + d)) p) (inl unit) vu →
+  p = imprecise.
+Proof.
+  intros vr.
+  rewrite valrel_fixp in vr.
+  unfold valrel' in vr.
+  destruct vr as [_ [[? ?] |[? [(? & ? & ?)| [[? ?] |[[? ?]|[[? ?]|[? ?]]]]]]]];
+    crush.
+Qed.
+
+Lemma invert_valrel_pEmulDV_inUnit {dir w n d p vs vu} :
+  valrel dir w (pEmulDV (S (n + d)) p) (inUnit (n + d) vs) vu →
+  vs = S.unit ∧ vu = U.unit.
+Proof.
+  intros vr.
+  rewrite valrel_fixp in vr.
+  unfold valrel' in vr.
+  destruct vr as [_ [[? ?] |[? [(? & ? & ?)| [[? ?] |[[? ?]|[[? ?]|[? ?]]]]]]]];
+    crush; inversion H; crush.
+Qed.
+
+Lemma invert_valrel_pEmulDV_inBool {dir w n d p vs vu} :
+  valrel dir w (pEmulDV (S (n + d)) p) (inBool (n + d) vs) vu →
+  (vs = S.true ∧ vu = U.true) ∨ (vs = S.false ∧ vu = U.false).
+Proof.
+  intros vr.
+  rewrite valrel_fixp in vr.
+  unfold valrel' in vr.
+  destruct vr as [_ [[? ?] |[? [(? & ? & ?)| [[? ?] |[[? ?]|[[? ?]|[? ?]]]]]]]];
+    crush.
+  inversion H; destruct H0 as [[? ?]|[? ?]]; crush.
+Qed.
+
+Lemma downgrade_works {n d v vu dir w p} :
+  dir_world_prec n w dir p →
+  valrel dir w (pEmulDV (n + d) p) v vu →
+  exists v', 
+    app (downgrade n d) v -->* v' ∧
+    valrel dir w (pEmulDV n p) v' vu. 
+Proof.
+  revert d v vu dir w p; induction n;
+  intros d v vu dir w p dwp vr;
+  destruct (valrel_implies_Value vr);
+  destruct (valrel_implies_OfType vr) as [[vv ty] otu];
+  unfold repEmul in ty.
+  - exists (unkUVal 0).
+    destruct (dwp_zero dwp).
+    split; eauto using downgrade_zero_eval.
+    apply valrel_unk; crush.
+  - canonUVal.
+    + exists (unkUVal (S n)).
+      change (S (n + d)) with (S n + d).
+      eauto using downgrade_eval_unk, valrel_unk, invert_valrel_pEmulDV_unk.
+    + exists (inUnit n x).
+      eauto using downgrade_eval_inUnit, invert_valrel_pEmulDV_inUnit, valrel_inUnit.
+    + exists (inBool n x).
+      eauto using downgrade_eval_inBool, invert_valrel_pEmulDV_inBool, valrel_inBool.
+    + admit.
+    + admit.
+    + exists (inArr n (abs (UVal n) (app (downgrade n d) (app (x[wk]) (app (upgrade n d) (var 0)))))).
+      admit.
+Admitted.

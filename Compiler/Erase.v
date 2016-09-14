@@ -79,27 +79,6 @@ Proof.
   apply U.ufix_ws.
 Qed.
 
-Ltac crushLRMatch :=
-  match goal with
-      [ |- _ ∧ _ ] => split
-    | [ |- context[ lev ]] => unfold lev
-    | [ H : context[ lev ] |- _ ] => unfold lev in *
-    | [ |- ⟪ _ ⊩ _ ⟦ _ , _ ⟧ _ : _ ⟫ ] => (unfold OpenLRN; split)
-    | [ H : ⟪ _ ⊩ _ ⟦ _ , _ ⟧ _ : _ ⟫ |- _ ] => (unfold OpenLRN in H; destruct_conjs)
-    | [ H : valrel ?d _ ?τ ?ts ?tu |- termrel ?d _ ?τ ?ts ?tu ] => apply valrel_in_termrel
-    | [ |- termrel _ _ _ (S.abs _ _) (U.abs _) ] => apply valrel_in_termrel
-    | [ |- termrel _ _ _ S.unit U.unit ] => apply valrel_in_termrel
-    | [ |- termrel _ _ _ S.false U.false ] => apply valrel_in_termrel
-    | [ |- termrel _ _ _ S.true U.true ] => apply valrel_in_termrel
-    | [ H : valrel ?d ?w ?τ ?ts ?tu |- valrel ?d ?w' ?τ ?ts ?tu ] => (refine (valrel_mono _ H); try omega)
-    | [ H : envrel ?d ?w ?τ ?ts ?tu |- envrel ?d ?w' ?τ ?ts ?tu ] => (refine (envrel_mono _ H); try omega)
-    | [ |- envrel ?d ?w (?Γ p▻ ?τ) (?γs↑ >=> beta1 ?ts) (?γu↑ >=> beta1 ?tu) ] => refine (extend_envrel _ _)
-    | [ H : valrel _ _ ?τ ?ts ?tu |- OfType ?τ ?ts ?tu ] => refine (valrel_implies_OfType H)
-    | [ |- valrel _ _ _ _ _] => rewrite -> valrel_fixp in |- *; unfold valrel' in |- *
-    | [ |- S.ECtx (S.pctx_cat _ _) ] => apply S.ectx_cat
-    | [ |- U.ECtx (U.pctx_cat _ _) ] => apply U.ectx_cat
-  end.
-
 Local Ltac crush :=
   cbn in * |- ;
   repeat

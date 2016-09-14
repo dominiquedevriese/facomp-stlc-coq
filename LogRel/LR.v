@@ -112,11 +112,11 @@ Section LogicalRelation.
                            | 0 => ts = S.unit ∧ p = imprecise
                            | S n' => (ts = unkUVal (S n') ∧ p = imprecise) ∨
                                      exists ts',
-                                       (ts = inUnit n ts' ∧ vrunit ts' tu) ∨
-                                       (ts = inBool n ts' ∧ vrbool ts' tu) ∨
-                                       (ts = inProd n ts' ∧ vrprod (pEmulDV n' p) (pEmulDV n' p) ts' tu) ∨
-                                       (ts = inSum n ts' ∧ vrsum (pEmulDV n' p) (pEmulDV n' p) ts' tu) ∨
-                                       (ts = inArr n ts' ∧ vrarr (pEmulDV n' p) (pEmulDV n' p) ts' tu)
+                                       (ts = inUnit n' ts' ∧ vrunit ts' tu) ∨
+                                       (ts = inBool n' ts' ∧ vrbool ts' tu) ∨
+                                       (ts = inProd n' ts' ∧ vrprod (pEmulDV n' p) (pEmulDV n' p) ts' tu) ∨
+                                       (ts = inSum n' ts' ∧ vrsum (pEmulDV n' p) (pEmulDV n' p) ts' tu) ∨
+                                       (ts = inArr n' ts' ∧ vrarr (pEmulDV n' p) (pEmulDV n' p) ts' tu)
                          end
       end.
 

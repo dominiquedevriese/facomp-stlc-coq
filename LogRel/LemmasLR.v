@@ -1,4 +1,5 @@
 Require Import Common.Common.
+Require Import UVal.UVal.
 Require Import LogRel.LemmasPseudoType.
 Require Import LogRel.PseudoType.
 Require Import LogRel.LR.
@@ -392,3 +393,62 @@ Section OpenLR.
   Qed.
 
 End OpenLR.
+
+Ltac crushLRMatch :=
+  match goal with
+      [ |- _ ∧ _ ] => split
+    | [ |- context[ lev ]] => unfold lev
+    | [ H : context[ lev ] |- _ ] => unfold lev in *
+    | [ |- ⟪ _ ⊩ _ ⟦ _ , _ ⟧ _ : _ ⟫ ] => (unfold OpenLRN; split)
+    | [ H : ⟪ _ ⊩ _ ⟦ _ , _ ⟧ _ : _ ⟫ |- _ ] => (unfold OpenLRN in H; destruct_conjs)
+    | [ H : valrel ?d _ ?τ ?ts ?tu |- termrel ?d _ ?τ ?ts ?tu ] => apply valrel_in_termrel
+    | [ |- termrel _ _ _ (S.abs _ _) (U.abs _) ] => apply valrel_in_termrel
+    | [ |- termrel _ _ _ S.unit U.unit ] => apply valrel_in_termrel
+    | [ |- termrel _ _ _ S.false U.false ] => apply valrel_in_termrel
+    | [ |- termrel _ _ _ S.true U.true ] => apply valrel_in_termrel
+    | [ H : valrel ?d ?w ?τ ?ts ?tu |- valrel ?d ?w' ?τ ?ts ?tu ] => (refine (valrel_mono _ H); try omega)
+    | [ H : envrel ?d ?w ?τ ?ts ?tu |- envrel ?d ?w' ?τ ?ts ?tu ] => (refine (envrel_mono _ H); try omega)
+    | [ |- envrel ?d ?w (?Γ p▻ ?τ) (?γs↑ >=> beta1 ?ts) (?γu↑ >=> beta1 ?tu) ] => refine (extend_envrel _ _)
+    | [ H : valrel _ _ ?τ ?ts ?tu |- OfType ?τ ?ts ?tu ] => refine (valrel_implies_OfType H)
+    | [ |- valrel _ _ _ _ _] => rewrite -> valrel_fixp in |- *; unfold valrel' in |- *
+    | [ |- S.ECtx (S.pctx_cat _ _) ] => apply S.ectx_cat
+    | [ |- U.ECtx (U.pctx_cat _ _) ] => apply U.ectx_cat
+  end.
+
+Section UVal.
+  Lemma valrel_unk {d w n p vu} :
+    p = imprecise → Value vu →
+    valrel d w (pEmulDV n p) (unkUVal n) vu.
+  Proof.
+    intros eq vvu; subst.
+    repeat crushLRMatch.
+    - unfold OfType, OfTypeStlc, OfTypeUtlc; split; simpl;
+      eauto using unkUVal_Value, unkUValT.
+    - destruct n; [|left]; eauto.
+  Qed.
+
+  Lemma valrel_inUnit {d w n p vs vu} :
+    vs = S.unit ∧ vu = U.unit →
+    valrel d w (pEmulDV (S n) p) (inUnit n vs) vu.
+  Proof.
+    destruct 1 as [? ?]; subst.
+    repeat crushLRMatch.
+    - assert (⟪ empty ⊢ S.unit : tunit ⟫) by constructor.
+      unfold OfType, OfTypeStlc, OfTypeUtlc; split; simpl;
+      eauto using inUnit_Value, inUnitT.
+    - right. exists S.unit. left. eauto.
+  Qed.
+
+  Lemma valrel_inBool {d w n p vs vu} :
+    (vs = S.true ∧ vu = U.true) ∨ (vs = S.false ∧ vu = U.false) →
+    valrel d w (pEmulDV (S n) p) (inBool n vs) vu.
+  Proof.
+    intros eqs;
+    repeat crushLRMatch.
+    - assert (⟪ empty ⊢ vs : tbool ⟫);
+      destruct eqs as [[? ?]|[? ?]]; subst; try constructor;
+      unfold OfType, OfTypeStlc, OfTypeUtlc; simpl;
+      eauto using inBool_Value, inBoolT.
+    - right. exists vs. right. left. eauto.
+  Qed.
+End UVal.
