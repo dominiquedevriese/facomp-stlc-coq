@@ -146,6 +146,12 @@ Section OfType.
     eauto using OfTypeUtlc_implies_Value.
   Qed.
 
+  Lemma OfType_pEmulDV {n p ts tu} :
+    S.Value ts ∧ U.Value tu ∧
+    ⟪ empty ⊢ ts : UVal n ⟫ → 
+    OfType (pEmulDV n p) ts tu.
+  Proof. crush. Qed.
+
 End OfType.
 
 Ltac crushOfType :=
@@ -169,4 +175,5 @@ Ltac crushOfType :=
       | [ |- OfType (ptsum _ _) (S.inr _) (U.inr _)] => apply OfType_inr
       | [ |- OfType (ptprod _ _) (S.pair _ _) (U.pair _ _) ] => apply OfType_pair
       | [ |- OfType (ptarr _ _) (S.abs _ _) (U.abs _) ] => apply OfType_lambda
+      | [ |- OfType (pEmulDV _ _) _ _ ] => apply OfType_pEmulDV
     end.

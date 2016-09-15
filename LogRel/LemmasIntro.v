@@ -7,6 +7,7 @@ Require Import Stlc.LemmasEvaluation.
 Require Import Utlc.SpecScoping.
 Require Import Utlc.LemmasScoping.
 Require Import Utlc.DecideEval.
+Require Import UVal.UVal.
 Require Import LogRel.PseudoType.
 Require Import LogRel.LemmasPseudoType.
 Require Import LogRel.LR.
@@ -28,7 +29,8 @@ Local Ltac crushLRMatch :=
 
 Local Ltac crush :=
   repeat
-    (cbn;
+    (try assumption;
+     cbn;
      destruct_conjs;
      subst*;
      repeat crushLRMatch;
@@ -116,6 +118,94 @@ Section ValueRelation.
     valrel d (S w) (ptsum τ₁ τ₂) (S.inr vs) (U.inr vu).
   Proof. crush. Qed.
 
+  Lemma valrel_unk {d w n p vu} :
+    p = imprecise → U.Value vu →
+    valrel d w (pEmulDV n p) (unkUVal n) vu.
+  Proof.
+    intros eq vvu; subst.
+    repeat crushLRMatch.
+    - unfold OfType, OfTypeStlc, OfTypeUtlc; split; simpl;
+      eauto using unkUVal_Value, unkUValT.
+    - destruct n; [|left]; eauto.
+  Qed.
+
+  Lemma valrel_inUnit {d w n p vs vu} :
+    vs = S.unit ∧ vu = U.unit →
+    valrel d w (pEmulDV (S n) p) (inUnit n vs) vu.
+  Proof.
+    destruct 1 as [? ?]; subst.
+    repeat crushLRMatch.
+    - assert (⟪ empty ⊢ S.unit : tunit ⟫) by constructor.
+      unfold OfType, OfTypeStlc, OfTypeUtlc; split; simpl;
+      eauto using inUnit_Value, inUnitT.
+    - right. exists S.unit. left. eauto.
+  Qed.
+
+  Lemma valrel_inBool {d w n p vs vu} :
+    (vs = S.true ∧ vu = U.true) ∨ (vs = S.false ∧ vu = U.false) →
+    valrel d w (pEmulDV (S n) p) (inBool n vs) vu.
+  Proof.
+    intros eqs;
+    repeat crushLRMatch.
+    - assert (⟪ empty ⊢ vs : tbool ⟫);
+      destruct eqs as [[? ?]|[? ?]]; subst; try constructor;
+      unfold OfType, OfTypeStlc, OfTypeUtlc; simpl;
+      eauto using inBool_Value, inBoolT.
+    - right. exists vs. right. left. eauto.
+  Qed.
+
+  Lemma valrel_inProd {d w n p vs₁ vs₂ vu₁ vu₂} :
+    OfType (pEmulDV n p) vs₁ vu₁ →
+    OfType (pEmulDV n p) vs₂ vu₂ →
+    (forall w', w' < w → valrel d w' (pEmulDV n p) vs₁ vu₁) →
+    (forall w', w' < w → valrel d w' (pEmulDV n p) vs₂ vu₂) →
+    valrel d w (pEmulDV (S n) p) (inProd n (S.pair vs₁ vs₂)) (U.pair vu₁ vu₂).
+  Proof.
+    intros ot₁ ot₂ vr₁ vr₂.
+    destruct (OfType_implies_Value ot₁).
+    destruct (OfType_implies_Value ot₂).
+    repeat crushLRMatch.
+    - unfold OfType, OfTypeStlc, OfTypeUtlc in *; crush. 
+      apply inProd_T; crushTyping.
+    - right. exists (S.pair vs₁ vs₂). right. right. left.
+      crush.
+  Qed.
+
+  Lemma valrel_inProd' {d w n p vs₁ vs₂ vu₁ vu₂} :
+    (valrel d w (pEmulDV n p) vs₁ vu₁) →
+    (valrel d w (pEmulDV n p) vs₂ vu₂) →
+    valrel d (S w) (pEmulDV (S n) p) (inProd n (S.pair vs₁ vs₂)) (U.pair vu₁ vu₂).
+  Proof.
+    intros vr₁ vr₂.
+    eapply valrel_inProd; crush.
+ Qed.
+
+  Lemma valrel_inSum {d w n p vs vs' vu vu'} :
+    OfType (pEmulDV n p) vs vu →
+    (forall w', w' < w → valrel d w' (pEmulDV n p) vs vu) →
+    (vs' = S.inl vs ∧ vu' = U.inl vu) ∨ (vs' = S.inr vs ∧ vu' = U.inr vu) →
+    valrel d w (pEmulDV (S n) p) (inSum n vs') vu'.
+  Proof.
+    intros ot vr eqs. 
+    destruct (OfType_implies_Value ot).
+    assert (S.Value vs') by (destruct eqs as [[? ?]|[? ?]]; crush).
+    assert (U.Value vu') by (destruct eqs as [[? ?]|[? ?]]; crush).
+    assert ⟪ empty ⊢ vs' : UVal n ⊎ UVal n ⟫
+      by (destruct eqs as [[? ?]|[? ?]]; crush).
+    crush.
+    - eauto using inSum_T with typing.
+    - right. exists vs'. right. right. right. left.
+      destruct eqs as [[? ?]|[? ?]]; crush.
+  Qed.
+
+  Lemma valrel_inSum' {d w n p vs vs' vu vu'} :
+    (valrel d w (pEmulDV n p) vs vu) →
+    (vs' = S.inl vs ∧ vu' = U.inl vu) ∨ (vs' = S.inr vs ∧ vu' = U.inr vu) →
+    valrel d (S w) (pEmulDV (S n) p) (inSum n vs') vu'.
+  Proof.
+    intros vr₁ eqs.
+    refine (valrel_inSum _ _ eqs); crush.
+  Qed.
 End ValueRelation.
 
 Ltac valrelIntro :=

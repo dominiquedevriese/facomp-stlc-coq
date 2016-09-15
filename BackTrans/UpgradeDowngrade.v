@@ -10,13 +10,18 @@ Require Import Db.Lemmas.
 Require Import Db.WellScoping.
 Require Import LogRel.LR.
 Require Import LogRel.LemmasLR.
+Require Import LogRel.LemmasIntro.
+Require Import LogRel.LemmasPseudoType.
 Require Import LogRel.PseudoType.
+
+Require Omega.
 
 Local Ltac crush :=
   intros; cbn in * |-;
   repeat
     (repeat crushStlcSyntaxMatchH;
      repeat crushDbSyntaxMatchH;
+     crushOfType;
      split;
      subst*);
   try discriminate;
@@ -270,38 +275,41 @@ Qed.
 
 Lemma downgrade_reduces {n d v} :
   ⟪ empty ⊢ v : UVal (n + d) ⟫ → Value v →
-  exists v', Value v' ∧ app (downgrade n d) v -->* v'.
-             (* ∧ (forall vu dir w p, valrel dir w (pEmulDV (n + d) p) v vu → valrel dir w (pEmulDV n p) v' vu). *)
+  exists v', Value v' ∧ ⟪ empty ⊢ v' : UVal n ⟫ ∧ 
+             app (downgrade n d) v -->* v'.
 Proof.
   revert v; induction n;
   intros v ty vv.
   - exists (unkUVal 0).
-    eauto using unkUVal_Value, downgrade_zero_eval.
+    eauto using unkUVal_Value, unkUValT, downgrade_zero_eval.
   - canonUVal. 
     + exists (unkUVal (S n)).
       change (S (n + d)) with (S n + d).
-      eauto using unkUVal_Value, downgrade_eval_unk.
+      eauto using unkUVal_Value, unkUValT, downgrade_eval_unk.
     + exists (inUnit n x).
-      eauto using inUnit_Value, downgrade_eval_inUnit.
+      eauto using inUnit_Value, inUnitT, downgrade_eval_inUnit.
     + exists (inBool n x).
-      eauto using inBool_Value, downgrade_eval_inBool.
+      eauto using inBool_Value, inBoolT, downgrade_eval_inBool.
     + stlcCanForm.
       destruct H0 as (vx0 & vx1).
-      destruct (IHn _ H2 vx0) as (x0' & vx0' & evalx0).
-      destruct (IHn _ H3 vx1) as (x1' & vx1' & evalx1).
+      destruct (IHn _ H2 vx0) as (x0' & vx0' & ty0 & evalx0).
+      destruct (IHn _ H3 vx1) as (x1' & vx1' & ty1 & evalx1).
       exists (inProd n (pair x0' x1')).
       assert (Value (pair x0' x1')) by crush.
-      eauto using inProd_Value, downgrade_eval_inProd.
+      eauto using inProd_Value, inProd_T, downgrade_eval_inProd with typing.
 
     + stlcCanForm;
-      [ destruct (IHn _ H2 H0) as (vf & vvf & ex);
+      [ destruct (IHn _ H2 H0) as (vf & vvf & tyf & ex);
         exists (inSum n (inl vf))
-      | destruct (IHn _ H2 H0) as (vf & vvf & ex);
+      | destruct (IHn _ H2 H0) as (vf & vvf & tyf & ex);
         exists (inSum n (inr vf))];
-      eauto using inSum_Value, downgrade_eval_inSum.
+      repeat split;
+      eauto using inSum_Value, inSum_T, downgrade_eval_inSum with typing.
     + exists (inArr n (abs (UVal n) (app (downgrade n d) (app (x[wk]) (app (upgrade n d) (var 0)))))).
       assert (Value (abs (UVal n) (app (downgrade n d) (app (x[wk]) (app (upgrade n d) (var 0)))))) by crush.
-      eauto using inArr_Value, downgrade_eval_inArr.
+      repeat split;
+      eauto using inArr_Value, downgrade_eval_inArr, inArr_T, 
+            downgrade_T, upgrade_T with typing.
 Qed.
   
 Definition dir_world_prec (n : nat) (w : World) (d : Direction) (p : Prec) : Prop :=
@@ -316,8 +324,14 @@ Proof.
   - auto.
 Qed.
 
+Lemma dwp_invert_S {w d p n} : dir_world_prec (S n) (S w) d p → dir_world_prec n w d p.
+Proof.
+  destruct 1 as [[? ?]|[? ?]]; [left|right];
+  eauto with arith.
+Qed.
+
 Lemma invert_valrel_pEmulDV_unk {dir w n d p vu} :
-  valrel dir w (pEmulDV (S (n + d)) p) (inl unit) vu →
+  valrel dir w (pEmulDV (S n + d) p) (inl unit) vu →
   p = imprecise.
 Proof.
   intros vr.
@@ -350,6 +364,41 @@ Proof.
   inversion H; destruct H0 as [[? ?]|[? ?]]; crush.
 Qed.
 
+Lemma invert_valrel_pEmulDV_inProd {dir w n d p vs vu} :
+  valrel dir w (pEmulDV (S (n + d)) p) (inProd (n + d) vs) vu →
+  ∃ vs₁ vs₂ vu₁ vu₂, vs = S.pair vs₁ vs₂ ∧ vu = U.pair vu₁ vu₂ ∧
+             (∀ w', w' < w → valrel dir w' (pEmulDV (n + d) p) vs₁ vu₁) ∧
+             (∀ w', w' < w → valrel dir w' (pEmulDV (n + d) p) vs₂ vu₂).
+Proof.
+  intros vr.
+  rewrite valrel_fixp in vr; unfold valrel' in vr.
+  destruct vr as [[[vv ty] vvu] [[? ?] |[? [(? & ? & ?)| [[? ?] |[[? ?]|[[? ?]|[? ?]]]]]]]]; simpl in *; crush.
+  inversion H; subst; clear H.
+  assert (Value (inProd (n + d) x)) by crush.
+  canonUVal; crush; clear ty. 
+  inversion H1; subst; clear H1.
+  stlcCanForm.
+  destruct vu; unfold prod_rel in H0; simpl in H0; try contradiction.
+  exists x, x1, vu1, vu2; repeat (split; auto).
+Qed.
+
+Lemma invert_valrel_pEmulDV_inSum {dir w n d p vs vu} :
+  valrel dir w (pEmulDV (S (n + d)) p) (inSum (n + d) vs) vu →
+  ∃ vs' vu', ((vs = S.inl vs' ∧ vu = U.inl vu') ∨ (vs = S.inr vs' ∧ vu = U.inr vu')) ∧
+             (∀ w', w' < w → valrel dir w' (pEmulDV (n + d) p) vs' vu').
+Proof.
+  intros vr.
+  rewrite valrel_fixp in vr; unfold valrel' in vr.
+  destruct vr as [[[vv ty] vvu] [[? ?] |[? [(? & ? & ?)| [[? ?] |[[? ?]|[[? ?]|[? ?]]]]]]]]; simpl in *; crush.
+  inversion H; subst; clear H.
+  assert (Value (inSum (n + d) x)) by crush.
+  canonUVal; crush; clear ty. 
+  inversion H1; subst; clear H1.
+  stlcCanForm;
+  destruct vu; unfold sum_rel in H0; simpl in H0; try contradiction;
+  exists x, vu; repeat (split; auto).
+Qed.
+
 Lemma downgrade_works {n d v vu dir w p} :
   dir_world_prec n w dir p →
   valrel dir w (pEmulDV (n + d) p) v vu →
@@ -357,25 +406,81 @@ Lemma downgrade_works {n d v vu dir w p} :
     app (downgrade n d) v -->* v' ∧
     valrel dir w (pEmulDV n p) v' vu. 
 Proof.
-  revert d v vu dir w p; induction n;
-  intros d v vu dir w p dwp vr;
+  revert v vu w; induction n;
+  intros v vu w dwp vr;
   destruct (valrel_implies_Value vr);
   destruct (valrel_implies_OfType vr) as [[vv ty] otu];
-  unfold repEmul in ty.
+   unfold repEmul in ty.
   - exists (unkUVal 0).
     destruct (dwp_zero dwp).
     split; eauto using downgrade_zero_eval.
     apply valrel_unk; crush.
   - canonUVal.
-    + exists (unkUVal (S n)).
+    + (* unkUVal *)
+      exists (unkUVal (S n)).
       change (S (n + d)) with (S n + d).
       eauto using downgrade_eval_unk, valrel_unk, invert_valrel_pEmulDV_unk.
-    + exists (inUnit n x).
+    + (* inUnit *)
+      exists (inUnit n x).
       eauto using downgrade_eval_inUnit, invert_valrel_pEmulDV_inUnit, valrel_inUnit.
-    + exists (inBool n x).
+    + (* inBool *)
+      exists (inBool n x).
       eauto using downgrade_eval_inBool, invert_valrel_pEmulDV_inBool, valrel_inBool.
-    + admit.
-    + admit.
+    + (* inProd *)
+      destruct (invert_valrel_pEmulDV_inProd vr) as (vs₁ & vs₂ & vu₁ & vu₂ & ? & ? & vr₁ & vr₂); subst.
+      destruct w.
+      * (* w = 0 *)
+        stlcCanForm.
+        inversion H1; subst; clear H1.
+        destruct H2.
+        destruct (downgrade_reduces H4 H1) as (vs₁' & vvs₁' & ty₁' & es₁).
+        destruct (downgrade_reduces H5 H2) as (vs₂' & vvs₂' & ty₂' & es₂).
+        exists (inProd n (S.pair vs₁' vs₂')).
+        assert (forall w', w' < 0 → valrel dir w' (pEmulDV n p) vs₁' vu₁) by (intros; exfalso; Omega.omega).
+        assert (forall w', w' < 0 → valrel dir w' (pEmulDV n p) vs₂' vu₂) by (intros; exfalso; Omega.omega).
+        split.
+        eapply downgrade_eval_inProd; trivial.
+        eapply valrel_inProd; trivial; crush.
+      * (* w = S w *)
+        pose proof (dwp_invert_S dwp) as dwp'. 
+        assert (wlt : w < S w) by eauto with arith.
+        specialize (vr₁ w wlt).
+        specialize (vr₂ w wlt).
+        destruct (IHn _ _ w dwp' vr₁) as (vs₁' & es₁ & vr₁').
+        destruct (IHn _ _ w dwp' vr₂) as (vs₂' & es₂ & vr₂').
+        destruct (valrel_implies_Value vr₁').
+        destruct (valrel_implies_Value vr₂').
+        exists (inProd n (S.pair vs₁' vs₂')).
+        destruct H2.
+        eauto using downgrade_eval_inProd, valrel_inProd'.
+    + (* inSum *)
+      destruct (invert_valrel_pEmulDV_inSum vr) as (vs' & vu' & ? & vr'); subst.
+      destruct w.
+      * (* w = 0 *)
+        stlcCanForm;
+        destruct (downgrade_reduces H5 H2) as (vs'' & vvs'' & ty' & es');
+        assert (forall w', w' < 0 → valrel dir w' (pEmulDV n p) vs'' vu') by (intros; exfalso; Omega.omega);
+        [exists (inSum n (inl vs''))|exists (inSum n (inr vs''))];
+        destruct H1 as [[eq1 eq2] | [eq1 eq2]];
+        inversion eq1; inversion eq2; subst; clear eq1;
+        (split;
+         [refine (downgrade_eval_inSum _ _ _ es'); crush|
+          assert (ot' : OfType (pEmulDV n p) vs'' vu') by crush;
+            eapply (valrel_inSum ot'); eauto]).
+      * (* w = S w *)
+        pose proof (dwp_invert_S dwp) as dwp'. 
+        assert (wlt : w < S w) by eauto with arith.
+        specialize (vr' w wlt).
+        destruct (IHn _ _ w dwp' vr') as (vs'' & es' & vr'').
+        destruct (valrel_implies_Value vr'').
+        destruct H1 as [[eq1 eq2] | [eq1 eq2]];
+          subst;
+          [exists (inSum n (S.inl vs'')) |exists (inSum n (S.inr vs''))];
+        (split; [refine (downgrade_eval_inSum _ _ _ es'); crush
+                | eapply (valrel_inSum' vr''); crush]).
     + exists (inArr n (abs (UVal n) (app (downgrade n d) (app (x[wk]) (app (upgrade n d) (var 0)))))).
+      split.
+      * eapply downgrade_eval_inArr; crush.
+      * 
       admit.
 Admitted.
