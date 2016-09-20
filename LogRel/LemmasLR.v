@@ -410,6 +410,72 @@ Section OpenLR.
 
 End OpenLR.
 
+Section TermRelZero.
+
+  Lemma valrel_in_termrel₀ {d w τ ts tu} :
+    valrel d w τ ts tu → termrel₀ d w τ ts tu.
+  Proof.
+    intros vr.
+    destruct (valrel_implies_OfType vr) as [[? ?] ?].
+    unfold termrel₀. simpl.
+    exists ts, tu.
+    eauto with eval.
+  Qed.
+
+  Lemma termrel₀_in_termrel {d w τ ts tu} :
+    termrel₀ d w τ ts tu → termrel d w τ ts tu.
+  Proof.
+    destruct 1 as (vs & vu & ess & esu & vr).
+    eauto using termrel_antired_star, valrel_in_termrel.
+  Qed.
+
+  Lemma termrel₀_antired_star {ts ts' tu tu' W d τ} :
+    clos_refl_trans_1n S.Tm S.eval ts ts' →
+    U.ctxevalStar tu tu' →
+    termrel₀ d W τ ts' tu' →
+    termrel₀ d W τ ts tu.
+  Proof.
+    intros es eu tr.
+    destruct tr as (vs & vu & ess & esu & vr).
+    exists vs, vu.
+    simpl in *.
+    eauto using evalStepTrans.
+  Qed.
+
+  Lemma termrel₀_antired_star_left {ts ts' tu W d τ} :
+    clos_refl_trans_1n S.Tm S.eval ts ts' →
+    termrel₀ d W τ ts' tu →
+    termrel₀ d W τ ts tu.
+  Proof.
+    assert (U.ctxevalStar tu tu) by (simpl; eauto with eval).
+    eauto using termrel₀_antired_star.
+  Qed.
+
+  Lemma termrel₀_ectx {d w τ₁ τ₂ ts Cs tu Cu} (eCs : S.ECtx Cs) (eCu : U.ECtx Cu) :
+    termrel₀ d w τ₁ ts tu →
+    (∀ vs vu, valrel d w τ₁ vs vu → termrel₀ d w τ₂ (S.pctx_app vs Cs) (U.pctx_app vu Cu)) →
+    termrel₀ d w τ₂ (S.pctx_app ts Cs) (U.pctx_app tu Cu).
+  Proof.
+    intros trtm trcont.
+    destruct trtm as (vs & vu & ess & esu & vr).
+    specialize (trcont vs vu vr).
+    refine (termrel₀_antired_star _ _ trcont);
+    eauto using evalstar_ctx, extend_ctxevalStar.
+  Qed.
+
+  Lemma termrel₀_ectx' {d w τ₁ τ₂ ts Cs tu ts' tu' Cu} :
+    termrel₀ d w τ₁ ts tu →
+    (∀ vs vu, valrel d w τ₁ vs vu → termrel₀ d w τ₂ (S.pctx_app vs Cs) (U.pctx_app vu Cu)) →
+    ts' = S.pctx_app ts Cs →
+    tu' = U.pctx_app tu Cu →
+    S.ECtx Cs → U.ECtx Cu →
+    termrel₀ d w τ₂ ts' tu'.
+  Proof.
+    intros. subst.
+    eauto using termrel₀_ectx.
+  Qed.
+End TermRelZero.
+
 Ltac crushLRMatch :=
   match goal with
       [ |- _ ∧ _ ] => split

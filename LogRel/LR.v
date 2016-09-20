@@ -211,3 +211,12 @@ Notation "⟪ ⊩ Cs ⟦ d ⟧ Cu : Γ₀ , τ₀ → Γ , τ ⟫" := (OpenLRCtx
    Γ₀ at level 98, τ₀ at level 98,
    Γ at level 98, τ at level 98,
    format "⟪  ⊩  Cs ⟦ d ⟧ Cu  :  Γ₀ ,  τ₀  →  Γ ,  τ  ⟫").
+
+Section TermRelZero.
+  Definition termrel₀ d w τ ts tu :=
+    ∃ vs vu, clos_refl_trans_1n S.Tm S.eval ts vs ∧ U.ctxevalStar tu vu ∧
+             valrel d w τ vs vu.
+  
+  Arguments termrel₀ d w τ ts tu : simpl never.
+
+End TermRelZero.
