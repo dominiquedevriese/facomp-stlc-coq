@@ -114,9 +114,12 @@ Section LogicalRelation.
                                      exists ts',
                                        (ts = inUnit n' ts' ∧ vrunit ts' tu) ∨
                                        (ts = inBool n' ts' ∧ vrbool ts' tu) ∨
-                                       (ts = inProd n' ts' ∧ vrprod (pEmulDV n' p) (pEmulDV n' p) ts' tu) ∨
-                                       (ts = inSum n' ts' ∧ vrsum (pEmulDV n' p) (pEmulDV n' p) ts' tu) ∨
-                                       (ts = inArr n' ts' ∧ vrarr (pEmulDV n' p) (pEmulDV n' p) ts' tu)
+                                       (ts = inProd n' ts' ∧ vrprod (pEmulDV n' p) (pEmulDV n' p) ts' tu ∧
+                                        OfTypeUtlc (ptprod (pEmulDV n' p) (pEmulDV n' p)) tu) ∨
+                                       (ts = inSum n' ts' ∧ vrsum (pEmulDV n' p) (pEmulDV n' p) ts' tu ∧ 
+                                        OfTypeUtlc (ptsum (pEmulDV n' p) (pEmulDV n' p)) tu) ∨
+                                       (ts = inArr n' ts' ∧ vrarr (pEmulDV n' p) (pEmulDV n' p) ts' tu ∧ 
+                                        OfTypeUtlc (ptarr (pEmulDV n' p) (pEmulDV n' p)) tu)
                          end
       end.
 

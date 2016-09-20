@@ -156,6 +156,7 @@ Definition ctxevalStar := clos_refl_trans_1n UTm ctxeval.
 Definition ctxevaln := stepRel ctxeval.
 
 Arguments ctxevaln /.
+Arguments ctxevalStar /.
 
 Definition normal (t : UTm) := ∀ t', ¬ (t --> t').
 

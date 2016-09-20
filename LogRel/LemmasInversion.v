@@ -3,7 +3,9 @@ Require Import LogRel.PseudoType.
 Require Import LogRel.LemmasPseudoType.
 Require Import LogRel.LR.
 Require Import LogRel.LemmasLR.
+Require Import LogRel.LemmasIntro.
 Require Import Stlc.SpecSyntax.
+Require Import Stlc.CanForm.
 Require Import Stlc.SpecEvaluation.
 Require Import Stlc.LemmasEvaluation.
 Require Import Stlc.LemmasTyping.
@@ -12,6 +14,7 @@ Require Import Utlc.SpecSyntax.
 Require Import Utlc.SpecEvaluation.
 Require Import Utlc.LemmasEvaluation.
 Require Import Utlc.Inst.
+Require Import UVal.UVal.
 
 Require Import Omega.
 Require Import Min.
@@ -20,21 +23,41 @@ Section ValrelInversion.
 
   Local Ltac crush :=
     repeat
-      (simpl;
+      (cbn in * |-; cbn;
        try assumption;
        crushOfType;
        repeat crushTyping;
        repeat crushStlcSyntaxMatchH;
        repeat crushUtlcSyntaxMatchH;
        repeat crushUtlcScopingMatchH;
+       repeat crushDbSyntaxMatchH;
        try subst;
        destruct_conjs;
        repeat match goal with
                   [ |- _ ∧ _ ] => split
               end;
        eauto
-      ); try omega.
+      ); 
+    try discriminate;
+    eauto with eval;
+    try omega.
 
+  Lemma valrel_ptunit_inversion {d w vs vu} :
+    valrel d w ptunit vs vu →
+    vs = S.unit ∧ vu = U.unit.
+  Proof.
+    rewrite valrel_fixp; unfold valrel'.
+    tauto.
+  Qed.
+
+  Lemma valrel_ptbool_inversion {d w vs vu} :
+    valrel d w ptbool vs vu →
+    (vs = S.true ∧ vu = U.true) ∨ (vs = S.false ∧ vu = U.false).
+  Proof.
+    rewrite valrel_fixp; unfold valrel'.
+    tauto.
+  Qed.
+  
   Lemma valrel_ptprod_inversion {d w τ₁ τ₂ vs vu} :
     valrel d w (ptprod τ₁ τ₂) vs vu →
     exists vs₁ vs₂ vu₁ vu₂,
@@ -88,4 +111,137 @@ Section ValrelInversion.
     unfold valrel' in vr; unfold termrel; crush.
   Qed.
 
+  Lemma invert_valrel_pEmulDV_unk {dir w n p vu} :
+    valrel dir w (pEmulDV (S n) p) (S.inl S.unit) vu →
+    p = imprecise.
+  Proof.
+    intros vr.
+    rewrite valrel_fixp in vr.
+    unfold valrel' in vr.
+    destruct vr as [_ [[? ?] |[? [(? & ? & ?)| [[? ?] |[[? ?]|[[? ?]|[? ?]]]]]]]];
+      crush.
+  Qed.
+
+  Lemma invert_valrel_pEmulDV_inUnit' {dir w n p vs vu} :
+    valrel dir w (pEmulDV (S n) p) (inUnit n vs) vu →
+    vs = S.unit ∧ vu = U.unit.
+  Proof.
+    intros vr.
+    rewrite valrel_fixp in vr.
+    unfold valrel' in vr.
+    destruct vr as [_ [[? ?] |[? [(? & ? & ?)| [[? ?] |[[? ?]|[[? ?]|[? ?]]]]]]]];
+      crush; inversion H; crush.
+  Qed.
+
+  Lemma invert_valrel_pEmulDV_inUnit {dir w n p vs vu} :
+    valrel dir w (pEmulDV (S n) p) (inUnit n vs) vu →
+    valrel dir w ptunit vs vu.
+  Proof.
+    intros vr.
+    destruct (invert_valrel_pEmulDV_inUnit' vr); subst.
+    apply valrel_unit.
+  Qed.
+
+  Lemma invert_valrel_pEmulDV_inBool' {dir w n p vs vu} :
+    valrel dir w (pEmulDV (S n) p) (inBool n vs) vu →
+    (vs = S.true ∧ vu = U.true) ∨ (vs = S.false ∧ vu = U.false).
+  Proof.
+    intros vr.
+    rewrite valrel_fixp in vr.
+    unfold valrel' in vr.
+    destruct vr as [_ [[? ?] |[? [(? & ? & ?)| [[? ?] |[[? ?]|[[? ?]|[? ?]]]]]]]];
+      crush.
+    inversion H; destruct H0 as [[? ?]|[? ?]]; crush.
+  Qed.
+
+  Lemma invert_valrel_pEmulDV_inBool {dir w n p vs vu} :
+    valrel dir w (pEmulDV (S n) p) (inBool n vs) vu →
+    valrel dir w ptbool vs vu.
+  Proof.
+    intros vr.
+    destruct (invert_valrel_pEmulDV_inBool' vr) as [[? ?]|[? ?]]; subst;
+    auto using valrel_true, valrel_false.
+  Qed.
+
+  Lemma invert_valrel_pEmulDV_inProd' {dir w n p vs vu} :
+    valrel dir w (pEmulDV (S n) p) (inProd n vs) vu →
+    ∃ vs₁ vs₂ vu₁ vu₂, vs = S.pair vs₁ vs₂ ∧ vu = U.pair vu₁ vu₂ ∧
+                       (∀ w', w' < w → valrel dir w' (pEmulDV n p) vs₁ vu₁) ∧
+                       (∀ w', w' < w → valrel dir w' (pEmulDV n p) vs₂ vu₂).
+  Proof.
+    intros vr.
+    rewrite valrel_fixp in vr; unfold valrel' in vr.
+    destruct vr as [[[vv ty] vvu] [[? ?] |[? [(? & ? & ?)| [[? ?] |[[? ?]|[[? ?]|[? ?]]]]]]]]; simpl in *; crush.
+    inversion H; subst; clear H.
+    assert (S.Value (inProd n x)) by crush.
+    canonUVal; crush; clear ty. 
+    inversion H7; subst; clear H7.
+    stlcCanForm.
+    unfold prod_rel in H0; simpl in H0.
+    exists x, x1, H1, H2; repeat (split; auto).
+  Qed.
+
+  Lemma invert_valrel_pEmulDV_inProd {dir w n p vs vu} :
+    valrel dir w (pEmulDV (S n) p) (inProd n vs) vu →
+    valrel dir w (ptprod (pEmulDV n p) (pEmulDV n p)) vs vu.
+  Proof.
+    intros vr.
+    destruct (valrel_implies_OfType vr) as [[? ?] ?].
+    destruct (invert_valrel_pEmulDV_inProd' vr) as (? & ? & ? & ? & ? & ? & ? & ?); subst.
+    simpl in *; destruct_conjs.
+    apply valrel_pair''; try assumption;
+    repeat split; unfold inProd in *; cbn; crushTyping.
+  Qed.
+
+  Lemma invert_valrel_pEmulDV_inSum' {dir w n p vs vu} :
+    valrel dir w (pEmulDV (S n) p) (inSum n vs) vu →
+    ∃ vs' vu', ((vs = S.inl vs' ∧ vu = U.inl vu') ∨ (vs = S.inr vs' ∧ vu = U.inr vu')) ∧
+               (∀ w', w' < w → valrel dir w' (pEmulDV n p) vs' vu').
+  Proof.
+    intros vr.
+    rewrite valrel_fixp in vr; unfold valrel' in vr.
+    destruct vr as [[[vv ty] vvu] [[? ?] |[? [(? & ? & ?)| [[? ?] |[[? ?]|[[? ?]|[? ?]]]]]]]]; simpl in *; crush.
+    inversion H; subst; clear H.
+    assert (S.Value (inSum n x)) by crush.
+    canonUVal; crush; clear ty. 
+    inversion H3; subst; clear H3.
+    unfold sum_rel in H0; simpl in H0.
+    stlcCanForm; 
+      destruct H2 as [[? ?]|[? ?]]; subst; try contradiction;
+      exists x, H1; repeat (split; auto).
+  Qed.
+
+  Lemma invert_valrel_pEmulDV_inSum {dir w n p vs vu} :
+    valrel dir w (pEmulDV (S n) p) (inSum n vs) vu →
+    valrel dir w (ptsum (pEmulDV n p) (pEmulDV n p)) vs vu.
+  Proof.
+    intros vr.
+    destruct (valrel_implies_OfType vr) as [[? ?] ?].
+    destruct (invert_valrel_pEmulDV_inSum' vr) as (? & ? & [[? ?]|[? ?]] & ?); 
+      subst; [apply valrel_inl''| apply valrel_inr'']; 
+      try assumption;
+      repeat split; simpl in *; unfold inSum in *; 
+      try assumption; crushTyping.
+  Qed.
+
+  Lemma invert_valrel_pEmulDV_inArr {dir w n p vs vu} :
+    valrel dir w (pEmulDV (S n) p) (inArr n vs) vu →
+    valrel dir w (ptarr (pEmulDV n p) (pEmulDV n p)) vs vu.
+  Proof.
+    intros vr.
+    rewrite valrel_fixp; unfold valrel'.
+    rewrite valrel_fixp in vr; unfold valrel' in vr.
+    destruct vr as [[[vv ty] vvu] [[? ?] |[? [(? & ? & ?)| [[? ?] |[[? ?]|[[? ?]|[? [? ?]]]]]]]]]; simpl in *; crush;
+    inversion H; subst; clear H;
+    assert (S.Value (inArr n x)) by crush.
+    - canonUVal; inversion H2; subst; clear H2.
+      stlcCanForm; destruct_conjs; subst. 
+      crush.
+    - unfold arr_rel in *.
+      canonUVal; crush.
+      inversion H2; subst; clear H2.
+      stlcCanForm; destruct_conjs; subst.
+      intros.
+      apply H0; trivial.
+  Qed.    
 End ValrelInversion.

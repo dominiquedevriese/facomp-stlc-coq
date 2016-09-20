@@ -115,6 +115,22 @@ Section OfType.
       OfType τ₂ ts₂ tu₂.
   Proof. crush. Qed.
 
+  Lemma OfTypeUtlc_inversion_ptarr {τ₁ τ₂ tu} :
+    OfTypeUtlc (ptarr τ₁ τ₂) tu →
+    ∃ tu', tu = U.abs tu'.
+  Proof. crush. Qed.
+
+  Lemma OfTypeUtlc_inversion_ptprod {τ₁ τ₂ tu} :
+    OfTypeUtlc (ptprod τ₁ τ₂) tu →
+    ∃ tu₁ tu₂, tu = U.pair tu₁ tu₂ ∧ OfTypeUtlc τ₁ tu₁ ∧ OfTypeUtlc τ₂ tu₂.
+  Proof. crush. Qed.
+
+  Lemma OfTypeUtlc_inversion_ptsum {τ₁ τ₂ tu} :
+    OfTypeUtlc (ptsum τ₁ τ₂) tu →
+    ∃ tu', (tu = U.inl tu' ∧ OfTypeUtlc τ₁ tu') ∨
+           (tu = U.inr tu' ∧ OfTypeUtlc τ₂ tu').
+  Proof. crush. Qed.
+
   Lemma OfType_inversion_ptarr {τ₁ τ₂ ts tu} :
     OfType (ptarr τ₁ τ₂) ts tu →
     ∃ ts' tu',
@@ -162,6 +178,9 @@ Ltac crushOfType :=
       | [ H: OfType (ptsum _ _) _ _ |- _ ] => apply OfType_inversion_ptsum in H
       | [ H: OfType (ptprod _ _) _ _ |- _ ] => apply OfType_inversion_ptprod in H
       | [ H: OfType (ptarr _ _) _ _ |- _ ] => apply OfType_inversion_ptarr in H
+      | [ H: OfTypeUtlc (ptarr _ _) _ |- _ ] => apply OfTypeUtlc_inversion_ptarr in H
+      | [ H: OfTypeUtlc (ptprod _ _) _ |- _ ] => apply OfTypeUtlc_inversion_ptprod in H
+      | [ H: OfTypeUtlc (ptsum _ _) _ |- _ ] => apply OfTypeUtlc_inversion_ptsum in H
       | [ H: OfType (pEmulDV _ _) _ _ |- _ ] => apply OfType_inversion_pEmulDV in H
       (* | [ H: OfTypeUtlc (ptprod _ _) ?t  |- _ ] => destruct t; cbn in H; try discriminate *)
       (* | [ H: OfTypeUtlc (ptsum _ _) ?t  |- _ ] => destruct t; cbn in H; try discriminate *)

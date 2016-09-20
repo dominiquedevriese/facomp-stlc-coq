@@ -190,6 +190,7 @@ Section ClosedLR.
     intros ts tu W' W fw [ot hyp];
     split; eauto; cbn in *.
     - (* ptarr _ _ *)
+      destruct_conjs; subst.
       intros W'' fw'.
       apply hyp; try omega.
     - (* ptprod *)
@@ -202,7 +203,13 @@ Section ClosedLR.
         [ now left
         | right; exists ts'].
       repeat (destruct hyp as [[eqs hyp]|hyp]; [ left | right]);
-        crush; destruct ts'; crush; destruct tu; crush.
+        crush; destruct ts'; crush; 
+        try match goal with
+            [ |- (∃ tub, U.abs ?tub' = U.abs tub ∧ _) ] => (exists tub') 
+            end; try destruct tu; crush;
+        match goal with
+            [ H : ∀ w' : nat, w' < ?W → False, _ : ?w' < _ |- False ] => eapply (H w')
+        end; omega.
   Qed.
         
   Lemma envrel_mono {d W Γ γs γu W'} :

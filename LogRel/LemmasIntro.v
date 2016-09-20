@@ -22,6 +22,10 @@ Local Ltac crushLRMatch :=
     | [ H : valrel _ _ ?τ ?ts ?tu   |- OfType ?τ ?ts ?tu ] => refine (valrel_implies_OfType H)
     | [ H : valrel ?d _ ?τ ?ts ?tu  |- termrel ?d _ ?τ ?ts ?tu ] => apply valrel_in_termrel
     | [ H : valrel ?d ?w ?τ ?ts ?tu |- valrel ?d ?w' ?τ ?ts ?tu ] => refine (valrel_mono _ H); omega
+    | [ H : valrel _ _ _ ?ts _ |- S.Value ?ts ] => refine (proj1 (valrel_implies_Value H))
+    | [ H : valrel _ _ _ _ ?tu |- U.Value ?tu ] => refine (proj2 (valrel_implies_Value H))
+    | [ H : OfType _ ?ts _ |- S.Value ?ts ] => refine (proj1 (OfType_implies_Value H))
+    | [ H : OfType _ _ ?tu |- U.Value ?tu ] => refine (proj2 (OfType_implies_Value H))
     | [ |- valrel _ _ _ _ _] => rewrite -> valrel_fixp; unfold valrel'
     | [ |- context[ lev ]] => unfold lev
     | [ H : context[ lev ] |- _ ] => unfold lev in *
@@ -49,7 +53,7 @@ Section ValueRelation.
     valrel d w (ptarr τ' τ) (S.abs (repEmul τ') ts) (U.abs tu).
   Proof.
     intros ot hyp; crush.
-    apply hyp; crush.
+    intros; apply hyp; crush.
   Qed.
 
   (* Unit *)
@@ -68,6 +72,16 @@ Section ValueRelation.
   Proof. crush. Qed.
 
   (* Pair *)
+  Lemma valrel_pair'' {d w τ₁ τ₂ ts₁ ts₂ tu₁ tu₂} :
+    OfType τ₁ ts₁ tu₁ →
+    OfType τ₂ ts₂ tu₂ →
+    (forall w', w' < w → valrel d w' τ₁ ts₁ tu₁) →
+    (forall w', w' < w → valrel d w' τ₂ ts₂ tu₂) →
+    valrel d w (ptprod τ₁ τ₂) (S.pair ts₁ ts₂) (U.pair tu₁ tu₂).
+  Proof. 
+    crush.
+  Qed.
+
   Lemma valrel_pair' {d w τ₁ τ₂ ts₁ ts₂ tu₁ tu₂} :
     valrel d w τ₁ ts₁ tu₁ →
     valrel d w τ₂ ts₂ tu₂ →
@@ -102,6 +116,12 @@ Section ValueRelation.
     valrel d (S w) (ptsum τ₁ τ₂) (S.inl vs) (U.inl vu).
   Proof. crush. Qed.
 
+  Lemma valrel_inl'' {d w τ₁ τ₂ vs vu} :
+    OfType τ₁ vs vu →
+    (∀ w', w' < w → valrel d w' τ₁ vs vu) →
+    valrel d w (ptsum τ₁ τ₂) (S.inl vs) (U.inl vu).
+  Proof. crush. Qed.
+
   (* Inr *)
   Lemma valrel_0_inr {d τ₁ τ₂ vs vu} :
     OfType τ₂ vs vu →
@@ -116,6 +136,12 @@ Section ValueRelation.
   Lemma valrel_inr' {d w τ₁ τ₂ vs vu} :
     valrel d w τ₂ vs vu →
     valrel d (S w) (ptsum τ₁ τ₂) (S.inr vs) (U.inr vu).
+  Proof. crush. Qed.
+
+  Lemma valrel_inr'' {d w τ₁ τ₂ vs vu} :
+    OfType τ₂ vs vu →
+    (∀ w', w' < w → valrel d w' τ₂ vs vu) →
+    valrel d w (ptsum τ₁ τ₂) (S.inr vs) (U.inr vu).
   Proof. crush. Qed.
 
   Lemma valrel_unk {d w n p vu} :
@@ -205,6 +231,19 @@ Section ValueRelation.
   Proof.
     intros vr₁ eqs.
     refine (valrel_inSum _ _ eqs); crush.
+  Qed.
+
+  Lemma valrel_inArr {d w n p vs vu} :
+    valrel d w (ptarr (pEmulDV n p) (pEmulDV n p)) vs vu →
+    valrel d w (pEmulDV (S n) p) (inArr n vs) vu.
+  Proof.
+    intros vr.
+    crush.
+    - destruct (valrel_implies_OfType vr) as [[_ ?] _].
+      eauto using inArr_T with typing.
+    - right. exists vs. do 4 right.
+      rewrite valrel_fixp in vr; destruct vr as [[_ ?] vrarr].
+      crush.
   Qed.
 End ValueRelation.
 

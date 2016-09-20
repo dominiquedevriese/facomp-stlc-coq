@@ -11,6 +11,7 @@ Require Import Db.WellScoping.
 Require Import LogRel.LR.
 Require Import LogRel.LemmasLR.
 Require Import LogRel.LemmasIntro.
+Require Import LogRel.LemmasInversion.
 Require Import LogRel.LemmasPseudoType.
 Require Import LogRel.PseudoType.
 
@@ -122,7 +123,7 @@ Proof.
   destruct n; simpl; trivial.
 Qed.
 
-Lemma upgrade_value {n d} : Value (downgrade n d).
+Lemma upgrade_value {n d} : Value (upgrade n d).
 Proof.
   destruct n; simpl; trivial.
 Qed.
@@ -135,12 +136,32 @@ Proof.
   simpl; eauto with eval. 
 Qed.
 
+Lemma upgrade_zero_eval {d v} : Value v → app (upgrade 0 d) v -->* unkUVal d.
+Proof.
+  intros vv.
+  unfold upgrade.
+  eapply evalStepStar. eapply eval₀_to_eval. crush.
+  destruct d; simpl; eauto with eval.
+Qed.
+
 Lemma downgrade_eval_unk {n d} : app (downgrade n d) (unkUVal (n + d)) -->* unkUVal n.
 Proof.
   assert (vv : Value (unkUVal (n + d))) by apply unkUVal_Value.
   destruct n; simpl.
   - eapply evalStepStar. eapply eval₀_to_eval. crush.
     simpl; eauto with eval. 
+  - change _ with (Value (inl unit)) in vv.
+    eapply evalStepStar. eapply eval₀_to_eval. crush.
+    rewrite -> ?(caseUVal_sub (beta1 _)); simpl.
+    eapply caseUVal_eval_unk.
+Qed.
+
+Lemma upgrade_eval_unk {n d} : app (upgrade n d) (unkUVal n) -->* unkUVal (n + d).
+Proof.
+  assert (vv : Value (unkUVal n)) by apply unkUVal_Value.
+  destruct n; simpl.
+  - eapply evalStepStar. eapply eval₀_to_eval. crush.
+    destruct d; simpl; eauto with eval. 
   - change _ with (Value (inl unit)) in vv.
     eapply evalStepStar. eapply eval₀_to_eval. crush.
     rewrite -> ?(caseUVal_sub (beta1 _)); simpl.
@@ -159,12 +180,36 @@ Proof.
   simpl; crush.
 Qed.
   
+Lemma upgrade_eval_inUnit {n d v} : 
+  Value v → app (upgrade (S n) d) (inUnit n v) -->* inUnit (n + d) v.
+Proof.
+  intros vv.
+  assert (Value (inUnit (n + d) v)) by (simpl; crush).
+  unfold upgrade.
+  eapply evalStepStar. eapply eval₀_to_eval. crush.
+  rewrite -> ?(caseUVal_sub (beta1 _)); simpl.
+  eapply evalStepTrans. eapply caseUVal_eval_unit; crush.
+  simpl; crush.
+Qed.
+
 Lemma downgrade_eval_inBool {n d v} : 
   Value v → app (downgrade (S n) d) (inBool (n + d) v) -->* inBool n v.
 Proof.
   intros vv.
   assert (Value (inBool (n + d) v)) by (simpl; crush).
   unfold downgrade.
+  eapply evalStepStar. eapply eval₀_to_eval. crush.
+  rewrite -> ?(caseUVal_sub (beta1 _)); simpl.
+  eapply evalStepTrans. eapply caseUVal_eval_bool; crush.
+  simpl; crush.
+Qed.
+ 
+Lemma upgrade_eval_inBool {n d v} : 
+  Value v → app (upgrade (S n) d) (inBool n v) -->* inBool (n + d) v.
+Proof.
+  intros vv.
+  assert (Value (inBool (n + d) v)) by (simpl; crush).
+  unfold upgrade.
   eapply evalStepStar. eapply eval₀_to_eval. crush.
   rewrite -> ?(caseUVal_sub (beta1 _)); simpl.
   eapply evalStepTrans. eapply caseUVal_eval_bool; crush.
@@ -192,6 +237,48 @@ Proof.
   (* downgrade under sub... *)
   simpl; crush.
   rewrite -> ?downgrade_sub.
+
+  (* first projection *)
+  eapply evalStepStar. 
+  assert (ep₁ : proj₁ (pair v₁ v₂) -->₀ v₁) by crush.
+  eapply (eval_from_eval₀ ep₁); inferContext; crush; simpl.
+
+  (* recursive call 1 *)
+  eapply evalStepTrans. eapply (evalstar_ctx' es₁); inferContext; crush.
+
+  (* second projection *)
+  eapply evalStepStar. 
+  assert (ep₂ : proj₂ (pair v₁ v₂) -->₀ v₂) by crush.
+  eapply (eval_from_eval₀ ep₂); inferContext; crush; simpl.
+
+  (* recursive call 2 *)
+  eapply evalStepTrans. eapply (evalstar_ctx' es₂); inferContext; crush.
+
+  (* ... and we're done. *)
+  simpl; crush.
+Qed.
+
+Lemma upgrade_eval_inProd {n d v₁ v₂ v₁' v₂'} : 
+  Value v₁ → Value v₂ → Value v₁' → Value v₂' →
+  app (upgrade n d) v₁ -->* v₁' →
+  app (upgrade n d) v₂ -->* v₂' →
+  app (upgrade (S n) d) (inProd n (pair v₁ v₂)) -->* inProd (n + d) (pair v₁' v₂').
+Proof.
+  intros vv₁ vv₂ vv₁' vv₂' es₁ es₂.
+  assert (Value (inProd (n + d) (pair v₁ v₂))) by (simpl; crush).
+  unfold upgrade.
+  assert (Value (upgrade n d)) by apply upgrade_value.
+
+  (* beta-reduce *)
+  eapply evalStepStar. eapply eval₀_to_eval; crush.
+  rewrite -> ?(caseUVal_sub (beta1 _)); simpl; crush.
+  rewrite -> ?upgrade_sub, ?upgrade_sub.
+
+  (* evaluate UVal pattern match *)
+  eapply evalStepTrans. eapply caseUVal_eval_prod; crush.
+  (* upgrade under sub... *)
+  simpl; crush.
+  rewrite -> ?upgrade_sub.
 
   (* first projection *)
   eapply evalStepStar. 
@@ -250,6 +337,43 @@ Proof.
     simpl; crush.
 Qed.
 
+Lemma upgrade_eval_inSum {n d v v' va va'} : 
+  Value v → Value v' → 
+  (va = inl v ∧ va' = inl v') ∨ (va = inr v ∧ va' = inr v') →
+  app (upgrade n d) v -->* v' →
+  app (upgrade (S n) d) (inSum n va) -->* inSum (n + d) va'.
+Proof.
+  intros vv vv' eqs es.
+
+  unfold upgrade.
+  destruct eqs as [(? & ?)|(? & ?)]; subst;
+  (* beta-reduce *)
+  (eapply evalStepStar; [eapply eval₀_to_eval; crush|]);
+    rewrite -> ?(caseUVal_sub (beta1 _)); simpl; crush;
+    rewrite -> ?upgrade_sub, ?upgrade_sub;
+
+    (* evaluate UVal pattern match *)
+    (eapply evalStepTrans; [eapply caseUVal_eval_sum; crush|]);
+    (* upgrade under sub... *)
+    simpl; crush;
+    rewrite -> ?upgrade_sub;
+
+    (* caseof *)
+    [assert (ec : caseof (inl v) (inl (app (upgrade n d) (var 0))) (inr (app (upgrade n d) (var 0))) -->₀ ((inl (app (upgrade n d) (var 0))) [beta1 v])) by crush
+    |assert (ec : caseof (inr v) (inl (app (upgrade n d) (var 0))) (inr (app (upgrade n d) (var 0))) -->₀ ((inr (app (upgrade n d) (var 0))) [beta1 v])) by crush
+    ];
+    (eapply evalStepStar;
+     [eapply (eval_from_eval₀ ec); inferContext; crush|]);
+    crushStlcSyntaxMatchH (* why is this needed? *);
+    rewrite -> ?upgrade_sub;
+
+    (* recursive call *)
+    (eapply evalStepTrans; [eapply (evalstar_ctx' es); inferContext; crush|]);
+
+    (* ... and we're done. *)
+    simpl; crush.
+Qed.
+
 Lemma downgrade_eval_inArr {n d v} : 
   Value v →
   app (downgrade (S n) d) (inArr (n + d) v) -->* 
@@ -268,6 +392,29 @@ Proof.
     (* downgrade under sub... *)
     simpl; crush;
     rewrite -> ?downgrade_sub, ?upgrade_sub.
+
+  change (wk 0) with 1; simpl.
+  eauto with eval.
+Qed.
+
+Lemma upgrade_eval_inArr {n d v} : 
+  Value v →
+  app (upgrade (S n) d) (inArr n v) -->* 
+      inArr (n + d) (abs (UVal (n + d)) (app (upgrade n d) (app (v[wk]) (app (downgrade n d) (var 0))))).
+Proof.
+  intros vv.
+  unfold upgrade; simpl.
+
+  (* beta-reduce *)
+  (eapply evalStepStar; [eapply eval₀_to_eval; crush|]).
+  rewrite -> ?(caseUVal_sub (beta1 _)); simpl; crush;
+  rewrite -> ?upgrade_sub, ?downgrade_sub.
+
+  (* evaluate UVal pattern match *)
+  (eapply evalStepTrans; [eapply caseUVal_eval_arr; crush|]);
+    (* upgrade under sub... *)
+    simpl; crush;
+    rewrite -> ?upgrade_sub, ?downgrade_sub.
 
   change (wk 0) with 1; simpl.
   eauto with eval.
@@ -311,6 +458,46 @@ Proof.
       eauto using inArr_Value, downgrade_eval_inArr, inArr_T, 
             downgrade_T, upgrade_T with typing.
 Qed.
+
+Lemma upgrade_reduces {n v} d :
+  ⟪ empty ⊢ v : UVal n ⟫ → Value v →
+  exists v', Value v' ∧ ⟪ empty ⊢ v' : UVal (n + d) ⟫ ∧ 
+             app (upgrade n d) v -->* v'.
+Proof.
+  revert v; induction n;
+  intros v ty vv.
+  - exists (unkUVal d).
+    eauto using unkUVal_Value, unkUValT, upgrade_zero_eval.
+  - canonUVal. 
+    + exists (unkUVal (S (n + d))).
+      change (S (n + d)) with (S n + d).
+      eauto using unkUVal_Value, unkUValT, upgrade_eval_unk.
+    + exists (inUnit (n + d) x).
+      eauto using inUnit_Value, inUnitT, upgrade_eval_inUnit.
+    + exists (inBool (n + d) x).
+      eauto using inBool_Value, inBoolT, upgrade_eval_inBool.
+    + stlcCanForm.
+      destruct H0 as (vx0 & vx1).
+      destruct (IHn _ H2 vx0) as (x0' & vx0' & ty0 & evalx0).
+      destruct (IHn _ H3 vx1) as (x1' & vx1' & ty1 & evalx1).
+      exists (inProd (n + d) (pair x0' x1')).
+      assert (Value (pair x0' x1')) by crush.
+      change (S n + d) with (S (n + d)).
+      eauto using inProd_Value, inProd_T, upgrade_eval_inProd with typing.
+    + stlcCanForm;
+      [ destruct (IHn _ H2 H0) as (vf & vvf & tyf & ex);
+        exists (inSum (n + d) (inl vf))
+      | destruct (IHn _ H2 H0) as (vf & vvf & tyf & ex);
+        exists (inSum (n + d) (inr vf))];
+      repeat split;
+      eauto using inSum_Value, inSum_T, upgrade_eval_inSum with typing.
+    + exists (inArr (n + d) (abs (UVal (n + d)) (app (upgrade n d) (app (x[wk]) (app (downgrade n d) (var 0)))))).
+      assert (Value (abs (UVal (n + d)) (app (upgrade n d) (app (x[wk]) (app (downgrade n d) (var 0)))))) by crush.
+      repeat split;
+      eauto using inArr_Value, upgrade_eval_inArr, inArr_T, 
+            upgrade_T, downgrade_T with typing.
+Qed.
+  
   
 Definition dir_world_prec (n : nat) (w : World) (d : Direction) (p : Prec) : Prop :=
   (lev w < n ∧ p = precise) ∨ (d = dir_lt ∧ p = imprecise).
@@ -330,73 +517,425 @@ Proof.
   eauto with arith.
 Qed.
 
-Lemma invert_valrel_pEmulDV_unk {dir w n d p vu} :
-  valrel dir w (pEmulDV (S n + d) p) (inl unit) vu →
-  p = imprecise.
+Lemma dwp_invert_S' {w d p n} : 
+  dir_world_prec (S n) w d p → 
+  forall w', w' < w → dir_world_prec n w' d p.
 Proof.
-  intros vr.
-  rewrite valrel_fixp in vr.
-  unfold valrel' in vr.
-  destruct vr as [_ [[? ?] |[? [(? & ? & ?)| [[? ?] |[[? ?]|[[? ?]|[? ?]]]]]]]];
-    crush.
+  destruct 1 as [[? ?]|[? ?]]; [left|right];
+  eauto with arith.
 Qed.
 
-Lemma invert_valrel_pEmulDV_inUnit {dir w n d p vs vu} :
-  valrel dir w (pEmulDV (S (n + d)) p) (inUnit (n + d) vs) vu →
-  vs = S.unit ∧ vu = U.unit.
-Proof.
-  intros vr.
-  rewrite valrel_fixp in vr.
-  unfold valrel' in vr.
-  destruct vr as [_ [[? ?] |[? [(? & ? & ?)| [[? ?] |[[? ?]|[[? ?]|[? ?]]]]]]]];
-    crush; inversion H; crush.
-Qed.
 
-Lemma invert_valrel_pEmulDV_inBool {dir w n d p vs vu} :
-  valrel dir w (pEmulDV (S (n + d)) p) (inBool (n + d) vs) vu →
-  (vs = S.true ∧ vu = U.true) ∨ (vs = S.false ∧ vu = U.false).
-Proof.
-  intros vr.
-  rewrite valrel_fixp in vr.
-  unfold valrel' in vr.
-  destruct vr as [_ [[? ?] |[? [(? & ? & ?)| [[? ?] |[[? ?]|[[? ?]|[? ?]]]]]]]];
-    crush.
-  inversion H; destruct H0 as [[? ?]|[? ?]]; crush.
-Qed.
-
-Lemma invert_valrel_pEmulDV_inProd {dir w n d p vs vu} :
+Lemma downgrade_inProd_works {n d w dir p vs vu} :
   valrel dir w (pEmulDV (S (n + d)) p) (inProd (n + d) vs) vu →
-  ∃ vs₁ vs₂ vu₁ vu₂, vs = S.pair vs₁ vs₂ ∧ vu = U.pair vu₁ vu₂ ∧
-             (∀ w', w' < w → valrel dir w' (pEmulDV (n + d) p) vs₁ vu₁) ∧
-             (∀ w', w' < w → valrel dir w' (pEmulDV (n + d) p) vs₂ vu₂).
+  (forall w' vs₁ vu₁, w' < w →
+              valrel dir w' (pEmulDV (n + d) p) vs₁ vu₁ →
+              ∃ vs₁', app (downgrade n d) vs₁ -->* vs₁' ∧
+                      valrel dir w' (pEmulDV n p) vs₁' vu₁) →
+  exists v', 
+    app (downgrade (S n) d) (inProd (n + d) vs) -->* v' ∧
+    valrel dir w (pEmulDV (S n) p) v' vu.
 Proof.
-  intros vr.
-  rewrite valrel_fixp in vr; unfold valrel' in vr.
-  destruct vr as [[[vv ty] vvu] [[? ?] |[? [(? & ? & ?)| [[? ?] |[[? ?]|[[? ?]|[? ?]]]]]]]]; simpl in *; crush.
-  inversion H; subst; clear H.
-  assert (Value (inProd (n + d) x)) by crush.
-  canonUVal; crush; clear ty. 
-  inversion H1; subst; clear H1.
-  stlcCanForm.
-  destruct vu; unfold prod_rel in H0; simpl in H0; try contradiction.
-  exists x, x1, vu1, vu2; repeat (split; auto).
+  intros vr ih.
+  destruct (valrel_implies_OfType vr) as [[? ?] ?].
+  destruct (invert_valrel_pEmulDV_inProd' vr) as (vs₁ & vs₂ & vu₁ & vu₂ & ? & ? & vr₁ & vr₂); subst.
+  destruct w.
+  * (* w = 0 *)
+    simpl in H0.
+    canonUVal; crush.
+    inversion H2; subst; clear H2.
+    stlcCanForm.
+    inversion H2; subst; clear H2.
+    destruct_conjs; destruct H3 as [vx vx0].
+    destruct (downgrade_reduces H5 vx) as (vs₁' & vvs₁' & ty₁' & es₁).
+    destruct (downgrade_reduces H6 vx0) as (vs₂' & vvs₂' & ty₂' & es₂).
+    exists (inProd n (S.pair vs₁' vs₂')).
+    assert (forall w', w' < 0 → valrel dir w' (pEmulDV n p) vs₁' vu₁) by (intros; exfalso; Omega.omega).
+    assert (forall w', w' < 0 → valrel dir w' (pEmulDV n p) vs₂' vu₂) by (intros; exfalso; Omega.omega).
+    split.
+    eapply downgrade_eval_inProd; trivial.
+    eapply valrel_inProd; trivial; crush.
+  * (* w = S w *)
+    assert (wlt : w < S w) by eauto with arith.
+    assert (h1 := ih w vs₁ vu₁ wlt (vr₁ w wlt)).
+    assert (h2 := ih w vs₂ vu₂ wlt (vr₂ w wlt)).
+    destruct h1 as (vs₁' & es₁ & vr₁').
+    destruct h2 as (vs₂' & es₂ & vr₂').
+    destruct (valrel_implies_Value vr₁').
+    destruct (valrel_implies_Value vr₂').
+    exists (inProd n (S.pair vs₁' vs₂')).
+    destruct H.
+    eauto using downgrade_eval_inProd, valrel_inProd'.
+Qed. 
+
+Lemma upgrade_inProd_works {n d w dir p vs vu} :
+  valrel dir w (pEmulDV (S n) p) (inProd n vs) vu →
+  (forall w' vs₁ vu₁, w' < w →
+              valrel dir w' (pEmulDV n p) vs₁ vu₁ →
+              ∃ vs₁', app (upgrade n d) vs₁ -->* vs₁' ∧
+                      valrel dir w' (pEmulDV (n + d) p) vs₁' vu₁) →
+  exists v', 
+    app (upgrade (S n) d) (inProd n vs) -->* v' ∧
+    valrel dir w (pEmulDV (S (n + d)) p) v' vu.
+Proof.
+  intros vr ih.
+  destruct (valrel_implies_OfType vr) as [[? ?] ?].
+  destruct (invert_valrel_pEmulDV_inProd' vr) as (vs₁ & vs₂ & vu₁ & vu₂ & ? & ? & vr₁ & vr₂); subst.
+  destruct w.
+  * (* w = 0 *)
+    simpl in H0.
+    canonUVal; crush.
+    inversion H2; subst; clear H2.
+    stlcCanForm.
+    inversion H2; subst; clear H2.
+    destruct_conjs; destruct H3 as [vx vx0].
+    destruct (upgrade_reduces d H5 vx) as (vs₁' & vvs₁' & ty₁' & es₁).
+    destruct (upgrade_reduces d H6 vx0) as (vs₂' & vvs₂' & ty₂' & es₂).
+    exists (inProd (n + d) (S.pair vs₁' vs₂')).
+    assert (forall w', w' < 0 → valrel dir w' (pEmulDV (n + d) p) vs₁' vu₁) by (intros; exfalso; Omega.omega).
+    assert (forall w', w' < 0 → valrel dir w' (pEmulDV (n + d) p) vs₂' vu₂) by (intros; exfalso; Omega.omega).
+    split.
+    eapply upgrade_eval_inProd; trivial.
+    eapply valrel_inProd; trivial; crush.
+  * (* w = S w *)
+    assert (wlt : w < S w) by eauto with arith.
+    assert (h1 := ih w vs₁ vu₁ wlt (vr₁ w wlt)).
+    assert (h2 := ih w vs₂ vu₂ wlt (vr₂ w wlt)).
+    destruct h1 as (vs₁' & es₁ & vr₁').
+    destruct h2 as (vs₂' & es₂ & vr₂').
+    destruct (valrel_implies_Value vr₁').
+    destruct (valrel_implies_Value vr₂').
+    exists (inProd (n + d) (S.pair vs₁' vs₂')).
+    destruct H.
+    eauto using upgrade_eval_inProd, valrel_inProd'.
+Qed. 
+
+Lemma downgrade_inSum_works {n d w dir p vs vu} :
+  valrel dir w (pEmulDV (S (n + d)) p) (inSum (n + d) vs) vu →
+  (forall w' vs₁ vu₁, w' < w →
+              valrel dir w' (pEmulDV (n + d) p) vs₁ vu₁ →
+              ∃ vs₁', app (downgrade n d) vs₁ -->* vs₁' ∧
+                      valrel dir w' (pEmulDV n p) vs₁' vu₁) →
+  exists v', 
+    app (downgrade (S n) d) (inSum (n + d) vs) -->* v' ∧
+    valrel dir w (pEmulDV (S n) p) v' vu.
+Proof.
+  intros vr ih.
+  destruct (valrel_implies_OfType vr) as [[? ?] ?].
+  destruct (invert_valrel_pEmulDV_inSum' vr) as (vs' & vu' & ? & vr'); subst.
+  destruct w.
+  + (* w = 0 *)
+    unfold repEmul in H0; canonUVal; 
+    inversion H3; subst; clear H3.
+    stlcCanForm;
+      destruct (downgrade_reduces H6 H4) as (vs'' & vvs'' & ty' & es');
+      assert (forall w', w' < 0 → valrel dir w' (pEmulDV n p) vs'' vu') by (intros; exfalso; Omega.omega);
+      [exists (inSum n (inl vs''))|exists (inSum n (inr vs''))];
+      destruct H2 as [[eq1 eq2] | [eq1 eq2]];
+      inversion eq1; inversion eq2; subst; clear eq1;
+      (split;
+       [refine (downgrade_eval_inSum _ _ _ es'); crush|
+        assert (ot' : OfType (pEmulDV n p) vs'' vu') by crush;
+          eapply (valrel_inSum ot'); eauto]).
+    + (* w = S w *)
+      assert (wlt : w < S w) by eauto with arith.
+      specialize (vr' w wlt).
+      destruct (ih w _ _ wlt vr') as (vs'' & es' & vr'').
+      destruct (valrel_implies_Value vr'').
+      destruct H2 as [[eq1 eq2] | [eq1 eq2]];
+        subst;
+        [exists (inSum n (S.inl vs'')) |exists (inSum n (S.inr vs''))];
+        (split; [refine (downgrade_eval_inSum _ _ _ es'); crush
+                | eapply (valrel_inSum' vr''); crush]).
 Qed.
 
-Lemma invert_valrel_pEmulDV_inSum {dir w n d p vs vu} :
-  valrel dir w (pEmulDV (S (n + d)) p) (inSum (n + d) vs) vu →
-  ∃ vs' vu', ((vs = S.inl vs' ∧ vu = U.inl vu') ∨ (vs = S.inr vs' ∧ vu = U.inr vu')) ∧
-             (∀ w', w' < w → valrel dir w' (pEmulDV (n + d) p) vs' vu').
+Lemma upgrade_inSum_works {n d w dir p vs vu} :
+  valrel dir w (pEmulDV (S n) p) (inSum n vs) vu →
+  (forall w' vs₁ vu₁, w' < w →
+              valrel dir w' (pEmulDV n p) vs₁ vu₁ →
+              ∃ vs₁', app (upgrade n d) vs₁ -->* vs₁' ∧
+                      valrel dir w' (pEmulDV (n + d) p) vs₁' vu₁) →
+  exists v', 
+    app (upgrade (S n) d) (inSum n vs) -->* v' ∧
+    valrel dir w (pEmulDV (S (n + d)) p) v' vu.
 Proof.
-  intros vr.
-  rewrite valrel_fixp in vr; unfold valrel' in vr.
-  destruct vr as [[[vv ty] vvu] [[? ?] |[? [(? & ? & ?)| [[? ?] |[[? ?]|[[? ?]|[? ?]]]]]]]]; simpl in *; crush.
-  inversion H; subst; clear H.
-  assert (Value (inSum (n + d) x)) by crush.
-  canonUVal; crush; clear ty. 
-  inversion H1; subst; clear H1.
-  stlcCanForm;
-  destruct vu; unfold sum_rel in H0; simpl in H0; try contradiction;
-  exists x, vu; repeat (split; auto).
+  intros vr ih.
+  destruct (valrel_implies_OfType vr) as [[? ?] ?].
+  destruct (invert_valrel_pEmulDV_inSum' vr) as (vs' & vu' & ? & vr'); subst.
+  destruct w.
+  + (* w = 0 *)
+    unfold repEmul in H0; canonUVal; 
+    inversion H3; subst; clear H3.
+    stlcCanForm;
+      destruct (upgrade_reduces d H6 H4) as (vs'' & vvs'' & ty' & es');
+      assert (forall w', w' < 0 → valrel dir w' (pEmulDV (n + d) p) vs'' vu') by (intros; exfalso; Omega.omega);
+      [exists (inSum n (inl vs''))|exists (inSum n (inr vs''))];
+      destruct H2 as [[eq1 eq2] | [eq1 eq2]];
+      inversion eq1; inversion eq2; subst; clear eq1;
+      (split;
+       [refine (upgrade_eval_inSum _ _ _ es'); crush|
+        assert (ot' : OfType (pEmulDV (n + d) p) vs'' vu') by crush;
+          eapply (valrel_inSum ot'); eauto]).
+    + (* w = S w *)
+      assert (wlt : w < S w) by eauto with arith.
+      specialize (vr' w wlt).
+      destruct (ih w _ _ wlt vr') as (vs'' & es' & vr'').
+      destruct (valrel_implies_Value vr'').
+      destruct H2 as [[eq1 eq2] | [eq1 eq2]];
+        subst;
+        [exists (inSum (n + d) (S.inl vs'')) |exists (inSum (n + d) (S.inr vs''))];
+        (split; [refine (upgrade_eval_inSum _ _ _ es'); crush
+                | eapply (valrel_inSum' vr''); crush]).
+Qed.
+
+Lemma downgrade_inArr_works {n d w dir p vs vu} :
+  valrel dir w (pEmulDV (S (n + d)) p) (inArr (n + d) vs) vu →
+  (forall w' vs₁ vu₁, w' < w →
+              valrel dir w' (pEmulDV (n + d) p) vs₁ vu₁ →
+              ∃ vs₁', app (downgrade n d) vs₁ -->* vs₁' ∧
+                      valrel dir w' (pEmulDV n p) vs₁' vu₁) →
+  (forall w' vs₁ vu₁, w' < w →
+              valrel dir w' (pEmulDV n p) vs₁ vu₁ →
+              ∃ vs₁', app (upgrade n d) vs₁ -->* vs₁' ∧
+                      valrel dir w' (pEmulDV (n + d) p) vs₁' vu₁) →
+  exists v', 
+    app (downgrade (S n) d) (inArr (n + d) vs) -->* v' ∧
+    valrel dir w (pEmulDV (S n) p) v' vu.
+Proof.
+  intros vr ihd ihu.
+  destruct (valrel_implies_OfType vr) as [[vv ty] otu].
+  exists (inArr n (abs (UVal n) (app (downgrade n d) (app (vs[wk]) (app (upgrade n d) (var 0)))))).
+  split.
+  - eapply downgrade_eval_inArr; crush.
+  - eapply valrel_inArr.
+    apply invert_valrel_pEmulDV_inArr in vr.
+    simpl in vv.
+    apply valrel_ptarr_inversion in vr; destruct_conjs; subst.
+    simpl in *.
+
+    (* unfold the valrel-ptarr *)
+    change (abs (UVal n)) with (abs (repEmul (pEmulDV n p))).
+    apply valrel_lambda; crushOfType; crushTyping;
+    eauto using downgrade_T, upgrade_T.
+    rewrite -> ?upgrade_sub, ?downgrade_sub.
+
+    rewrite <- ap_liftSub; rewrite <- up_liftSub;
+    rewrite -> liftSub_wkm; rewrite (apply_wkm_beta1_up_cancel vr vs).
+
+    (* first execute the upgrade *)
+    specialize (ihu w' _ _ H0 H1).
+    destruct ihu as (vs' & eups & vr').
+    enough (termrel dir w' (pEmulDV n p)
+                    (app (downgrade n d) (app (abs (UVal (n + d)) vr) vs')) (H [beta1 vu])) as tr'
+        by (refine (termrel_antired_star (evalstar_ctx' eups _ _ _) _ tr'); 
+            inferContext; simpl; crush; eauto using downgrade_value with eval).
+
+    (* now beta-reduce *)
+    enough (termrel dir w' (pEmulDV n p)
+                    (app (downgrade n d) (vr[beta1 vs']))
+                    H[beta1 vu]) as tr'
+    by (refine (termrel_antired_star _ _ tr'); simpl; eauto with eval;
+        apply evalToStar;
+        destruct (valrel_implies_Value vr') as [? _];
+        assert (e₀ : app (abs (UVal (n + d)) vr) vs' -->₀ vr[beta1 vs']) by (eauto with eval);
+        eapply (eval_from_eval₀ e₀); inferContext; crush; eauto using downgrade_value with eval).
+     
+    (* now execute the application *)
+    specialize (H3 w' _ _ H0 vr').
+    eapply (termrel_ectx' H3); S.inferContext; U.inferContext; crush;
+    eauto using downgrade_value.
+
+    (* now execute the downgrade *)
+    assert (wlt0 : w'0 < w) by Omega.omega.
+    specialize (ihd w'0 _ _ wlt0 H4).
+    destruct ihd as (vs'' & edowns & vr'').
+    enough (termrel dir w'0 (pEmulDV n p)
+                    vs'' vu0) as tr'
+        by (refine (termrel_antired_star (evalstar_ctx' edowns _ _ _) _ tr'); 
+            inferContext; simpl; crush; eauto using downgrade_value with eval).
+    
+    (* conclude *)
+    apply valrel_in_termrel.
+    assumption.
+Qed. 
+
+Lemma upgrade_inArr_works {n d w dir p vs vu} :
+  valrel dir w (pEmulDV (S n) p) (inArr n vs) vu →
+  (forall w' vs₁ vu₁, w' < w →
+              valrel dir w' (pEmulDV (n + d) p) vs₁ vu₁ →
+              ∃ vs₁', app (downgrade n d) vs₁ -->* vs₁' ∧
+                      valrel dir w' (pEmulDV n p) vs₁' vu₁) →
+  (forall w' vs₁ vu₁, w' < w →
+              valrel dir w' (pEmulDV n p) vs₁ vu₁ →
+              ∃ vs₁', app (upgrade n d) vs₁ -->* vs₁' ∧
+                      valrel dir w' (pEmulDV (n + d) p) vs₁' vu₁) →
+  exists v', 
+    app (upgrade (S n) d) (inArr n vs) -->* v' ∧
+    valrel dir w (pEmulDV (S (n + d)) p) v' vu.
+Proof.
+  intros vr ihd ihu.
+  destruct (valrel_implies_OfType vr) as [[vv ty] otu].
+  exists (inArr (n + d) (abs (UVal (n + d)) (app (upgrade n d) (app (vs[wk]) (app (downgrade n d) (var 0)))))).
+  split.
+  - eapply upgrade_eval_inArr; crush.
+  - eapply valrel_inArr.
+    apply invert_valrel_pEmulDV_inArr in vr.
+    simpl in vv.
+    apply valrel_ptarr_inversion in vr; destruct_conjs; subst.
+    simpl in *.
+
+    (* unfold the valrel-ptarr *)
+    change (abs (UVal (n + d))) with (abs (repEmul (pEmulDV (n + d) p))).
+    apply valrel_lambda; crushOfType; crushTyping;
+    eauto using upgrade_T, downgrade_T.
+    rewrite -> ?upgrade_sub, ?downgrade_sub.
+
+    rewrite <- ap_liftSub; rewrite <- up_liftSub;
+    rewrite -> liftSub_wkm; rewrite (apply_wkm_beta1_up_cancel vr vs).
+
+    (* first execute the upgrade *)
+    specialize (ihd w' _ _ H0 H1).
+    destruct ihd as (vs' & edowns & vr').
+    enough (termrel dir w' (pEmulDV (n + d) p)
+                    (app (upgrade n d) (app (abs (UVal n) vr) vs')) (H [beta1 vu])) as tr'
+        by (refine (termrel_antired_star (evalstar_ctx' edowns _ _ _) _ tr'); 
+            inferContext; simpl; crush; eauto using upgrade_value with eval).
+
+    (* now beta-reduce *)
+    enough (termrel dir w' (pEmulDV (n + d) p)
+                    (app (upgrade n d) (vr[beta1 vs']))
+                    H[beta1 vu]) as tr'
+    by (refine (termrel_antired_star _ _ tr'); simpl; eauto with eval;
+        apply evalToStar;
+        destruct (valrel_implies_Value vr') as [? _];
+        assert (e₀ : app (abs (UVal n) vr) vs' -->₀ vr[beta1 vs']) by (eauto with eval);
+        eapply (eval_from_eval₀ e₀); inferContext; crush; eauto using upgrade_value with eval).
+     
+    (* now execute the application *)
+    specialize (H3 w' _ _ H0 vr').
+    eapply (termrel_ectx' H3); S.inferContext; U.inferContext; crush;
+    eauto using upgrade_value.
+
+    (* now execute the upgrade *)
+    assert (wlt0 : w'0 < w) by Omega.omega.
+    specialize (ihu w'0 _ _ wlt0 H4).
+    destruct ihu as (vs'' & eups & vr'').
+    enough (termrel dir w'0 (pEmulDV (n + d) p)
+                    vs'' vu0) as tr'
+        by (refine (termrel_antired_star (evalstar_ctx' eups _ _ _) _ tr'); 
+            inferContext; simpl; crush; eauto using upgrade_value with eval).
+    
+    (* conclude *)
+    apply valrel_in_termrel.
+    assumption.
+Qed. 
+
+Lemma downgrade_zero_works {d v vu dir w p} :
+  dir_world_prec 0 w dir p →
+  valrel dir w (pEmulDV d p) v vu →
+  exists v', 
+    app (downgrade 0 d) v -->* v' ∧
+    valrel dir w (pEmulDV 0 p) v' vu.
+Proof.
+  intros dwp vr;
+  destruct (valrel_implies_OfType vr) as [[vv ty] otu];
+  exists (unkUVal 0).
+  destruct (dwp_zero dwp).
+  eauto using downgrade_zero_eval, valrel_unk, dwp_zero.
+Qed.
+
+Lemma downgrade_S_works {n d v vu dir w p} :
+  dir_world_prec (S n) w dir p →
+  valrel dir w (pEmulDV (S (n + d)) p) v vu →
+  (forall v vu w', dir_world_prec n w' dir p → valrel dir w' (pEmulDV (n + d) p) v vu →
+                   exists v', 
+                     app (downgrade n d) v -->* v' ∧ valrel dir w' (pEmulDV n p) v' vu) →
+  (forall v vu w', dir_world_prec n w' dir p → valrel dir w' (pEmulDV n p) v vu →
+                   exists v', 
+                     app (upgrade n d) v -->* v' ∧ valrel dir w' (pEmulDV (n + d) p) v' vu) →
+  exists v', 
+    app (downgrade (S n) d) v -->* v' ∧
+    valrel dir w (pEmulDV (S n) p) v' vu.
+Proof.
+  intros dwp vr IHdown IHup.
+  destruct (valrel_implies_Value vr);
+  destruct (valrel_implies_OfType vr) as [[vv ty] otu];
+   unfold repEmul in ty.
+  canonUVal.
+  - (* unkUVal *)
+    exists (unkUVal (S n)).
+    change (S (n + d)) with (S n + d).
+    eauto using downgrade_eval_unk, valrel_unk, invert_valrel_pEmulDV_unk.
+  - (* inUnit *)
+    exists (inUnit n x).
+    eauto using downgrade_eval_inUnit, invert_valrel_pEmulDV_inUnit', valrel_inUnit.
+  - (* inBool *)
+    exists (inBool n x).
+    eauto using downgrade_eval_inBool, invert_valrel_pEmulDV_inBool', valrel_inBool.
+  - (* inProd *)
+    eapply (downgrade_inProd_works vr); crush;
+    eapply IHdown; try assumption; eapply dwp_invert_S'; crush.
+  - (* inSum *)
+    eapply (downgrade_inSum_works vr); crush;
+    eapply IHdown; try assumption; eapply dwp_invert_S'; crush.
+  - (* inArr *)
+    eapply (downgrade_inArr_works vr); crush.
+    + eapply IHdown; try assumption; eapply dwp_invert_S'; crush.
+    + eapply IHup; try assumption; eapply dwp_invert_S'; crush.
+Qed.
+
+Lemma upgrade_zero_works {d v vu dir w p} :
+  dir_world_prec 0 w dir p →
+  valrel dir w (pEmulDV 0 p) v vu →
+  exists v', 
+    app (upgrade 0 d) v -->* v' ∧
+    valrel dir w (pEmulDV d p) v' vu.
+Proof.
+  intros dwp vr;
+  destruct (valrel_implies_OfType vr) as [[vv ty] otu];
+  exists (unkUVal d).
+  destruct (dwp_zero dwp).
+  eauto using upgrade_zero_eval, valrel_unk, dwp_zero.
+Qed.
+
+Lemma upgrade_S_works {n d v vu dir w p} :
+  dir_world_prec (S n) w dir p →
+  valrel dir w (pEmulDV (S n) p) v vu →
+  (forall v vu w', dir_world_prec n w' dir p → valrel dir w' (pEmulDV (n + d) p) v vu →
+                   exists v', 
+                     app (downgrade n d) v -->* v' ∧ valrel dir w' (pEmulDV n p) v' vu) →
+  (forall v vu w', dir_world_prec n w' dir p → valrel dir w' (pEmulDV n p) v vu →
+                   exists v', 
+                     app (upgrade n d) v -->* v' ∧ valrel dir w' (pEmulDV (n + d) p) v' vu) →
+  exists v', 
+    app (upgrade (S n) d) v -->* v' ∧
+    valrel dir w (pEmulDV (S n + d) p) v' vu.
+Proof.
+  change (S n + d) with (S (n + d)).
+  intros dwp vr IHdown IHup.
+  destruct (valrel_implies_Value vr);
+  destruct (valrel_implies_OfType vr) as [[vv ty] otu];
+   unfold repEmul in ty.
+  canonUVal.
+  - (* unkUVal *)
+    exists (unkUVal (S n + d)).
+    eauto using upgrade_eval_unk, valrel_unk, invert_valrel_pEmulDV_unk.
+  - (* inUnit *)
+    exists (inUnit (n + d) x).
+    eauto using upgrade_eval_inUnit, invert_valrel_pEmulDV_inUnit', valrel_inUnit.
+  - (* inBool *)
+    exists (inBool (n + d) x).
+    eauto using upgrade_eval_inBool, invert_valrel_pEmulDV_inBool', valrel_inBool.
+  - (* inProd *)
+    eapply (upgrade_inProd_works vr); crush;
+    eapply IHup; try assumption; eapply dwp_invert_S'; crush.
+  - (* inSum *)
+    eapply (upgrade_inSum_works vr); crush;
+    eapply IHup; try assumption; eapply dwp_invert_S'; crush.
+  - (* inArr *)
+    eapply (upgrade_inArr_works vr); crush.
+    + eapply IHdown; try assumption; eapply dwp_invert_S'; crush.
+    + eapply IHup; try assumption; eapply dwp_invert_S'; crush.
 Qed.
 
 Lemma downgrade_works {n d v vu dir w p} :
@@ -404,83 +943,26 @@ Lemma downgrade_works {n d v vu dir w p} :
   valrel dir w (pEmulDV (n + d) p) v vu →
   exists v', 
     app (downgrade n d) v -->* v' ∧
-    valrel dir w (pEmulDV n p) v' vu. 
+    valrel dir w (pEmulDV n p) v' vu
+with upgrade_works {n d v vu dir w p} :
+       dir_world_prec n w dir p →
+       valrel dir w (pEmulDV n p) v vu →
+       exists v', 
+         app (upgrade n d) v -->* v' ∧
+         valrel dir w (pEmulDV (n + d) p) v' vu.
 Proof.
-  revert v vu w; induction n;
-  intros v vu w dwp vr;
-  destruct (valrel_implies_Value vr);
-  destruct (valrel_implies_OfType vr) as [[vv ty] otu];
-   unfold repEmul in ty.
-  - exists (unkUVal 0).
-    destruct (dwp_zero dwp).
-    split; eauto using downgrade_zero_eval.
-    apply valrel_unk; crush.
-  - canonUVal.
-    + (* unkUVal *)
-      exists (unkUVal (S n)).
-      change (S (n + d)) with (S n + d).
-      eauto using downgrade_eval_unk, valrel_unk, invert_valrel_pEmulDV_unk.
-    + (* inUnit *)
-      exists (inUnit n x).
-      eauto using downgrade_eval_inUnit, invert_valrel_pEmulDV_inUnit, valrel_inUnit.
-    + (* inBool *)
-      exists (inBool n x).
-      eauto using downgrade_eval_inBool, invert_valrel_pEmulDV_inBool, valrel_inBool.
-    + (* inProd *)
-      destruct (invert_valrel_pEmulDV_inProd vr) as (vs₁ & vs₂ & vu₁ & vu₂ & ? & ? & vr₁ & vr₂); subst.
-      destruct w.
-      * (* w = 0 *)
-        stlcCanForm.
-        inversion H1; subst; clear H1.
-        destruct H2.
-        destruct (downgrade_reduces H4 H1) as (vs₁' & vvs₁' & ty₁' & es₁).
-        destruct (downgrade_reduces H5 H2) as (vs₂' & vvs₂' & ty₂' & es₂).
-        exists (inProd n (S.pair vs₁' vs₂')).
-        assert (forall w', w' < 0 → valrel dir w' (pEmulDV n p) vs₁' vu₁) by (intros; exfalso; Omega.omega).
-        assert (forall w', w' < 0 → valrel dir w' (pEmulDV n p) vs₂' vu₂) by (intros; exfalso; Omega.omega).
-        split.
-        eapply downgrade_eval_inProd; trivial.
-        eapply valrel_inProd; trivial; crush.
-      * (* w = S w *)
-        pose proof (dwp_invert_S dwp) as dwp'. 
-        assert (wlt : w < S w) by eauto with arith.
-        specialize (vr₁ w wlt).
-        specialize (vr₂ w wlt).
-        destruct (IHn _ _ w dwp' vr₁) as (vs₁' & es₁ & vr₁').
-        destruct (IHn _ _ w dwp' vr₂) as (vs₂' & es₂ & vr₂').
-        destruct (valrel_implies_Value vr₁').
-        destruct (valrel_implies_Value vr₂').
-        exists (inProd n (S.pair vs₁' vs₂')).
-        destruct H2.
-        eauto using downgrade_eval_inProd, valrel_inProd'.
-    + (* inSum *)
-      destruct (invert_valrel_pEmulDV_inSum vr) as (vs' & vu' & ? & vr'); subst.
-      destruct w.
-      * (* w = 0 *)
-        stlcCanForm;
-        destruct (downgrade_reduces H5 H2) as (vs'' & vvs'' & ty' & es');
-        assert (forall w', w' < 0 → valrel dir w' (pEmulDV n p) vs'' vu') by (intros; exfalso; Omega.omega);
-        [exists (inSum n (inl vs''))|exists (inSum n (inr vs''))];
-        destruct H1 as [[eq1 eq2] | [eq1 eq2]];
-        inversion eq1; inversion eq2; subst; clear eq1;
-        (split;
-         [refine (downgrade_eval_inSum _ _ _ es'); crush|
-          assert (ot' : OfType (pEmulDV n p) vs'' vu') by crush;
-            eapply (valrel_inSum ot'); eauto]).
-      * (* w = S w *)
-        pose proof (dwp_invert_S dwp) as dwp'. 
-        assert (wlt : w < S w) by eauto with arith.
-        specialize (vr' w wlt).
-        destruct (IHn _ _ w dwp' vr') as (vs'' & es' & vr'').
-        destruct (valrel_implies_Value vr'').
-        destruct H1 as [[eq1 eq2] | [eq1 eq2]];
-          subst;
-          [exists (inSum n (S.inl vs'')) |exists (inSum n (S.inr vs''))];
-        (split; [refine (downgrade_eval_inSum _ _ _ es'); crush
-                | eapply (valrel_inSum' vr''); crush]).
-    + exists (inArr n (abs (UVal n) (app (downgrade n d) (app (x[wk]) (app (upgrade n d) (var 0)))))).
-      split.
-      * eapply downgrade_eval_inArr; crush.
-      * 
-      admit.
-Admitted.
+  (* the following is easier, but cheats by using the inductive hypotheses
+  immediately *)
+  (* auto using downgrade_zero_works, downgrade_S_works, upgrade_zero_works, upgrade_S_works. *)
+
+  - destruct n.
+    + intros; apply downgrade_zero_works; trivial.
+    + specialize (downgrade_works n).
+      specialize (upgrade_works n).
+      auto using downgrade_S_works.
+  - destruct n.
+    + intros; apply upgrade_zero_works; trivial.
+    + specialize (downgrade_works n).
+      specialize (upgrade_works n).
+      auto using upgrade_S_works.
+Qed.

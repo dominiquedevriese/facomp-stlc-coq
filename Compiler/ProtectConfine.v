@@ -273,8 +273,9 @@ Lemma protect_terminates {τ vu} :
          OfTypeUtlc (embed τ) vu'.
 Proof.
   revert vu.
-  induction τ; intros vu oft_vu; crush;
-    pose proof (OfTypeUtlc_implies_Value oft_vu) as vvu.
+  induction τ; intros vu oft_vu;
+  pose proof (OfTypeUtlc_implies_Value oft_vu) as vvu;
+  crush.
   - (* ptarr *)
     exists
       (abs
@@ -296,23 +297,23 @@ Proof.
     apply evalToStar, U.eval₀_ctxeval; crush.
     apply U.eval_beta''; crush.
   - (* ptprod *)
-    destruct vu; crush.
+    destruct oft_vu as (vu₁ & vu₂ & ? & otu₁ & otu₂); subst; crush.
 
-    specialize (IHτ1 vu1 H1); destruct IHτ1 as (vu1' & vvu1' & hyp1).
-    specialize (IHτ2 vu2 H2); destruct IHτ2 as (vu2' & vvu2' & hyp2).
+    specialize (IHτ1 vu₁ otu₁); destruct IHτ1 as (vu1' & vvu1' & hyp1 & otu₁').
+    specialize (IHτ2 vu₂ otu₂); destruct IHτ2 as (vu2' & vvu2' & hyp2 & otu₂').
     exists (U.pair vu1' vu2'); crush.
 
     refine (protect_prod _ _ _ _ _ _); crush.
 
   - (* ptsum *)
-    destruct vu; crush.
+    destruct oft_vu as (vu' & [[? otu']|[? otu']]); crush.
     + (* inl *)
-      specialize (IHτ1 vu oft_vu); destruct IHτ1 as (vu' & vvu' & hyp).
-      exists (inl vu'); crush.
+      specialize (IHτ1 vu' otu'); destruct IHτ1 as (vu'' & vvu' & hyp).
+      exists (inl vu''); crush.
       refine (protect_inl _ _ _); crush.
     + (* inr *)
-      specialize (IHτ2 vu oft_vu); destruct IHτ2 as (vu' & vvu' & hyp).
-      exists (inr vu'); crush.
+      specialize (IHτ2 vu' otu'); destruct IHτ2 as (vu'' & vvu' & hyp).
+      exists (inr vu''); crush.
       refine (protect_inr _ _ _); crush.
 Qed.
 
@@ -324,8 +325,9 @@ Lemma confine_terminates {τ vu} :
          OfTypeUtlc (embed τ) vu'.
 Proof.
   revert vu.
-  induction τ; intros vu oft_vu; crush;
-    pose proof (OfTypeUtlc_implies_Value oft_vu) as vvu.
+  induction τ; intros vu oft_vu; 
+  pose proof (OfTypeUtlc_implies_Value oft_vu) as vvu;
+  crush.
   - exists (abs
          (app
             (confine τ2)[wkm]
@@ -350,7 +352,7 @@ Proof.
     apply evalToStar, U.eval₀_ctxeval; crush.
     destruct oft_vu; subst; [apply eval_ite_true|apply eval_ite_false]; crush.
   - (* ptprod *)
-    destruct vu; crush.
+    destruct oft_vu as (vu1 & vu2 & ? & H1 & H2).
 
     specialize (IHτ1 vu1 H1); destruct IHτ1 as (vu1' & vvu1' & hyp1).
     specialize (IHτ2 vu2 H2); destruct IHτ2 as (vu2' & vvu2' & hyp2).
@@ -358,14 +360,14 @@ Proof.
     refine (confine_prod _ _ _ _ _ _); crush.
 
   - (* ptsum *)
-    destruct vu; crush.
+    destruct oft_vu as (vu' & [[? oft_vu]|[? oft_vu]]).
     + (* inl *)
-      specialize (IHτ1 vu oft_vu); destruct IHτ1 as (vu' & vvu' & hyp).
-      exists (inl vu'); crush.
+      specialize (IHτ1 vu' oft_vu); destruct IHτ1 as (vu'' & vvu' & hyp).
+      exists (inl vu''); crush.
       refine (confine_inl _ _ _); crush.
     + (* inr *)
-      specialize (IHτ2 vu oft_vu); destruct IHτ2 as (vu' & vvu' & hyp).
-      exists (inr vu'); crush.
+      specialize (IHτ2 vu' oft_vu); destruct IHτ2 as (vu'' & vvu' & hyp).
+      exists (inr vu''); crush.
       refine (confine_inr _ _ _); crush.
 Qed.
 
