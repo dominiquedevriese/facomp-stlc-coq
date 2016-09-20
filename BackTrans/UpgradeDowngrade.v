@@ -1,4 +1,6 @@
 Require Import UVal.UVal.
+Require Import Utlc.LemmasScoping.
+Require Import Utlc.SpecSyntax.
 Require Import Stlc.SpecSyntax.
 Require Import Stlc.Inst.
 Require Import Stlc.SpecTyping.
@@ -22,10 +24,15 @@ Local Ltac crush :=
   repeat
     (repeat crushStlcSyntaxMatchH;
      repeat crushDbSyntaxMatchH;
-     crushOfType;
+     repeat crushRepEmulEmbed;
+     repeat crushUtlcSyntaxMatchH;
+     repeat crushUtlcScopingMatchH;
      split;
+     trivial;
+     crushTyping;
+     try crushOfType;
      subst*);
-  try discriminate;
+  try discriminate; try Omega.omega;
   eauto with eval;
   repeat crushStlcSyntaxMatchH (* remove apTm's again *).
 
@@ -525,6 +532,14 @@ Proof.
   eauto with arith.
 Qed.
 
+Lemma dwp_mono {w d p n} : 
+  dir_world_prec n w d p → 
+  forall w', w' ≤ w → dir_world_prec n w' d p.
+Proof.
+  destruct 1 as [[? ?]|[? ?]]; [left|right];
+  eauto with arith.
+Qed.
+
 
 Lemma downgrade_inProd_works {n d w dir p vs vu} :
   valrel dir w (pEmulDV (S (n + d)) p) (inProd (n + d) vs) vu →
@@ -944,7 +959,7 @@ Lemma downgrade_works {n d v vu dir w p} :
   exists v', 
     app (downgrade n d) v -->* v' ∧
     valrel dir w (pEmulDV n p) v' vu
-with upgrade_works {n d v vu dir w p} :
+with upgrade_works {n v vu dir w p} d :
        dir_world_prec n w dir p →
        valrel dir w (pEmulDV n p) v vu →
        exists v', 
@@ -965,4 +980,64 @@ Proof.
     + specialize (downgrade_works n).
       specialize (upgrade_works n).
       auto using upgrade_S_works.
+Qed.
+
+Lemma downgrade_works' {n d v vu dir w p} :
+  dir_world_prec n w dir p →
+  valrel dir w (pEmulDV (n + d) p) v vu →
+  termrel dir w (pEmulDV n p) (app (downgrade n d) v) vu.
+Proof.
+  intros dwp vr.
+  destruct (downgrade_works dwp vr) as (v' & es & vr').
+  apply valrel_in_termrel in vr'.
+  refine (termrel_antired_star es _ vr').
+  simpl. eauto with eval.
+Qed.
+
+Lemma upgrade_works' {n v vu dir w p} d :
+  dir_world_prec n w dir p →
+  valrel dir w (pEmulDV n p) v vu →
+  termrel dir w (pEmulDV (n + d) p) (app (upgrade n d) v) vu.
+Proof.
+  intros dwp vr.
+  destruct (upgrade_works d dwp vr) as (v' & es & vr').
+  apply valrel_in_termrel in vr'.
+  refine (termrel_antired_star es _ vr').
+  simpl. eauto with eval.
+Qed.
+
+Lemma compat_upgrade {Γ ts dir m tu n p} d :
+  dir_world_prec n m dir p →
+  ⟪ Γ ⊩ ts ⟦ dir , m ⟧ tu : pEmulDV n p ⟫ →
+  ⟪ Γ ⊩ app (upgrade n d) ts ⟦ dir , m ⟧ tu : pEmulDV (n + d) p ⟫.
+Proof.
+  intros.
+  repeat crushLRMatch.
+  - eauto using upgrade_T with typing.
+  - intros.
+    specialize (H1 w H2 _ _ H3).
+    simpl; repeat crushStlcSyntaxMatchH.
+    rewrite upgrade_sub.
+    eapply (termrel_ectx' H1); S.inferContext; U.inferContext; crush;
+    eauto using upgrade_value.
+    simpl.
+    eauto using upgrade_works', dwp_mono.
+Qed.
+
+Lemma compat_downgrade {Γ ts dir m tu n p d} :
+  dir_world_prec n m dir p →
+  ⟪ Γ ⊩ ts ⟦ dir , m ⟧ tu : pEmulDV (n + d) p ⟫ →
+  ⟪ Γ ⊩ app (downgrade n d) ts ⟦ dir , m ⟧ tu : pEmulDV n p ⟫.
+Proof.
+  intros.
+  repeat crushLRMatch.
+  - eauto using downgrade_T with typing.
+  - intros.
+    specialize (H1 w H2 _ _ H3).
+    simpl; repeat crushStlcSyntaxMatchH.
+    rewrite downgrade_sub.
+    eapply (termrel_ectx' H1); S.inferContext; U.inferContext; crush;
+    eauto using downgrade_value.
+    simpl.
+    eauto using downgrade_works', dwp_mono.
 Qed.
