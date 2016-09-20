@@ -261,6 +261,15 @@ Section ClosedLR.
     refine (termrel_antired W esi euj _ _ tr); omega.
   Qed.
 
+  Lemma termrel_antired_star_left {ts ts' tu W d τ} :
+    clos_refl_trans_1n S.Tm S.eval ts ts' →
+    termrel d W τ ts' tu →
+    termrel d W τ ts tu.
+  Proof.
+    assert (U.ctxevalStar tu tu) by (simpl; eauto with eval).
+    eauto using termrel_antired_star.
+  Qed.
+
   (* Lemma termrel_antired' {ts ts' tu tu' W d τ i j} W' : *)
   (*   S.evaln ts ts' i → *)
   (*   U.evaln tu tu' j →  *)

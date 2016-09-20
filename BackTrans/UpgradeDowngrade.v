@@ -742,18 +742,18 @@ Proof.
     destruct ihu as (vs' & eups & vr').
     enough (termrel dir w' (pEmulDV n p)
                     (app (downgrade n d) (app (abs (UVal (n + d)) vr) vs')) (H [beta1 vu])) as tr'
-        by (refine (termrel_antired_star (evalstar_ctx' eups _ _ _) _ tr'); 
-            inferContext; simpl; crush; eauto using downgrade_value with eval).
+        by (refine (termrel_antired_star_left (evalstar_ctx' eups _ _ _) tr'); 
+            inferContext; crush; eauto using downgrade_value).
 
     (* now beta-reduce *)
     enough (termrel dir w' (pEmulDV n p)
                     (app (downgrade n d) (vr[beta1 vs']))
                     H[beta1 vu]) as tr'
-    by (refine (termrel_antired_star _ _ tr'); simpl; eauto with eval;
+    by (refine (termrel_antired_star_left _ tr'); simpl; eauto with eval;
         apply evalToStar;
         destruct (valrel_implies_Value vr') as [? _];
         assert (e₀ : app (abs (UVal (n + d)) vr) vs' -->₀ vr[beta1 vs']) by (eauto with eval);
-        eapply (eval_from_eval₀ e₀); inferContext; crush; eauto using downgrade_value with eval).
+        eapply (eval_from_eval₀ e₀); inferContext; crush; eauto using downgrade_value).
      
     (* now execute the application *)
     specialize (H3 w' _ _ H0 vr').
@@ -766,8 +766,8 @@ Proof.
     destruct ihd as (vs'' & edowns & vr'').
     enough (termrel dir w'0 (pEmulDV n p)
                     vs'' vu0) as tr'
-        by (refine (termrel_antired_star (evalstar_ctx' edowns _ _ _) _ tr'); 
-            inferContext; simpl; crush; eauto using downgrade_value with eval).
+        by (refine (termrel_antired_star_left (evalstar_ctx' edowns _ _ _) tr'); 
+            inferContext; crush; eauto using downgrade_value).
     
     (* conclude *)
     apply valrel_in_termrel.
@@ -805,6 +805,7 @@ Proof.
     eauto using upgrade_T, downgrade_T.
     rewrite -> ?upgrade_sub, ?downgrade_sub.
 
+    (* sigh... *)
     rewrite <- ap_liftSub; rewrite <- up_liftSub;
     rewrite -> liftSub_wkm; rewrite (apply_wkm_beta1_up_cancel vr vs).
 
@@ -813,18 +814,18 @@ Proof.
     destruct ihd as (vs' & edowns & vr').
     enough (termrel dir w' (pEmulDV (n + d) p)
                     (app (upgrade n d) (app (abs (UVal n) vr) vs')) (H [beta1 vu])) as tr'
-        by (refine (termrel_antired_star (evalstar_ctx' edowns _ _ _) _ tr'); 
-            inferContext; simpl; crush; eauto using upgrade_value with eval).
+        by (refine (termrel_antired_star_left (evalstar_ctx' edowns _ _ _) tr'); 
+            inferContext; crush; eauto using upgrade_value).
 
     (* now beta-reduce *)
     enough (termrel dir w' (pEmulDV (n + d) p)
                     (app (upgrade n d) (vr[beta1 vs']))
                     H[beta1 vu]) as tr'
-    by (refine (termrel_antired_star _ _ tr'); simpl; eauto with eval;
+    by (refine (termrel_antired_star_left _ tr');
         apply evalToStar;
         destruct (valrel_implies_Value vr') as [? _];
         assert (e₀ : app (abs (UVal n) vr) vs' -->₀ vr[beta1 vs']) by (eauto with eval);
-        eapply (eval_from_eval₀ e₀); inferContext; crush; eauto using upgrade_value with eval).
+        eapply (eval_from_eval₀ e₀); inferContext; crush; eauto using upgrade_value).
      
     (* now execute the application *)
     specialize (H3 w' _ _ H0 vr').
@@ -837,12 +838,11 @@ Proof.
     destruct ihu as (vs'' & eups & vr'').
     enough (termrel dir w'0 (pEmulDV (n + d) p)
                     vs'' vu0) as tr'
-        by (refine (termrel_antired_star (evalstar_ctx' eups _ _ _) _ tr'); 
-            inferContext; simpl; crush; eauto using upgrade_value with eval).
-    
+        by (refine (termrel_antired_star_left (evalstar_ctx' eups _ _ _) tr'); 
+            inferContext; crush; eauto using upgrade_value).
+
     (* conclude *)
-    apply valrel_in_termrel.
-    assumption.
+    repeat crushLRMatch.
 Qed. 
 
 Lemma downgrade_zero_works {d v vu dir w p} :
@@ -990,8 +990,7 @@ Proof.
   intros dwp vr.
   destruct (downgrade_works dwp vr) as (v' & es & vr').
   apply valrel_in_termrel in vr'.
-  refine (termrel_antired_star es _ vr').
-  simpl. eauto with eval.
+  refine (termrel_antired_star_left es vr').
 Qed.
 
 Lemma upgrade_works' {n v vu dir w p} d :
@@ -1002,8 +1001,7 @@ Proof.
   intros dwp vr.
   destruct (upgrade_works d dwp vr) as (v' & es & vr').
   apply valrel_in_termrel in vr'.
-  refine (termrel_antired_star es _ vr').
-  simpl. eauto with eval.
+  refine (termrel_antired_star_left es vr').
 Qed.
 
 Lemma compat_upgrade {Γ ts dir m tu n p} d :
