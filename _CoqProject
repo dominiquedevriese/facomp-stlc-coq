@@ -1,5 +1,7 @@
 -R . FaComp
 BackTrans/UpgradeDowngrade.v
+BackTrans/UValHelpers.v
+BackTrans/Emulate.v
 Common/Common.v
 Common/Relations.v
 Compiler/Erase.v

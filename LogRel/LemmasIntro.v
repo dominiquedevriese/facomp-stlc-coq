@@ -2,6 +2,7 @@ Require Stlc.SpecSyntax.
 Require Utlc.SpecSyntax.
 Require Import Stlc.SpecTyping.
 Require Import Stlc.LemmasTyping.
+Require Import Stlc.CanForm.
 Require Import Stlc.SpecEvaluation.
 Require Import Stlc.LemmasEvaluation.
 Require Import Utlc.SpecScoping.
@@ -167,6 +168,18 @@ Section ValueRelation.
     - right. exists S.unit. left. eauto.
   Qed.
 
+  Lemma valrel_inUnit' {d w n p vs vu} :
+    valrel d w ptunit vs vu →
+    valrel d w (pEmulDV (S n) p) (inUnit n vs) vu.
+  Proof.
+    intros vr.
+    rewrite valrel_fixp in vr.
+    destruct vr as [_ vr].
+    simpl in vr.
+    apply valrel_inUnit.
+    crush.
+  Qed.
+
   Lemma valrel_inBool {d w n p vs vu} :
     (vs = S.true ∧ vu = U.true) ∨ (vs = S.false ∧ vu = U.false) →
     valrel d w (pEmulDV (S n) p) (inBool n vs) vu.
@@ -180,6 +193,18 @@ Section ValueRelation.
     - right. exists vs. right. left. eauto.
   Qed.
 
+  Lemma valrel_inBool' {d w n p vs vu} :
+    valrel d w ptbool vs vu →
+    valrel d w (pEmulDV (S n) p) (inBool n vs) vu.
+  Proof.
+    intros vr.
+    rewrite valrel_fixp in vr.
+    destruct vr as [_ vr].
+    simpl in vr.
+    apply valrel_inBool.
+    crush.
+  Qed.
+    
   Lemma valrel_inProd {d w n p vs₁ vs₂ vu₁ vu₂} :
     OfType (pEmulDV n p) vs₁ vu₁ →
     OfType (pEmulDV n p) vs₂ vu₂ →
@@ -206,6 +231,25 @@ Section ValueRelation.
     eapply valrel_inProd; crush.
  Qed.
 
+  Lemma valrel_inProd'' {d w n p vs vu} :
+    valrel d w (ptprod (pEmulDV n p) (pEmulDV n p)) vs vu →
+    valrel d w (pEmulDV (S n) p) (inProd n vs) vu.
+  Proof.
+    intros vr.
+    rewrite valrel_fixp in vr.
+    destruct vr as [val vr].
+    simpl in vr; unfold prod_rel in vr.
+    destruct vs; try contradiction.
+    destruct vu; try contradiction.
+    destruct val as ((? & ?) & ? & ?).
+    destruct vr as (? & ?).
+    simpl in H0.
+    stlcCanForm.
+    destruct H as (? & ?).
+    inversion H5; subst.
+    eapply valrel_inProd; crushOfType; auto.
+  Qed.
+
   Lemma valrel_inSum {d w n p vs vs' vu vu'} :
     OfType (pEmulDV n p) vs vu →
     (forall w', w' < w → valrel d w' (pEmulDV n p) vs vu) →
@@ -231,6 +275,23 @@ Section ValueRelation.
   Proof.
     intros vr₁ eqs.
     refine (valrel_inSum _ _ eqs); crush.
+  Qed.
+
+  Lemma valrel_inSum'' {d w n p vs vu} :
+    valrel d w (ptsum (pEmulDV n p) (pEmulDV n p)) vs vu →
+    valrel d w (pEmulDV (S n) p) (inSum n vs) vu.
+  Proof.
+   intros vr. 
+   rewrite valrel_fixp in vr.
+   destruct vr as [val vr].
+   destruct val as ((? & ?) & ?).
+   simpl in H0.
+   stlcCanForm;
+   simpl in vr; unfold sum_rel in vr;
+   destruct vu; try contradiction;
+   eapply valrel_inSum; auto;
+   unfold OfType, OfTypeUtlc, OfTypeStlc; 
+   eauto using inSum_T with typing.
   Qed.
 
   Lemma valrel_inArr {d w n p vs vu} :

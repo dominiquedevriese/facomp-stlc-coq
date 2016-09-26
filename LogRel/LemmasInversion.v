@@ -243,5 +243,54 @@ Section ValrelInversion.
       stlcCanForm; destruct_conjs; subst.
       intros.
       apply H0; trivial.
-  Qed.    
+  Qed. 
+
+  Lemma invert_valrel_pEmulDV {dir w n p vs vu} :
+    valrel dir w (pEmulDV (S n) p) vs vu →
+    (vs = unkUVal (S n) ∧ p = imprecise) ∨
+    ∃ vs',
+      (vs = inUnit n vs' ∧ valrel dir w ptunit vs' vu) ∨
+      (vs = inBool n vs' ∧ valrel dir w ptbool vs' vu) ∨
+      (vs = inProd n vs' ∧ valrel dir w (ptprod (pEmulDV n p) (pEmulDV n p)) vs' vu) ∨
+      (vs = inSum n vs' ∧ valrel dir w (ptsum (pEmulDV n p) (pEmulDV n p)) vs' vu) ∨
+      (vs = inArr n vs' ∧ valrel dir w (ptarr (pEmulDV n p) (pEmulDV n p)) vs' vu).
+  Proof.
+    intros vr.
+    destruct (valrel_implies_OfType vr) as [[? ?] _].
+    simpl in H0.
+    canonUVal.
+    - left; crush.
+      exact (invert_valrel_pEmulDV_unk vr).
+    - right. exists x. left. crush.
+      exact (invert_valrel_pEmulDV_inUnit vr).
+    - right. exists x. right. left. crush.
+      exact (invert_valrel_pEmulDV_inBool vr).
+    - right. exists x. right. right. left. crush.
+      exact (invert_valrel_pEmulDV_inProd vr).
+    - right. exists x. right. right. right. left. crush.
+      exact (invert_valrel_pEmulDV_inSum vr).
+    - right. exists x. right. right. right. right. crush.
+      exact (invert_valrel_pEmulDV_inArr vr).
+  Qed.
 End ValrelInversion.
+
+(* Section DestructUVal. *)
+(*   Lemma termrel_caseUValUnit {d w n p vs vu}:  *)
+(*     dir_world_prec d w n p → *)
+(*     valrel d w (pEmulDV (S n) p) vs vu → *)
+(*     termrel d w ptunit (caseUValUnit n vs) (seq vu unit). *)
+(*   Proof. *)
+(*     unfold caseUValUnit. *)
+(*     intros vr. *)
+(*     destruct (valrel_implies_Value vr). *)
+(*     apply invert_valrel_pEmulDV in vr. *)
+(*     destruct vr as [[? ?] | other_cases]; subst. *)
+(*     - admit. *)
+(*     - destruct other_cases as (? & [ [? vr] | [ [? vr] | [ [? vr] | [[? vr] | [? vr]]]]]); *)
+(*       eapply termrel_antired_star; *)
+(*       eauto using caseUVal_eval_unk, caseUVal_eval_unit, caseUVal_eval_bool, caseUVal_eval_prod, caseUVal_eval_sum, caseUVal_eval_arr,  *)
+(*       valrel_in_termrel, valrel_inUnit'. *)
+      
+(*   Qed. *)
+
+(* End DestructUVal. *)
