@@ -29,3 +29,9 @@ Proof.
   apply cycles_dont_terminate.
   apply stlcOmega_cycles.
 Qed.
+
+Lemma stlcOmega_sub {ty γ} : (stlcOmega ty)[γ] = stlcOmega ty.
+Proof.
+  unfold stlcOmega.
+  simpl; trivial.
+Qed.

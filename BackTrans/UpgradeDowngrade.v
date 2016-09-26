@@ -518,6 +518,13 @@ Proof.
   - auto.
 Qed.
 
+Lemma dwp_imprecise {n w d} : dir_world_prec n w d imprecise → d = dir_lt.
+Proof.
+  destruct 1 as [[? ?]|[? ?]].
+  - inversion H0.
+  - auto.
+Qed.
+
 Lemma dwp_invert_S {w d p n} : dir_world_prec (S n) (S w) d p → dir_world_prec n w d p.
 Proof.
   destruct 1 as [[? ?]|[? ?]]; [left|right];

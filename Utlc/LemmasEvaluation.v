@@ -112,6 +112,14 @@ Section Values.
   Qed.
   Global Arguments values_are_normal {_} _ {_} _.
 
+  Lemma wrong_normal : normal wrong.
+  Proof.
+    intros t' e.
+    depind e.
+    - destruct C; crush.
+      inversion H.
+    - destruct C; crush.
+  Qed.
 End Values.
 
 Section CtxEval.
@@ -234,6 +242,7 @@ Section Termination.
     destruct (evalStar_to_evaln es) as (n & esn).
     exists n; exists v, n; crush.
   Qed.
+
 End Termination.
 
 Section SubstEval.
@@ -382,6 +391,16 @@ Section Determinacy.
     - reflexivity.
   Qed.
 
+  Lemma determinacy_star {t t₁ t₂} :
+    t -->* t₁ → t -->* t₂ → (t₁ -->* t₂ ∨ t₂ -->* t₁).
+  Proof.
+    intros es1 es2.
+    pose proof es1 as es1'.
+    induction es1; auto.
+    destruct es2; auto.
+    rewrite (determinacy H H0) in *.
+    crush.
+  Qed.
 End Determinacy.
 
 Section Termination'.
@@ -464,6 +483,28 @@ Section Termination'.
     intros ineq'.
     exists v, m; crush.
   Qed.
+
+  Lemma Terminating_not_div_wrong {t} : 
+    t ⇓ → (t ⇑ ∨ t -->* wrong) → False.
+  Proof.
+    intros term.
+    destruct 1 as [div | termwrong]; auto.
+    destruct term as (? & ? & ?).
+    destruct (determinacy_star H0 termwrong).
+    - depind H1; try contradiction.
+      eapply (values_are_normal H H1).
+    - depind H1; try contradiction.
+      eapply (wrong_normal _ H1).
+  Qed.    
+
+  Lemma div_ectx {t C} :
+    ECtx C → t ⇑ → (pctx_app t C) ⇑.
+  Admitted.
+    
+  Lemma eval_to_wrong_ectx {t C} :
+    ECtx C → t -->* wrong → (pctx_app t C) -->* wrong.
+  Admitted.
+    
 
 End Termination'.
 

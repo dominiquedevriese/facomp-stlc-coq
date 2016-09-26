@@ -120,7 +120,7 @@ Proof.
   exists v'; crush.
 Qed.
 
-Corollary divergence_closed_under_evalcontex t :
+Corollary divergence_closed_under_evalcontext t :
   t⇑ → ∀ p, ECtx p → (pctx_app t p)⇑.
 Proof. eauto using inversion_termination_evalcontext. Qed.
 

@@ -143,6 +143,29 @@ Section Obs.
     apply S.values_terminateN; trivial.
   Qed.
     
+  Lemma Diverge_Obs_lt {w ts tu} : not (S.Terminating ts) → Obs dir_lt w ts tu.
+  Proof.
+    intros div termobs.
+    destruct w; try contradiction.
+    apply S.TerminatingN_Terminating in termobs.
+    exfalso; eauto.
+  Qed.    
+    
+  Lemma Diverge_Wrong_Obs {d w ts tu} : 
+    not (S.Terminating ts) → 
+    (not (U.Terminating tu) ∨ clos_refl_trans_1n UTm U.eval tu wrong) →
+    Obs d w ts tu.
+  Proof.
+    intros div divw.
+    destruct d; intros termobs.
+    - destruct w; try contradiction.
+      apply S.TerminatingN_Terminating in termobs.
+      exfalso; eauto.
+    - destruct w; try contradiction.
+      apply U.TerminatingN_Terminating in termobs.
+      exfalso; eauto using Terminating_not_div_wrong.
+  Qed.    
+    
 End Obs.
 
 Section ClosedLR.
@@ -358,6 +381,25 @@ Section ClosedLR.
     apply (U.TerminatingN_lt term); omega.
   Qed.
 
+  Lemma termrel_div_lt {w τ ts tu} : not (S.Terminating ts) → termrel dir_lt w τ ts tu.
+  Proof.
+    intros div Cs Cu eCs eCu contrel.
+    eauto using Diverge_Obs_lt, S.divergence_closed_under_evalcontext.
+  Qed.
+
+  Lemma termrel_div_wrong {d w τ ts tu} : 
+    not (S.Terminating ts) → 
+    (not (U.Terminating tu) ∨ clos_refl_trans_1n UTm U.eval tu U.wrong) → 
+    termrel d w τ ts tu.
+  Proof.
+    intros div divw Cs Cu eCs eCu _.
+    eauto using Diverge_Wrong_Obs, S.divergence_closed_under_evalcontext.
+    eapply Diverge_Wrong_Obs.
+    - eauto using S.divergence_closed_under_evalcontext.
+    - destruct divw as [divu | termwu]; [left|right].
+      + eapply div_ectx; trivial.
+      + eapply eval_to_wrong_ectx; trivial.
+  Qed.
 End ClosedLR.
 
       

@@ -2,6 +2,7 @@ Require Import UVal.UVal.
 Require Import Utlc.LemmasScoping.
 Require Import Utlc.SpecSyntax.
 Require Import Stlc.SpecSyntax.
+Require Import Stlc.StlcOmega.
 Require Import Stlc.Inst.
 Require Import Stlc.SpecTyping.
 Require Import Stlc.SpecEvaluation.
@@ -91,12 +92,110 @@ Section IntroProps.
 End IntroProps.
 
 Section Destruct.
-  Definition caseUnitDwn (n : nat) (t : Tm) := app (downgrade n 1) (inUnit n t).
-  Definition inBoolDwn (n : nat) (t : Tm) := app (downgrade n 1) (inBool n t).
-  Definition inProdDwn (n : nat) (t : Tm) := app (downgrade n 1) (inProd n t).
-  Definition inArrDwn (n : nat) (t : Tm) := app (downgrade n 1) (inArr n t).
-  Definition inSumDwn (n : nat) (t : Tm) := app (downgrade n 1) (inSum n t).
+  Definition caseUnitDwn (n : nat) (t : Tm) := caseUnit n (app (downgrade n 1) t).
+  Definition caseBoolDwn (n : nat) (t : Tm) := caseBool n (app (downgrade n 1) t).
+  Definition caseProdDwn (n : nat) (t : Tm) := caseProd n (app (downgrade n 1) t).
+  Definition caseSumDwn (n : nat) (t : Tm) := caseSum n (app (downgrade n 1) t).
+  Definition caseArrDwn (n : nat) (t : Tm) := caseArr n (app (downgrade n 1) t).
 End Destruct.
 
+Local Ltac crush :=
+  repeat (
+      repeat match goal with
+                 [ H : _ ∧ _ |- _] => destruct H as [? ?]
+               | [ H : valrel _ _ ptunit _ _ |- _] => apply valrel_ptunit_inversion in H
+               | [ H : valrel _ _ ptbool _ _ |- _] => apply valrel_ptbool_inversion in H
+               | [ H : valrel _ _ (ptprod _ _) _ _ |- _] => apply valrel_ptprod_inversion in H
+               | [ H : valrel _ _ (ptsum _ _) _ _ |- _] => apply valrel_ptsum_inversion in H
+               | [ H : valrel _ _ (ptarr _ _) _ _ |- _] => apply valrel_ptarr_inversion in H
+               | [ |- U.ctxevalStar (U.seq U.unit ?t) _ ] => (eapply (evalStepStar t); [eapply U.eval₀_ctxeval; eauto using U.eval₀|idtac])
+               | [ |- clos_refl_trans_1n UTm U.ctxeval U.unit _ ] => eapply rt1n_refl
+             end; 
+      repeat crushLRMatch;
+      crushOfType;
+      trivial;
+      simpl);
+  subst.
+
 Section DestructProps.
+  (* pff how to shorten the following? *)
+  Lemma invert_valrel_pEmulDV_for_caseUValUnit {d w n p vs vu} :
+    valrel d w (pEmulDV (S n) p) vs vu →
+    (vs = (inUnit n S.unit) ∧ vu = U.unit ∧
+            caseUnit n vs -->* S.unit) ∨
+    (p = imprecise ∧ (caseUnit n vs) ⇑) ∨
+    (vu ≠ U.unit ∧ (caseUnit n vs) ⇑).
+  Proof.
+    intros vr.
+    apply invert_valrel_pEmulDV in vr.
+    destruct vr as [[? ?] | (? & [ [? vr] | [ [? vr] | [ [? vr] | [[? vr] | [? vr]]]]])]; 
+      subst; unfold caseUnit.
+    - right. left.
+      eauto using divergence_closed_under_evalstar, caseUVal_eval_unk, stlcOmega_div.
+    - left. 
+      destruct (valrel_ptunit_inversion vr); subst.
+      crush.
+      change S.unit with ((var 0) [beta1 S.unit]) at 2.
+      eapply caseUVal_eval_unit. crush.
+    - right. right.
+      destruct (valrel_implies_Value vr).
+      crush.
+      + destruct vr as [[? ?]|[? ?]]; intros eq;
+        subst; inversion eq.
+      + eapply divergence_closed_under_evalstar.
+        * eapply caseUVal_eval_bool; trivial.
+        * rewrite stlcOmega_sub.
+          eapply stlcOmega_div.
+    - right. right.
+      destruct (valrel_implies_Value vr).
+      crush.
+      + destruct vr as (? & ? & ? & ? & ? & ? & _); subst.
+        inversion 1.
+      + eapply divergence_closed_under_evalstar.
+        * eapply caseUVal_eval_prod; trivial.
+        * rewrite stlcOmega_sub.
+          eapply stlcOmega_div.
+    - right. right.
+      destruct (valrel_implies_Value vr).
+      crush.
+      + destruct vr as (? & ? & [(? & ? & _)|(? & ? & _)]); subst;
+        inversion 1.
+      + eapply divergence_closed_under_evalstar.
+        * eapply caseUVal_eval_sum; trivial.
+        * rewrite stlcOmega_sub.
+          eapply stlcOmega_div.
+    - right. right. 
+      destruct (valrel_implies_Value vr).
+      crush.
+      + destruct vr as (? & ? & ? & ? & _); subst;
+        inversion 1.
+      + eapply divergence_closed_under_evalstar.
+        * eapply caseUVal_eval_arr; trivial.
+        * rewrite stlcOmega_sub.
+          eapply stlcOmega_div.
+  Qed.
+
+  Lemma termrel_caseUValUnit {d w n p vs vu}:
+    dir_world_prec n w d p →
+    valrel d w (pEmulDV (S n) p) vs vu →
+    termrel d w ptunit (caseUnit n vs) (U.seq vu U.unit).
+  Proof.
+    unfold caseUnit.
+    intros dwp vr.
+    destruct (valrel_implies_Value vr).
+    apply invert_valrel_pEmulDV_for_caseUValUnit in vr.
+    destruct vr as [(? & ? & ?)|[(? & ?)|(? & ?)]].
+    - subst.
+      eapply termrel_antired_star.
+      + eapply caseUVal_eval_unit; crush.
+      + eapply evalToStar.
+        eapply U.eval₀_ctxeval.
+        eauto with eval.
+      + simpl; crush.
+    - subst; eapply dwp_imprecise in dwp; subst.
+      eapply (termrel_div_lt H2).
+    - apply (termrel_div_wrong H2).
+      admit.
+  Admitted.
+
 End DestructProps.

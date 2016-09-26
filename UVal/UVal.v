@@ -342,43 +342,43 @@ Arguments caseUVal n tscrut tunk tcunit tcbool tcprod tcsum tcarr : simpl never.
 
 (* Definition caseUVal (n : nat) (tscrut tunk tcunit tcbool tcprod tcsum tcarr : Tm) := *)
 
-Definition caseUValUnit n t := caseUVal n t (stlcOmega tunit) (var 0) (stlcOmega tunit) (stlcOmega tunit) (stlcOmega tunit) (stlcOmega tunit).
-Definition caseUValBool n t := caseUVal n t (stlcOmega tbool) (stlcOmega tbool) (var 0) (stlcOmega tbool) (stlcOmega tbool) (stlcOmega tbool).
-Definition caseUValProd n t := caseUVal n t (stlcOmega (UVal n × UVal n)) (stlcOmega (UVal n × UVal n)) (stlcOmega (UVal n × UVal n)) (var 0) (stlcOmega (UVal n × UVal n)) (stlcOmega (UVal n × UVal n)).
-Definition caseUValSum n t := caseUVal n t (stlcOmega (UVal n ⊎ UVal n)) (stlcOmega (UVal n ⊎ UVal n)) (stlcOmega (UVal n ⊎ UVal n)) (stlcOmega (UVal n ⊎ UVal n)) (var 0) (stlcOmega (UVal n ⊎ UVal n)).
-Definition caseUValArr n t := caseUVal n t (stlcOmega (UVal n ⇒ UVal n)) (stlcOmega (UVal n ⇒ UVal n)) (stlcOmega (UVal n ⇒ UVal n)) (stlcOmega (UVal n ⇒ UVal n)) (stlcOmega (UVal n ⇒ UVal n)) (var 0).
+Definition caseUnit n t := caseUVal n t (stlcOmega tunit) (var 0) (stlcOmega tunit) (stlcOmega tunit) (stlcOmega tunit) (stlcOmega tunit).
+Definition caseBool n t := caseUVal n t (stlcOmega tbool) (stlcOmega tbool) (var 0) (stlcOmega tbool) (stlcOmega tbool) (stlcOmega tbool).
+Definition caseProd n t := caseUVal n t (stlcOmega (UVal n × UVal n)) (stlcOmega (UVal n × UVal n)) (stlcOmega (UVal n × UVal n)) (var 0) (stlcOmega (UVal n × UVal n)) (stlcOmega (UVal n × UVal n)).
+Definition caseSum n t := caseUVal n t (stlcOmega (UVal n ⊎ UVal n)) (stlcOmega (UVal n ⊎ UVal n)) (stlcOmega (UVal n ⊎ UVal n)) (stlcOmega (UVal n ⊎ UVal n)) (var 0) (stlcOmega (UVal n ⊎ UVal n)).
+Definition caseArr n t := caseUVal n t (stlcOmega (UVal n ⇒ UVal n)) (stlcOmega (UVal n ⇒ UVal n)) (stlcOmega (UVal n ⇒ UVal n)) (stlcOmega (UVal n ⇒ UVal n)) (stlcOmega (UVal n ⇒ UVal n)) (var 0).
 
-Lemma caseUValUnit_T {Γ n t} : 
-  ⟪ Γ ⊢ t : UVal (S n) ⟫ → ⟪ Γ ⊢ caseUValUnit n t : tunit ⟫.
+Lemma caseUnit_T {Γ n t} : 
+  ⟪ Γ ⊢ t : UVal (S n) ⟫ → ⟪ Γ ⊢ caseUnit n t : tunit ⟫.
 Proof.
-  unfold caseUValUnit.
+  unfold caseUnit.
   eauto using stlcOmegaT with typing uval_typing.
 Qed.
 
-Lemma caseUValBool_T {Γ n t} : 
-  ⟪ Γ ⊢ t : UVal (S n) ⟫ → ⟪ Γ ⊢ caseUValBool n t : tbool ⟫.
+Lemma caseBool_T {Γ n t} : 
+  ⟪ Γ ⊢ t : UVal (S n) ⟫ → ⟪ Γ ⊢ caseBool n t : tbool ⟫.
 Proof.
-  unfold caseUValBool.
+  unfold caseBool.
   eauto using stlcOmegaT with typing uval_typing.
 Qed.
 
-Lemma caseUValProd_T {Γ n t} : 
-  ⟪ Γ ⊢ t : UVal (S n) ⟫ → ⟪ Γ ⊢ caseUValProd n t : UVal n × UVal n ⟫.
+Lemma caseProd_T {Γ n t} : 
+  ⟪ Γ ⊢ t : UVal (S n) ⟫ → ⟪ Γ ⊢ caseProd n t : UVal n × UVal n ⟫.
 Proof.
-  unfold caseUValProd.
+  unfold caseProd.
   eauto using stlcOmegaT with typing uval_typing.
 Qed.
 
-Lemma caseUValSum_T {Γ n t} : 
-  ⟪ Γ ⊢ t : UVal (S n) ⟫ → ⟪ Γ ⊢ caseUValSum n t : UVal n ⊎ UVal n ⟫.
+Lemma caseSum_T {Γ n t} : 
+  ⟪ Γ ⊢ t : UVal (S n) ⟫ → ⟪ Γ ⊢ caseSum n t : UVal n ⊎ UVal n ⟫.
 Proof.
-  unfold caseUValSum.
+  unfold caseSum.
   eauto using stlcOmegaT with typing uval_typing.
 Qed.
 
-Lemma caseUValArr_T {Γ n t} : 
-  ⟪ Γ ⊢ t : UVal (S n) ⟫ → ⟪ Γ ⊢ caseUValArr n t : UVal n ⇒ UVal n ⟫.
+Lemma caseArr_T {Γ n t} : 
+  ⟪ Γ ⊢ t : UVal (S n) ⟫ → ⟪ Γ ⊢ caseArr n t : UVal n ⇒ UVal n ⟫.
 Proof.
-  unfold caseUValArr.
+  unfold caseArr.
   eauto using stlcOmegaT with typing uval_typing.
 Qed.
