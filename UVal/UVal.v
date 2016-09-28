@@ -382,3 +382,9 @@ Proof.
   unfold caseArr.
   eauto using stlcOmegaT with typing uval_typing.
 Qed.
+
+Hint Resolve caseUnit_T : uval_typing.
+Hint Resolve caseBool_T : uval_typing.
+Hint Resolve caseProd_T : uval_typing.
+Hint Resolve caseSum_T : uval_typing.
+Hint Resolve caseArr_T : uval_typing.

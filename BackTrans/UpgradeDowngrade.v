@@ -96,6 +96,20 @@ Proof.
   - induction n; unfold upgrade, downgrade;
     auto with typing uval_typing.
 Qed.
+
+Lemma upgrade_T1 {Γ n} :
+  ⟪ Γ ⊢ upgrade n 1 : UVal n ⇒ UVal (S n) ⟫.
+Proof.
+  replace (S n) with (n + 1) by Omega.omega.
+  eauto using upgrade_T.
+Qed.
+
+Lemma downgrade_T1 {Γ n} :
+  ⟪ Γ ⊢ downgrade n 1 : UVal (S n) ⇒ UVal n ⟫.
+Proof.
+  replace (S n) with (n + 1) by Omega.omega.
+  eauto using downgrade_T.
+Qed.
  
 Lemma upgrade_closed {n d} :
   ⟨ 0 ⊢ upgrade n d ⟩.
