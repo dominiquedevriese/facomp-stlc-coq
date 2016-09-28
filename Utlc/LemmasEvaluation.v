@@ -26,6 +26,12 @@ Local Ltac crush :=
   try discriminate;
   eauto.
 
+Lemma eval₀_to_eval {t t'} : t -->₀ t' → t --> t'.
+Proof.
+  intros.
+  eapply (eval_ctx₀ phole); crush.
+Qed.
+
 Section EvaluationContexts.
 
   Lemma pctx_app_sub' C :

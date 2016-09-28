@@ -128,51 +128,30 @@ Section DestructProps.
   Proof.
     intros vr.
     apply invert_valrel_pEmulDV in vr.
-    destruct vr as [[? ?] | (? & [ [? vr] | [ [? vr] | [ [? vr] | [[? vr] | [? vr]]]]])]; 
+    destruct vr as [[? ?] | (? & [ [? vr] | other_cases])]; 
       subst; unfold caseUnit.
     - right. left.
       eauto using divergence_closed_under_evalstar, caseUVal_eval_unk, stlcOmega_div.
-    - left. 
-      destruct (valrel_ptunit_inversion vr); subst.
-      crush.
-      change S.unit with ((var 0) [beta1 S.unit]) at 2.
-      eapply caseUVal_eval_unit. crush.
+    - left. destruct (valrel_ptunit_inversion vr); subst.
+      change S.unit with ((var 0) [beta1 S.unit]) at 4.
+      assert (S.Value S.unit) by crush.
+      eauto using caseUVal_eval_unit. 
     - right. right.
-      destruct (valrel_implies_Value vr).
-      crush.
-      + destruct vr as [[? ?]|[? ?]]; intros eq;
-        subst; inversion eq.
-      + eapply divergence_closed_under_evalstar.
-        * eapply caseUVal_eval_bool; trivial.
-        * rewrite stlcOmega_sub.
-          eapply stlcOmega_div.
-    - right. right.
-      destruct (valrel_implies_Value vr).
-      crush.
-      + destruct vr as (? & ? & ? & ? & ? & ? & _); subst.
-        inversion 1.
-      + eapply divergence_closed_under_evalstar.
-        * eapply caseUVal_eval_prod; trivial.
-        * rewrite stlcOmega_sub.
-          eapply stlcOmega_div.
-    - right. right.
-      destruct (valrel_implies_Value vr).
-      crush.
-      + destruct vr as (? & ? & [(? & ? & _)|(? & ? & _)]); subst;
-        inversion 1.
-      + eapply divergence_closed_under_evalstar.
-        * eapply caseUVal_eval_sum; trivial.
-        * rewrite stlcOmega_sub.
-          eapply stlcOmega_div.
-    - right. right. 
-      destruct (valrel_implies_Value vr).
-      crush.
-      + destruct vr as (? & ? & ? & ? & _); subst;
-        inversion 1.
-      + eapply divergence_closed_under_evalstar.
-        * eapply caseUVal_eval_arr; trivial.
-        * rewrite stlcOmega_sub.
-          eapply stlcOmega_div.
+      enough (vu ≠ U.unit ∧ caseUnit n vs -->* stlcOmega tunit) as (nunit & eval)
+          by eauto using divergence_closed_under_evalstar, stlcOmega_div.
+      destruct other_cases as [ [? vr] | [ [? vr] | [[? vr] | [? vr]]]];
+      destruct (valrel_implies_Value vr); subst;
+      crush;
+      repeat match goal with
+                 [ |- context [ ((stlcOmega ?tau) [?γ]) ] ]=> rewrite stlcOmega_sub
+               | [ H : _ ∧ _ |- _ ]=> destruct H
+               | [ H : ∃ _, _ |- _ ]=> destruct H
+               | [ H : _ ∨ _ |- _ ]=> destruct H
+               | [ |- caseUnit _ _ -->* stlcOmega tunit   ] => 
+                (replace (stlcOmega tunit) with ((stlcOmega tunit )[ beta1 x ]) by eapply stlcOmega_sub;
+                 eauto using caseUVal_eval_bool, caseUVal_eval_prod, caseUVal_eval_sum, caseUVal_eval_arr)
+             end;
+      subst; inversion 1.
   Qed.
 
   Lemma termrel_caseUValUnit {d w n p vs vu}:
@@ -195,7 +174,8 @@ Section DestructProps.
     - subst; eapply dwp_imprecise in dwp; subst.
       eapply (termrel_div_lt H2).
     - apply (termrel_div_wrong H2).
-      admit.
-  Admitted.
+      right.
+      eauto using evalToStar, U.eval₀_to_eval with eval.
+  Qed.
 
 End DestructProps.
