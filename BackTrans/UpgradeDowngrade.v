@@ -111,6 +111,9 @@ Proof.
   eauto using downgrade_T.
 Qed.
  
+Hint Resolve upgrade_T1 : uval_typing.
+Hint Resolve downgrade_T1 : uval_typing.
+
 Lemma upgrade_closed {n d} :
   ⟨ 0 ⊢ upgrade n d ⟩.
 Proof.
@@ -579,18 +582,17 @@ Proof.
   * (* w = 0 *)
     simpl in H0.
     canonUVal; crush.
-    inversion H2; subst; clear H2.
     stlcCanForm.
     inversion H2; subst; clear H2.
     destruct_conjs; destruct H3 as [vx vx0].
     destruct (downgrade_reduces H5 vx) as (vs₁' & vvs₁' & ty₁' & es₁).
-    destruct (downgrade_reduces H6 vx0) as (vs₂' & vvs₂' & ty₂' & es₂).
+    destruct (downgrade_reduces H7 vx0) as (vs₂' & vvs₂' & ty₂' & es₂).
     exists (inProd n (S.pair vs₁' vs₂')).
     assert (forall w', w' < 0 → valrel dir w' (pEmulDV n p) vs₁' vu₁) by (intros; exfalso; Omega.omega).
     assert (forall w', w' < 0 → valrel dir w' (pEmulDV n p) vs₂' vu₂) by (intros; exfalso; Omega.omega).
     split.
-    eapply downgrade_eval_inProd; trivial.
-    eapply valrel_inProd; trivial; crush.
+    eapply downgrade_eval_inProd; crush.
+    eapply valrel_inProd; crush.
   * (* w = S w *)
     assert (wlt : w < S w) by eauto with arith.
     assert (h1 := ih w vs₁ vu₁ wlt (vr₁ w wlt)).
@@ -621,12 +623,11 @@ Proof.
   * (* w = 0 *)
     simpl in H0.
     canonUVal; crush.
-    inversion H2; subst; clear H2.
     stlcCanForm.
     inversion H2; subst; clear H2.
     destruct_conjs; destruct H3 as [vx vx0].
     destruct (upgrade_reduces d H5 vx) as (vs₁' & vvs₁' & ty₁' & es₁).
-    destruct (upgrade_reduces d H6 vx0) as (vs₂' & vvs₂' & ty₂' & es₂).
+    destruct (upgrade_reduces d H7 vx0) as (vs₂' & vvs₂' & ty₂' & es₂).
     exists (inProd (n + d) (S.pair vs₁' vs₂')).
     assert (forall w', w' < 0 → valrel dir w' (pEmulDV (n + d) p) vs₁' vu₁) by (intros; exfalso; Omega.omega).
     assert (forall w', w' < 0 → valrel dir w' (pEmulDV (n + d) p) vs₂' vu₂) by (intros; exfalso; Omega.omega).
@@ -783,7 +784,7 @@ Proof.
 
     (* now execute the downgrade *)
     assert (wlt0 : w'0 < w) by Omega.omega.
-    specialize (ihd w'0 _ _ wlt0 H4).
+    specialize (ihd w'0 _ _ wlt0 H19).
     destruct ihd as (vs'' & edowns & vr'').
     enough (termrel dir w'0 (pEmulDV n p)
                     vs'' vu0) as tr'
@@ -855,7 +856,7 @@ Proof.
 
     (* now execute the upgrade *)
     assert (wlt0 : w'0 < w) by Omega.omega.
-    specialize (ihu w'0 _ _ wlt0 H4).
+    specialize (ihu w'0 _ _ wlt0 H19).
     destruct ihu as (vs'' & eups & vr'').
     enough (termrel dir w'0 (pEmulDV (n + d) p)
                     vs'' vu0) as tr'

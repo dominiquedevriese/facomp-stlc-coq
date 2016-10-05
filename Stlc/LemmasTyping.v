@@ -43,21 +43,40 @@ Ltac crushTypingMatchH :=
     | [ wi : ⟪ ?i : _ ∈ (_ ▻ _) ⟫
         |- context [(_ · _) ?i]
       ] => destruct i
-    | [ |- ⟪ _ ⊢ var _ : _ ⟫         ] => econstructor
-    | [ |- ⟪ _ ⊢ abs _ _ : _ ⟫       ] => econstructor
-    | [ |- ⟪ _ ⊢ app _ _ : _ ⟫       ] => econstructor
-    | [ |- ⟪ _ ⊢ unit : _ ⟫          ] => econstructor
-    | [ |- ⟪ _ ⊢ true : _ ⟫          ] => econstructor
-    | [ |- ⟪ _ ⊢ false : _ ⟫         ] => econstructor
-    | [ |- ⟪ _ ⊢ ite _ _ _ : _ ⟫     ] => econstructor
-    | [ |- ⟪ _ ⊢ pair _ _ : _ ⟫      ] => econstructor
-    | [ |- ⟪ _ ⊢ proj₁ _ : _ ⟫       ] => econstructor
-    | [ |- ⟪ _ ⊢ proj₂ _ : _ ⟫       ] => econstructor
-    | [ |- ⟪ _ ⊢ inl _ : _ ⟫         ] => econstructor
-    | [ |- ⟪ _ ⊢ inr _ : _ ⟫         ] => econstructor
-    | [ |- ⟪ _ ⊢ caseof _ _ _ : _ ⟫  ] => econstructor
-    | [ |- ⟪ _ ⊢ seq _ _ : _ ⟫       ] => econstructor
-    | [ |- ⟪ _ ⊢ fixt _ _ _ : _ ⟫    ] => econstructor
+    | [ |- ⟪ _ ⊢ var _ : _ ⟫                    ] => econstructor
+    | [ |- ⟪ _ ⊢ abs _ _ : _ ⟫                  ] => econstructor
+    | [ |- ⟪ _ ⊢ app _ _ : _ ⟫                  ] => econstructor
+    | [ |- ⟪ _ ⊢ unit : _ ⟫                     ] => econstructor
+    | [ |- ⟪ _ ⊢ true : _ ⟫                     ] => econstructor
+    | [ |- ⟪ _ ⊢ false : _ ⟫                    ] => econstructor
+    | [ |- ⟪ _ ⊢ ite _ _ _ : _ ⟫                ] => econstructor
+    | [ |- ⟪ _ ⊢ pair _ _ : _ ⟫                 ] => econstructor
+    | [ |- ⟪ _ ⊢ proj₁ _ : _ ⟫                  ] => econstructor
+    | [ |- ⟪ _ ⊢ proj₂ _ : _ ⟫                  ] => econstructor
+    | [ |- ⟪ _ ⊢ inl _ : _ ⟫                    ] => econstructor
+    | [ |- ⟪ _ ⊢ inr _ : _ ⟫                    ] => econstructor
+    | [ |- ⟪ _ ⊢ caseof _ _ _ : _ ⟫             ] => econstructor
+    | [ |- ⟪ _ ⊢ seq _ _ : _ ⟫                  ] => econstructor
+    | [ |- ⟪ _ ⊢ fixt _ _ _ : _ ⟫               ] => econstructor
+    | [ |- ⟪ ⊢ phole : _ , _ → _ , _ ⟫          ] => econstructor
+    | [ |- ⟪ ⊢ pabs _ _ : _ , _ → _ , _ ⟫       ] => econstructor
+    | [ |- ⟪ ⊢ papp₁ _ _ : _ , _ → _ , _ ⟫      ] => econstructor
+    | [ |- ⟪ ⊢ papp₂ _ _ : _ , _ → _ , _ ⟫      ] => econstructor
+    | [ |- ⟪ ⊢ pite₁ _ _ _ : _ , _ → _ , _ ⟫    ] => econstructor
+    | [ |- ⟪ ⊢ pite₂ _ _ _ : _ , _ → _ , _ ⟫    ] => econstructor
+    | [ |- ⟪ ⊢ pite₃ _ _ _ : _ , _ → _ , _ ⟫    ] => econstructor
+    | [ |- ⟪ ⊢ ppair₁ _ _ : _ , _ → _ , _ ⟫     ] => econstructor
+    | [ |- ⟪ ⊢ ppair₂ _ _ : _ , _ → _ , _ ⟫     ] => econstructor
+    | [ |- ⟪ ⊢ pproj₁ _ : _ , _ → _ , _ ⟫       ] => econstructor
+    | [ |- ⟪ ⊢ pproj₂ _ : _ , _ → _ , _ ⟫       ] => econstructor
+    | [ |- ⟪ ⊢ pinl _ : _ , _ → _ , _ ⟫         ] => econstructor
+    | [ |- ⟪ ⊢ pinr _ : _ , _ → _ , _ ⟫         ] => econstructor
+    | [ |- ⟪ ⊢ pcaseof₁ _ _ _ : _ , _ → _ , _ ⟫ ] => econstructor
+    | [ |- ⟪ ⊢ pcaseof₂ _ _ _ : _ , _ → _ , _ ⟫ ] => econstructor
+    | [ |- ⟪ ⊢ pcaseof₃ _ _ _ : _ , _ → _ , _ ⟫ ] => econstructor
+    | [ |- ⟪ ⊢ pseq₁ _ _ : _ , _ → _ , _ ⟫      ] => econstructor
+    | [ |- ⟪ ⊢ pseq₂ _ _ : _ , _ → _ , _ ⟫      ] => econstructor
+    | [ |- ⟪ ⊢ pfixt _ _ _ : _ , _ → _ , _ ⟫    ] => econstructor
   end.
 
 Local Ltac crush :=
@@ -339,6 +358,12 @@ Ltac crushTyping :=
 
 Hint Extern 20 (⟪ _ ⊢ _ : _ ⟫) =>
   crushTyping : typing.
+
+Hint Extern 20 (⟪ ⊢ _ : _ , _ → _ , _ ⟫) =>
+  crushTyping : typing.
+
+Hint Resolve pctxtyping_cat : typing.
+Hint Resolve pctxtyping_app : typing.
 
 Lemma wtvar_implies_wsvar {Γ i τ} :
   ⟪ i : τ ∈ Γ ⟫ → dom Γ ∋ i.

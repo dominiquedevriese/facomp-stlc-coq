@@ -217,7 +217,6 @@ Section ValueRelation.
     destruct (OfType_implies_Value ot₂).
     repeat crushLRMatch.
     - unfold OfType, OfTypeStlc, OfTypeUtlc in *; crush. 
-      apply inProd_T; crushTyping.
     - right. exists (S.pair vs₁ vs₂). right. right. left.
       crush.
   Qed.
@@ -263,9 +262,8 @@ Section ValueRelation.
     assert ⟪ empty ⊢ vs' : UVal n ⊎ UVal n ⟫
       by (destruct eqs as [[? ?]|[? ?]]; crush).
     crush.
-    - eauto using inSum_T with typing.
-    - right. exists vs'. right. right. right. left.
-      destruct eqs as [[? ?]|[? ?]]; crush.
+    right. exists vs'. right. right. right. left.
+    destruct eqs as [[? ?]|[? ?]]; crush.
   Qed.
 
   Lemma valrel_inSum' {d w n p vs vs' vu vu'} :

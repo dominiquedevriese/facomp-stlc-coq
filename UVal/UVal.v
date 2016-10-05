@@ -29,25 +29,40 @@ Proof.
   induction n; eauto using Typing.
 Qed.
 
-Definition inUnit (n : nat) (t : Tm) := inr (inl t).
+Definition inUnit_pctx (n : nat) := pinr (pinl phole).
+Definition inUnit (n : nat) (t : Tm) := pctx_app t (inUnit_pctx n).
+Arguments inUnit_pctx / n.
 
 Lemma inUnit_Value {n v} : Value v → Value (inUnit n v).
 Proof.
   simpl; trivial.
 Qed.
 
+Lemma inUnit_pctx_T {Γ n} : ⟪ ⊢ inUnit_pctx n : Γ , tunit → Γ , UVal (S n) ⟫.
+Proof.
+  unfold inUnit_pctx. crushTyping.
+Qed.
+
 Lemma inUnitT {Γ n t} : ⟪ Γ ⊢ t : tunit ⟫ → ⟪ Γ ⊢ inUnit n t : UVal (S n) ⟫.
 Proof.
-  unfold inUnit. crushTyping.
+  unfold inUnit. eauto using inUnit_pctx_T with typing.
 Qed.
 
 Arguments inUnit n t : simpl never.
 
-Definition inBool (n : nat) (t : Tm): Tm := inr (inr (inl t)).
+Definition inBool_pctx (n : nat) : PCtx := pinr (pinr (pinl phole)).
+Definition inBool (n : nat) (t : Tm): Tm := pctx_app t (inBool_pctx n).
+
+Arguments inBool_pctx /n.
+
+Lemma inBool_pctx_T {Γ n} : ⟪ ⊢ inBool_pctx n : Γ , tbool → Γ , UVal (S n) ⟫.
+Proof.
+  unfold inBool_pctx. crushTyping.
+Qed.
 
 Lemma inBoolT {Γ n t} : ⟪ Γ ⊢ t : tbool ⟫ → ⟪ Γ ⊢ inBool n t : UVal (S n) ⟫.
 Proof.
-  unfold inBool. crushTyping.
+  unfold inBool. eauto using inBool_pctx_T with typing.
 Qed.
 
 Lemma inBool_Value {n v} : Value v → Value (inBool n v).
@@ -55,11 +70,17 @@ Proof.
   simpl; trivial.
 Qed.
 
-Definition inProd (n : nat) (t : Tm) : Tm := inr (inr (inr (inl t))).
+Definition inProd_pctx (n : nat) : PCtx := pinr (pinr (pinr (pinl phole))).
+Definition inProd (n : nat) (t : Tm) : Tm := pctx_app t (inProd_pctx n).
+
+Lemma inProd_pctx_T {Γ n} : ⟪ ⊢ inProd_pctx n : Γ , UVal n × UVal n → Γ , UVal (S n) ⟫.
+Proof.
+  unfold inProd_pctx. crushTyping.
+Qed.
 
 Lemma inProd_T {Γ n t} : ⟪ Γ ⊢ t : UVal n × UVal n ⟫ → ⟪ Γ ⊢ inProd n t : UVal (S n) ⟫.
 Proof.
-  unfold inProd. crushTyping.
+  unfold inProd. eauto using inProd_pctx_T with typing.
 Qed.
 
 Lemma inProd_Value {n v} : Value v → Value (inProd n v).
@@ -67,11 +88,19 @@ Proof.
   simpl; trivial.
 Qed.
 
-Definition inArr (n : nat) (t : Tm) : Tm := inr (inr (inr (inr (inl t)))).
+Definition inArr_pctx (n : nat) : PCtx := pinr (pinr (pinr (pinr (pinl phole)))).
+Definition inArr (n : nat) (t : Tm) : Tm := pctx_app t (inArr_pctx n).
+
+Arguments inArr_pctx / n.
+
+Lemma inArr_pctx_T {Γ n} : ⟪ ⊢ inArr_pctx n : Γ , UVal n ⇒ UVal n → Γ , UVal (S n) ⟫.
+Proof.
+  unfold inArr_pctx. crushTyping.
+Qed.
 
 Lemma inArr_T {Γ n t} : ⟪ Γ ⊢ t : UVal n ⇒ UVal n ⟫ → ⟪ Γ ⊢ inArr n t : UVal (S n) ⟫.
 Proof.
-  unfold inArr. crushTyping.
+  unfold inArr. eauto using inArr_pctx_T with typing. 
 Qed.
 
 Lemma inArr_Value {n v} : Value v → Value (inArr n v).
@@ -80,11 +109,17 @@ Proof.
 Qed.
 
 
-Definition inSum (n : nat) (t : Tm) : Tm := inr (inr (inr (inr (inr t)))).
+Definition inSum_pctx (n : nat) : PCtx := pinr (pinr (pinr (pinr (pinr phole)))).
+Definition inSum (n : nat) (t : Tm) : Tm := pctx_app t (inSum_pctx n).
+
+Lemma inSum_pctx_T {Γ n} : ⟪ ⊢ inSum_pctx n : Γ , UVal n ⊎ UVal n → Γ , UVal (S n) ⟫.
+Proof.
+  unfold inSum_pctx. crushTyping.
+Qed.
 
 Lemma inSum_T {Γ n t} : ⟪ Γ ⊢ t : UVal n ⊎ UVal n ⟫ → ⟪ Γ ⊢ inSum n t : UVal (S n) ⟫.
 Proof.
-  unfold inSum. crushTyping.
+  unfold inSum. eauto using inSum_pctx_T with typing. 
 Qed.
 
 Lemma inSum_Value {n v} : Value v → Value (inSum n v).
@@ -136,6 +171,11 @@ Hint Resolve inBoolT : uval_typing.
 Hint Resolve inProd_T : uval_typing.
 Hint Resolve inSum_T : uval_typing.
 Hint Resolve inArr_T : uval_typing.
+Hint Resolve inUnit_pctx_T : uval_typing.
+Hint Resolve inBool_pctx_T : uval_typing.
+Hint Resolve inProd_pctx_T : uval_typing.
+Hint Resolve inSum_pctx_T : uval_typing.
+Hint Resolve inArr_pctx_T : uval_typing.
 Hint Resolve caseUVal_T : uval_typing.
 
 Local Ltac crush :=
@@ -286,7 +326,7 @@ Lemma caseUVal_eval_unit {n tunk tcunit tcbool tcprod tcsum tcarr v} :
   caseUVal n (inUnit n v) tunk tcunit tcbool tcprod tcsum tcarr -->* tcunit [beta1 v].
 Proof.
   intros vv.
-  unfold caseUVal, inUnit.
+  unfold caseUVal, inUnit; simpl.
   crushEvalsInCaseUVal.
 Qed.
   
@@ -295,7 +335,7 @@ Lemma caseUVal_eval_bool {n tunk tcunit tcbool tcprod tcsum tcarr v} :
   caseUVal n (inBool n v) tunk tcunit tcbool tcprod tcsum tcarr -->* tcbool [beta1 v].
 Proof.
   intros vv.
-  unfold caseUVal, inBool.
+  unfold caseUVal, inBool; simpl.
   crushEvalsInCaseUVal.
 Qed.
   
@@ -304,7 +344,7 @@ Lemma caseUVal_eval_prod {n tunk tcunit tcbool tcprod tcsum tcarr v} :
   caseUVal n (inProd n v) tunk tcunit tcbool tcprod tcsum tcarr -->* tcprod [beta1 v].
 Proof.
   intros vv.
-  unfold caseUVal, inProd.
+  unfold caseUVal, inProd; simpl.
   crushEvalsInCaseUVal.
 Qed.
 
@@ -313,7 +353,7 @@ Lemma caseUVal_eval_sum {n tunk tcunit tcbool tcprod tcsum tcarr v} :
   caseUVal n (inSum n v) tunk tcunit tcbool tcprod tcsum tcarr -->* tcsum [beta1 v].
 Proof.
   intros vv.
-  unfold caseUVal, inSum.
+  unfold caseUVal, inSum; simpl.
   crushEvalsInCaseUVal.
 Qed.
 
@@ -322,7 +362,7 @@ Lemma caseUVal_eval_arr {n tunk tcunit tcbool tcprod tcsum tcarr v} :
   caseUVal n (inArr n v) tunk tcunit tcbool tcprod tcsum tcarr -->* tcarr [beta1 v].
 Proof.
   intros vv.
-  unfold caseUVal, inArr.
+  unfold caseUVal, inArr; simpl.
   crushEvalsInCaseUVal.
 Qed.
 

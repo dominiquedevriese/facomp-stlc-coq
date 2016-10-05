@@ -22,42 +22,78 @@ Require Import Omega.
 
 
 Section Intro.
-  Definition inUnitDwn (n : nat) (t : Tm) := app (downgrade n 1) (inUnit n t).
-  Definition inBoolDwn (n : nat) (t : Tm) := app (downgrade n 1) (inBool n t).
-  Definition inProdDwn (n : nat) (t : Tm) := app (downgrade n 1) (inProd n t).
-  Definition inArrDwn (n : nat) (t : Tm) := app (downgrade n 1) (inArr n t).
-  Definition inSumDwn (n : nat) (t : Tm) := app (downgrade n 1) (inSum n t).
+  Definition inUnitDwn_pctx (n : nat) := papp₂ (downgrade n 1) (inUnit_pctx n).
+  Definition inUnitDwn (n : nat) (t : Tm) := pctx_app t (inUnitDwn_pctx n).
+  Definition inBoolDwn_pctx (n : nat) := papp₂ (downgrade n 1) (inBool_pctx n).
+  Definition inBoolDwn (n : nat) (t : Tm) := pctx_app t (inBoolDwn_pctx n).
+  Definition inProdDwn_pctx (n : nat) := papp₂ (downgrade n 1) (inProd_pctx n).
+  Definition inProdDwn (n : nat) (t : Tm) := pctx_app t (inProdDwn_pctx n).
+  Definition inArrDwn_pctx (n : nat) := papp₂ (downgrade n 1) (inArr_pctx n).
+  Definition inArrDwn (n : nat) (t : Tm) := pctx_app t (inArrDwn_pctx n).
+  Definition inSumDwn_pctx (n : nat) := papp₂ (downgrade n 1) (inSum_pctx n).
+  Definition inSumDwn (n : nat) (t : Tm) := pctx_app t (inSumDwn_pctx n).
 End Intro.
 
 Section IntroTypes.
+  Lemma inUnitDwn_pctx_T {n Γ} : ⟪ ⊢ inUnitDwn_pctx n : Γ , tunit → Γ , UVal n ⟫.
+  Proof.
+    unfold inUnitDwn_pctx.
+    eauto using upgrade_T1, downgrade_T1 with typing uval_typing.
+  Qed.
+
   Lemma inUnitDwn_T {n t Γ} : ⟪ Γ ⊢ t : tunit ⟫ → ⟪ Γ ⊢ inUnitDwn n t : UVal n ⟫.
   Proof.
     unfold inUnitDwn.
+    eauto using inUnitDwn_pctx_T with typing.
+  Qed.
+
+
+  Lemma inBoolDwn_pctx_T {n Γ} : ⟪ ⊢ inBoolDwn_pctx n : Γ , tbool → Γ , UVal n ⟫.
+  Proof.
+    unfold inBoolDwn_pctx.
     eauto using upgrade_T1, downgrade_T1 with typing uval_typing.
   Qed.
 
   Lemma inBoolDwn_T {n t Γ} : ⟪ Γ ⊢ t : tbool ⟫ → ⟪ Γ ⊢ inBoolDwn n t : UVal n ⟫.
   Proof.
     unfold inBoolDwn.
+    eauto using inBoolDwn_pctx_T with typing.
+  Qed.
+
+  Lemma inProdDwn_pctx_T {n Γ} : ⟪ ⊢ inProdDwn_pctx n : Γ , UVal n × UVal n → Γ , UVal n ⟫.
+  Proof.
+    unfold inProdDwn_pctx.
     eauto using upgrade_T1, downgrade_T1 with typing uval_typing.
   Qed.
 
   Lemma inProdDwn_T {n t Γ} : ⟪ Γ ⊢ t : UVal n × UVal n ⟫ → ⟪ Γ ⊢ inProdDwn n t : UVal n ⟫.
   Proof.
     unfold inProdDwn.
+    eauto using inProdDwn_pctx_T with typing.
+  Qed.
+
+  Lemma inSumDwn_pctx_T {n Γ} : ⟪ ⊢ inSumDwn_pctx n : Γ , UVal n ⊎ UVal n → Γ , UVal n ⟫.
+  Proof.
+    unfold inSumDwn_pctx.
     eauto using upgrade_T1, downgrade_T1 with typing uval_typing.
   Qed.
 
   Lemma inSumDwn_T {n t Γ} : ⟪ Γ ⊢ t : UVal n ⊎ UVal n ⟫ → ⟪ Γ ⊢ inSumDwn n t : UVal n ⟫.
   Proof.
     unfold inSumDwn.
+    eauto using inSumDwn_pctx_T with typing.
+  Qed.
+
+  Lemma inArrDwn_pctx_T {n Γ} : ⟪ ⊢ inArrDwn_pctx n : Γ , (UVal n ⇒ UVal n) → Γ , UVal n ⟫.
+  Proof.
+    unfold inArrDwn_pctx.
     eauto using upgrade_T1, downgrade_T1 with typing uval_typing.
   Qed.
 
   Lemma inArrDwn_T {n t Γ} : ⟪ Γ ⊢ t : UVal n ⇒ UVal n ⟫ → ⟪ Γ ⊢ inArrDwn n t : UVal n ⟫.
   Proof.
     unfold inArrDwn.
-    eauto using upgrade_T1, downgrade_T1 with typing uval_typing.
+    eauto using inArrDwn_pctx_T with typing.
   Qed.
 End IntroTypes.
 
@@ -135,6 +171,11 @@ Section Destruct.
   Definition caseProdUp (n : nat) (t : Tm) := caseProd n (app (upgrade n 1) t).
   Definition caseSumUp (n : nat) (t : Tm) := caseSum n (app (upgrade n 1) t).
   Definition caseArrUp (n : nat) (t : Tm) := caseArr n (app (upgrade n 1) t).
+  Definition caseUnitUp_pctx (n : nat) := papp₂ (S.abs (UVal n) (caseUnit n (app (upgrade n 1) (var 0)))) phole.
+  Definition caseBoolUp_pctx (n : nat) := papp₂ (S.abs (UVal n) (caseBool n (app (upgrade n 1) (var 0)))) phole.
+  Definition caseProdUp_pctx (n : nat) := papp₂ (S.abs (UVal n) (caseProd n (app (upgrade n 1) (var 0)))) phole.
+  Definition caseSumUp_pctx (n : nat) := papp₂ (S.abs (UVal n) (caseSum n (app (upgrade n 1) (var 0)))) phole.
+  Definition caseArrUp_pctx (n : nat) := papp₂ (S.abs (UVal n) (caseArr n (app (upgrade n 1) (var 0)))) phole.
 End Destruct.
 
 Section DestructTypes.
@@ -144,10 +185,23 @@ Section DestructTypes.
     eauto using upgrade_T1, downgrade_T1 with typing uval_typing.
   Qed.
 
+  Lemma caseUnitUp_pctx_T {n Γ} : ⟪ ⊢ caseUnitUp_pctx n : Γ , UVal n → Γ , tunit ⟫.
+  Proof.
+    unfold caseUnitUp_pctx.
+    eauto using caseUnitUp_T with typing.
+  Qed.
+
+
   Lemma caseBoolUp_T {n t Γ} : ⟪ Γ ⊢ t : UVal n ⟫ → ⟪ Γ ⊢ caseBoolUp n t : tbool ⟫.
   Proof.
     unfold caseBoolUp.
     eauto using upgrade_T1, downgrade_T1 with typing uval_typing.
+  Qed.
+
+  Lemma caseBoolUp_pctx_T {n Γ} : ⟪ ⊢ caseBoolUp_pctx n : Γ , UVal n → Γ , tbool ⟫.
+  Proof.
+    unfold caseBoolUp_pctx.
+    eauto using caseBoolUp_T with typing.
   Qed.
 
   Lemma caseProdUp_T {n t Γ} : ⟪ Γ ⊢ t : UVal n ⟫ → ⟪ Γ ⊢ caseProdUp n t : UVal n × UVal n ⟫.
@@ -156,16 +210,34 @@ Section DestructTypes.
     eauto using upgrade_T1, downgrade_T1 with typing uval_typing.
   Qed.
 
+  Lemma caseProdUp_pctx_T {n Γ} : ⟪ ⊢ caseProdUp_pctx n : Γ , UVal n → Γ , UVal n × UVal n ⟫.
+  Proof.
+    unfold caseProdUp_pctx.
+    eauto using caseProdUp_T with typing.
+  Qed.
+
   Lemma caseSumUp_T {n t Γ} : ⟪ Γ ⊢ t : UVal n ⟫ → ⟪ Γ ⊢ caseSumUp n t : UVal n ⊎ UVal n ⟫.
   Proof.
     unfold caseSumUp.
     eauto using upgrade_T1, downgrade_T1 with typing uval_typing.
   Qed.
 
+  Lemma caseSumUp_pctx_T {n Γ} : ⟪ ⊢ caseSumUp_pctx n : Γ , UVal n → Γ , UVal n ⊎ UVal n ⟫.
+  Proof.
+    unfold caseSumUp_pctx.
+    eauto using caseSumUp_T with typing.
+  Qed.
+
   Lemma caseArrUp_T {n t Γ} : ⟪ Γ ⊢ t : UVal n ⟫ → ⟪ Γ ⊢ caseArrUp n t : UVal n ⇒ UVal n ⟫.
   Proof.
     unfold caseArrUp.
     eauto using upgrade_T1, downgrade_T1 with typing uval_typing.
+  Qed.
+
+  Lemma caseArrUp_pctx_T {n Γ} : ⟪ ⊢ caseArrUp_pctx n : Γ , UVal n → Γ , UVal n ⇒ UVal n ⟫.
+  Proof.
+    unfold caseArrUp_pctx.
+    eauto using caseArrUp_T with typing.
   Qed.
 
 End DestructTypes.
@@ -175,6 +247,11 @@ Hint Resolve caseBoolUp_T : uval_typing.
 Hint Resolve caseProdUp_T : uval_typing.
 Hint Resolve caseSumUp_T : uval_typing.
 Hint Resolve caseArrUp_T : uval_typing.
+Hint Resolve caseUnitUp_pctx_T : uval_typing.
+Hint Resolve caseBoolUp_pctx_T : uval_typing.
+Hint Resolve caseProdUp_pctx_T : uval_typing.
+Hint Resolve caseSumUp_pctx_T : uval_typing.
+Hint Resolve caseArrUp_pctx_T : uval_typing.
 
 Local Ltac crush :=
   repeat (
