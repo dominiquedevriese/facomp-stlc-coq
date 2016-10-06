@@ -109,6 +109,15 @@ Section ValrelInversion.
     unfold valrel' in vr; unfold termrel; crush.
   Qed.
 
+  Lemma invert_valrel_pEmulDV_zero {dir w p vs vu} :
+    valrel dir w (pEmulDV 0 p) vs vu →
+    OfType (pEmulDV 0 p) vs vu ∧ vs = S.unit ∧ p = imprecise.
+  Proof.
+    intros vr.
+    rewrite valrel_fixp in vr; unfold valrel' in vr.
+    tauto.
+  Qed.
+
   Lemma invert_valrel_pEmulDV_unk {dir w n p vu} :
     valrel dir w (pEmulDV (S n) p) (S.inl S.unit) vu →
     p = imprecise.
@@ -245,4 +254,12 @@ Section ValrelInversion.
     - right. exists x. right. right. right. right. crush.
       exact (invert_valrel_pEmulDV_inArr vr).
   Qed.
+
 End ValrelInversion.
+
+Ltac invert_valrel_pEmulDV :=
+  match goal with
+      [ H : valrel _ _ (pEmulDV (S _) _) _ _ |- _ ] =>
+      destruct (invert_valrel_pEmulDV H)
+               as [[? ?]|(? & [(?&?)|[(?&?)|[(?&?)|[(?&?)|(?&?)]]]])]
+  end.

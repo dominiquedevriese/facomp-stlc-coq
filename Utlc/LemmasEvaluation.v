@@ -543,7 +543,7 @@ Ltac crushUtlcEvaluationMatchH2 :=
   end.
 
 Ltac inferContext :=
-  simpl; try reflexivity;
+  cbn; try reflexivity;
   let rec inferC acc t t₀ :=
       match t with
         | t₀ => instantiate (1 := acc)
@@ -557,6 +557,7 @@ Ltac inferContext :=
         | caseof ?t1 ?t2 ?t3 => inferC (pctx_cat (pcaseof₁ phole t2 t3) acc) t1 t₀
         | proj₁ ?t1 => inferC (pctx_cat (pproj₁ phole) acc) t1 t₀
         | proj₂ ?t1 => inferC (pctx_cat (pproj₂ phole) acc) t1 t₀
+        | pctx_app t₀ ?C => instantiate (1 := pctx_cat C acc)
         | pctx_app ?t1 (pctx_cat ?C1 ?C2) => inferC (pctx_app (pctx_app t1 C1) C2) t₀
         | pctx_app ?t1 ?C => inferC (pctx_cat C acc) t1 t₀
       end

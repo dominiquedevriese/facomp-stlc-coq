@@ -17,7 +17,7 @@ Require Import LogRel.LemmasIntro.
 Require Import LogRel.LemmasInversion.
 Require Import LogRel.LemmasPseudoType.
 Require Import LogRel.PseudoType.
-Require Import BackTrans.UpgradeDowngrade.
+Require Export BackTrans.UpgradeDowngrade.
 Require Import Omega.
 
 
@@ -32,6 +32,12 @@ Section Intro.
   Definition inArrDwn (n : nat) (t : Tm) := pctx_app t (inArrDwn_pctx n).
   Definition inSumDwn_pctx (n : nat) := papp₂ (downgrade n 1) (inSum_pctx n).
   Definition inSumDwn (n : nat) (t : Tm) := pctx_app t (inSumDwn_pctx n).
+
+  Arguments inUnitDwn n t : simpl never.
+  Arguments inBoolDwn n t : simpl never.
+  Arguments inProdDwn n t : simpl never.
+  Arguments inSumDwn n t : simpl never.
+  Arguments inArrDwn n t : simpl never.
 End Intro.
 
 Section IntroTypes.
@@ -104,6 +110,51 @@ Hint Resolve inSumDwn_T : uval_typing.
 Hint Resolve inArrDwn_T : uval_typing.
 
 Section IntroProps.
+  Lemma inUnitDwn_sub {n ts γs} :
+    (inUnitDwn n ts)[γs] = 
+    (inUnitDwn n (ts[γs])).
+  Proof.
+    unfold inUnitDwn, inUnitDwn_pctx, inUnit_pctx.
+    cbn; repeat crushStlcSyntaxMatchH.
+    eapply downgrade_sub.
+  Qed.
+
+  Lemma inBoolDwn_sub {n ts γs} :
+    (inBoolDwn n ts)[γs] = 
+    (inBoolDwn n (ts[γs])).
+  Proof.
+    unfold inBoolDwn, inBoolDwn_pctx, inBool_pctx.
+    cbn; repeat crushStlcSyntaxMatchH.
+    eapply downgrade_sub.
+  Qed.
+
+  Lemma inProdDwn_sub {n ts γs} :
+    (inProdDwn n ts)[γs] = 
+    (inProdDwn n (ts[γs])).
+  Proof.
+    unfold inProdDwn, inProdDwn_pctx, inProd_pctx.
+    cbn; repeat crushStlcSyntaxMatchH.
+    eapply downgrade_sub.
+  Qed.
+
+  Lemma inSumDwn_sub {n ts γs} :
+    (inSumDwn n ts)[γs] = 
+    (inSumDwn n (ts[γs])).
+  Proof.
+    unfold inSumDwn, inSumDwn_pctx, inSum_pctx.
+    cbn; repeat crushStlcSyntaxMatchH.
+    eapply downgrade_sub.
+  Qed.
+
+  Lemma inArrDwn_sub {n ts γs} :
+    (inArrDwn n ts)[γs] = 
+    (inArrDwn n (ts[γs])).
+  Proof.
+    unfold inArrDwn, inArrDwn_pctx, inArr_pctx.
+    cbn; repeat crushStlcSyntaxMatchH.
+    eapply downgrade_sub.
+  Qed.
+
   Lemma termrel_inUnitDwn {d w n p vs vu} :
     dir_world_prec n w d p →
     valrel d w ptunit vs vu →
@@ -166,78 +217,84 @@ Section IntroProps.
 End IntroProps.
 
 Section Destruct.
-  Definition caseUnitUp (n : nat) (t : Tm) := caseUnit n (app (upgrade n 1) t).
-  Definition caseBoolUp (n : nat) (t : Tm) := caseBool n (app (upgrade n 1) t).
-  Definition caseProdUp (n : nat) (t : Tm) := caseProd n (app (upgrade n 1) t).
-  Definition caseSumUp (n : nat) (t : Tm) := caseSum n (app (upgrade n 1) t).
-  Definition caseArrUp (n : nat) (t : Tm) := caseArr n (app (upgrade n 1) t).
-  Definition caseUnitUp_pctx (n : nat) := papp₂ (S.abs (UVal n) (caseUnit n (app (upgrade n 1) (var 0)))) phole.
-  Definition caseBoolUp_pctx (n : nat) := papp₂ (S.abs (UVal n) (caseBool n (app (upgrade n 1) (var 0)))) phole.
-  Definition caseProdUp_pctx (n : nat) := papp₂ (S.abs (UVal n) (caseProd n (app (upgrade n 1) (var 0)))) phole.
-  Definition caseSumUp_pctx (n : nat) := papp₂ (S.abs (UVal n) (caseSum n (app (upgrade n 1) (var 0)))) phole.
-  Definition caseArrUp_pctx (n : nat) := papp₂ (S.abs (UVal n) (caseArr n (app (upgrade n 1) (var 0)))) phole.
+  Definition caseUnitUp_pctx (n : nat) := pctx_cat (papp₂ (upgrade n 1) phole) caseUnit_pctx.
+  Definition caseBoolUp_pctx (n : nat) := pctx_cat (papp₂ (upgrade n 1) phole) caseBool_pctx.
+  Definition caseProdUp_pctx (n : nat) := pctx_cat (papp₂ (upgrade n 1) phole) (caseProd_pctx n).
+  Definition caseSumUp_pctx (n : nat) := pctx_cat (papp₂ (upgrade n 1) phole) (caseSum_pctx n).
+  Definition caseArrUp_pctx (n : nat) := pctx_cat (papp₂ (upgrade n 1) phole) (caseArr_pctx n).
+
+  Definition caseUnitUp (n : nat) (t : Tm) := pctx_app t (caseUnitUp_pctx n).
+  Definition caseBoolUp (n : nat) (t : Tm) := pctx_app t (caseBoolUp_pctx n).
+  Definition caseProdUp (n : nat) (t : Tm) := pctx_app t (caseProdUp_pctx n).
+  Definition caseSumUp (n : nat) (t : Tm) := pctx_app t (caseSumUp_pctx n).
+  Definition caseArrUp (n : nat) (t : Tm) := pctx_app t (caseArrUp_pctx n).
 End Destruct.
 
-Section DestructTypes.
-  Lemma caseUnitUp_T {n t Γ} : ⟪ Γ ⊢ t : UVal n ⟫ → ⟪ Γ ⊢ caseUnitUp n t : tunit ⟫.
-  Proof.
-    unfold caseUnitUp.
-    eauto using upgrade_T1, downgrade_T1 with typing uval_typing.
-  Qed.
+Arguments caseArrUp n t : simpl never.
+Arguments caseUnitUp n t : simpl never.
+Arguments caseBoolUp n t : simpl never.
+Arguments caseProdUp n t : simpl never.
+Arguments caseSumUp n t : simpl never.
 
+Section DestructTypes.
   Lemma caseUnitUp_pctx_T {n Γ} : ⟪ ⊢ caseUnitUp_pctx n : Γ , UVal n → Γ , tunit ⟫.
   Proof.
     unfold caseUnitUp_pctx.
-    eauto using caseUnitUp_T with typing.
+    eauto using caseUnit_pctx_T, upgrade_T1, downgrade_T1 with typing uval_typing.
   Qed.
 
-
-  Lemma caseBoolUp_T {n t Γ} : ⟪ Γ ⊢ t : UVal n ⟫ → ⟪ Γ ⊢ caseBoolUp n t : tbool ⟫.
+  Lemma caseUnitUp_T {n t Γ} : ⟪ Γ ⊢ t : UVal n ⟫ → ⟪ Γ ⊢ caseUnitUp n t : tunit ⟫.
   Proof.
-    unfold caseBoolUp.
-    eauto using upgrade_T1, downgrade_T1 with typing uval_typing.
+    unfold caseUnitUp.
+    eauto using caseUnitUp_pctx_T with typing.
   Qed.
 
   Lemma caseBoolUp_pctx_T {n Γ} : ⟪ ⊢ caseBoolUp_pctx n : Γ , UVal n → Γ , tbool ⟫.
   Proof.
     unfold caseBoolUp_pctx.
-    eauto using caseBoolUp_T with typing.
+    eauto using caseBool_pctx_T, upgrade_T1, downgrade_T1 with typing uval_typing.
   Qed.
 
-  Lemma caseProdUp_T {n t Γ} : ⟪ Γ ⊢ t : UVal n ⟫ → ⟪ Γ ⊢ caseProdUp n t : UVal n × UVal n ⟫.
+  Lemma caseBoolUp_T {n t Γ} : ⟪ Γ ⊢ t : UVal n ⟫ → ⟪ Γ ⊢ caseBoolUp n t : tbool ⟫.
   Proof.
-    unfold caseProdUp.
-    eauto using upgrade_T1, downgrade_T1 with typing uval_typing.
+    unfold caseBoolUp.
+    eauto using caseBoolUp_pctx_T with typing.
   Qed.
 
   Lemma caseProdUp_pctx_T {n Γ} : ⟪ ⊢ caseProdUp_pctx n : Γ , UVal n → Γ , UVal n × UVal n ⟫.
   Proof.
     unfold caseProdUp_pctx.
-    eauto using caseProdUp_T with typing.
+    eauto using caseProd_pctx_T, upgrade_T1, downgrade_T1 with typing uval_typing.
   Qed.
 
-  Lemma caseSumUp_T {n t Γ} : ⟪ Γ ⊢ t : UVal n ⟫ → ⟪ Γ ⊢ caseSumUp n t : UVal n ⊎ UVal n ⟫.
+  Lemma caseProdUp_T {n t Γ} : ⟪ Γ ⊢ t : UVal n ⟫ → ⟪ Γ ⊢ caseProdUp n t : UVal n × UVal n ⟫.
   Proof.
-    unfold caseSumUp.
-    eauto using upgrade_T1, downgrade_T1 with typing uval_typing.
+    unfold caseProdUp.
+    eauto using caseProdUp_pctx_T with typing.
   Qed.
 
   Lemma caseSumUp_pctx_T {n Γ} : ⟪ ⊢ caseSumUp_pctx n : Γ , UVal n → Γ , UVal n ⊎ UVal n ⟫.
   Proof.
     unfold caseSumUp_pctx.
-    eauto using caseSumUp_T with typing.
+    eauto using caseSum_pctx_T, upgrade_T1, downgrade_T1 with typing uval_typing.
   Qed.
 
-  Lemma caseArrUp_T {n t Γ} : ⟪ Γ ⊢ t : UVal n ⟫ → ⟪ Γ ⊢ caseArrUp n t : UVal n ⇒ UVal n ⟫.
+  Lemma caseSumUp_T {n t Γ} : ⟪ Γ ⊢ t : UVal n ⟫ → ⟪ Γ ⊢ caseSumUp n t : UVal n ⊎ UVal n ⟫.
   Proof.
-    unfold caseArrUp.
-    eauto using upgrade_T1, downgrade_T1 with typing uval_typing.
+    unfold caseSumUp.
+    eauto using caseSumUp_pctx_T with typing.
   Qed.
 
   Lemma caseArrUp_pctx_T {n Γ} : ⟪ ⊢ caseArrUp_pctx n : Γ , UVal n → Γ , UVal n ⇒ UVal n ⟫.
   Proof.
     unfold caseArrUp_pctx.
-    eauto using caseArrUp_T with typing.
+    eauto using caseArr_pctx_T, upgrade_T1, downgrade_T1 with typing uval_typing.
+  Qed.
+
+  Lemma caseArrUp_T {n t Γ} : ⟪ Γ ⊢ t : UVal n ⟫ → ⟪ Γ ⊢ caseArrUp n t : UVal n ⇒ UVal n ⟫.
+  Proof.
+    unfold caseArrUp.
+    eauto using caseArrUp_pctx_T with typing.
   Qed.
 
 End DestructTypes.
@@ -272,13 +329,59 @@ Local Ltac crush :=
   subst.
 
 Section DestructProps.
+  Lemma caseUnitUp_sub {n ts γs} :
+    (caseUnitUp n ts)[γs] = 
+    (caseUnitUp n (ts[γs])).
+  Proof.
+    unfold caseUnitUp, caseUnitUp_pctx, caseUnit_pctx.
+    simpl.
+    cbn; repeat crushStlcSyntaxMatchH.
+    eapply upgrade_sub.
+  Qed.
+  
+  Lemma caseBoolUp_sub {n ts γs} :
+    (caseBoolUp n ts)[γs] = 
+    (caseBoolUp n (ts[γs])).
+  Proof.
+    unfold caseBoolUp, caseBool, caseUVal.
+    simpl; repeat crushStlcSyntaxMatchH.
+    eapply upgrade_sub.
+  Qed.
+  
+  Lemma caseProdUp_sub {n ts γs} :
+    (caseProdUp n ts)[γs] = 
+    (caseProdUp n (ts[γs])).
+  Proof.
+    unfold caseProdUp, caseProd, caseUVal.
+    simpl; repeat crushStlcSyntaxMatchH.
+    eapply upgrade_sub.
+  Qed.
+  
+  Lemma caseSumUp_sub {n ts γs} :
+    (caseSumUp n ts)[γs] = 
+    (caseSumUp n (ts[γs])).
+  Proof.
+    unfold caseSumUp, caseSum, caseUVal.
+    simpl; repeat crushStlcSyntaxMatchH.
+    eapply upgrade_sub.
+  Qed.
+  
+  Lemma caseArrUp_sub {n ts γs} :
+    (caseArrUp n ts)[γs] = 
+    (caseArrUp n (ts[γs])).
+  Proof.
+    unfold caseArrUp, caseArr, caseUVal.
+    simpl; repeat crushStlcSyntaxMatchH.
+    eapply upgrade_sub.
+  Qed.
+  
   (* pff how to shorten the following? *)
   Lemma invert_valrel_pEmulDV_for_caseUValUnit {d w n p vs vu} :
     valrel d w (pEmulDV (S n) p) vs vu →
     (vs = (inUnit n S.unit) ∧ vu = U.unit ∧
-            caseUnit n vs -->* S.unit) ∨
-    (p = imprecise ∧ (caseUnit n vs) ⇑) ∨
-    (vu ≠ U.unit ∧ (caseUnit n vs) ⇑).
+            caseUnit vs -->* S.unit) ∨
+    (p = imprecise ∧ (caseUnit vs) ⇑) ∨
+    (vu ≠ U.unit ∧ (caseUnit vs) ⇑).
   Proof.
     intros vr.
     apply invert_valrel_pEmulDV in vr.
@@ -291,19 +394,21 @@ Section DestructProps.
       assert (S.Value S.unit) by crush.
       eauto using caseUVal_eval_unit. 
     - right. right.
-      enough (vu ≠ U.unit ∧ caseUnit n vs -->* stlcOmega tunit) as (nunit & eval)
+      enough (vu ≠ U.unit ∧ caseUnit vs -->* stlcOmega tunit) as (nunit & eval)
           by eauto using divergence_closed_under_evalstar, stlcOmega_div.
       destruct other_cases as [ [? vr] | [ [? vr] | [[? vr] | [? vr]]]];
       destruct (valrel_implies_Value vr); subst;
       crush;
+      unfold caseUnit, caseUnit_pctx;
       repeat match goal with
                  [ |- context [ ((stlcOmega ?tau) [?γ]) ] ]=> rewrite stlcOmega_sub
+               | [ |- context [ pctx_app ?t (caseUVal_pctx ?tunk ?tunit ?tbool ?tprod ?tsum ?tarr) ] ]=> change (pctx_app ?t (caseUVal_pctx ?tunk ?tunit ?tbool ?tprod ?tsum ?tarr)) with (caseUVal t tunk tunit tbool tprod tsum tarr)
                | [ H : _ ∧ _ |- _ ]=> destruct H
                | [ H : ∃ _, _ |- _ ]=> destruct H
                | [ H : _ ∨ _ |- _ ]=> destruct H
-               | [ |- caseUnit _ _ -->* stlcOmega tunit   ] => 
-                (replace (stlcOmega tunit) with ((stlcOmega tunit )[ beta1 x ]) by eapply stlcOmega_sub;
-                 eauto using caseUVal_eval_bool, caseUVal_eval_prod, caseUVal_eval_sum, caseUVal_eval_arr)
+               | [ |- caseUVal _ _ _ _ _ _ _ -->* stlcOmega tunit   ] => 
+                 (replace (stlcOmega tunit) with ((stlcOmega tunit )[ beta1 x ]) at 6 by eapply stlcOmega_sub;
+                  eauto using caseUVal_eval_bool, caseUVal_eval_prod, caseUVal_eval_sum, caseUVal_eval_arr)
              end;
       subst; inversion 1.
   Qed.
@@ -311,7 +416,7 @@ Section DestructProps.
   Lemma termrel_caseUValUnit {d w n p vs vu}:
     dir_world_prec n w d p →
     valrel d w (pEmulDV (S n) p) vs vu →
-    termrel d w ptunit (caseUnit n vs) (U.seq vu U.unit).
+    termrel d w ptunit (caseUnit vs) (U.seq vu U.unit).
   Proof.
     unfold caseUnit.
     intros dwp vr.
@@ -335,10 +440,10 @@ Section DestructProps.
   Lemma invert_valrel_pEmulDV_for_caseUValBool {d w n p vs vu} :
     valrel d w (pEmulDV (S n) p) vs vu →
     (∃ vs', vs = (inBool n vs') ∧ 
-                caseBool n vs -->* vs' ∧
+                caseBool vs -->* vs' ∧
                 valrel d w ptbool vs' vu) ∨
-    (p = imprecise ∧ (caseBool n vs) ⇑) ∨
-    (vu ≠ U.true ∧ vu ≠ U.false ∧ (caseBool n vs) ⇑).
+    (p = imprecise ∧ (caseBool vs) ⇑) ∨
+    (vu ≠ U.true ∧ vu ≠ U.false ∧ (caseBool vs) ⇑).
   Proof.
     intros vr.
     apply invert_valrel_pEmulDV in vr.
@@ -359,21 +464,66 @@ Section DestructProps.
         assert (S.Value vs') by (destruct H0; subst; crush);
         eauto using caseUVal_eval_bool. 
       + right. right.
-        enough (vu ≠ U.true ∧ vu ≠ U.false ∧ caseBool n vs -->* stlcOmega tbool) as (? & ? & ?)
+        enough (vu ≠ U.true ∧ vu ≠ U.false ∧ caseBool vs -->* stlcOmega tbool) as (? & ? & ?)
+            by eauto using divergence_closed_under_evalstar, stlcOmega_div.
+        destruct other_cases as [ [? vr] | [ [? vr] | [[? vr] | [? vr]]]];
+          destruct (valrel_implies_Value vr); subst;
+          crush;
+          unfold caseBool, caseBool_pctx;
+          repeat match goal with
+                     [ |- context [ ((stlcOmega ?tau) [?γ]) ] ]=> rewrite stlcOmega_sub
+                   | [ |- context [ pctx_app ?t (caseUVal_pctx ?tunk ?tunit ?tbool ?tprod ?tsum ?tarr) ] ]=> change (pctx_app ?t (caseUVal_pctx ?tunk ?tunit ?tbool ?tprod ?tsum ?tarr)) with (caseUVal t tunk tunit tbool tprod tsum tarr)
+                   | [ H : _ ∧ _ |- _ ]=> destruct H
+                   | [ H : ∃ _, _ |- _ ]=> destruct H
+                   | [ H : _ ∨ _ |- _ ]=> destruct H
+                   | [ |- caseUVal (_ _ ?vs') _ _ _ _ _ _ -->* stlcOmega tbool   ] => 
+                     (replace (stlcOmega tbool) with ((stlcOmega tbool )[ beta1 vs' ]) at 6 by eapply stlcOmega_sub;
+                      eauto using caseUVal_eval_unit, caseUVal_eval_bool, caseUVal_eval_prod, caseUVal_eval_sum, caseUVal_eval_arr)
+                 end;
+          subst; try inversion 1.
+  Qed.
+
+  Lemma invert_valrel_pEmulDV_for_caseUValArr {d w n p vs vu} :
+    valrel d w (pEmulDV (S n) p) vs vu →
+    (∃ vs', vs = (inArr n vs') ∧ 
+                caseArr n vs -->* vs' ∧
+                valrel d w (ptarr (pEmulDV n p) (pEmulDV n p)) vs' vu) ∨
+    (p = imprecise ∧ (caseArr n vs) ⇑) ∨
+    ((not (∃ tu', vu = U.abs tu')) ∧ (caseArr n vs) ⇑).
+  Proof.
+    intros vr.
+    apply invert_valrel_pEmulDV in vr.
+    destruct vr as [[? ?] | (vs' & cases)]; 
+      subst; unfold caseArr.
+    - right. left.
+      eauto using divergence_closed_under_evalstar, caseUVal_eval_unk, stlcOmega_div.
+    - assert (cases' : (vs = inArr n vs' ∧ valrel d w (ptarr (pEmulDV n p) (pEmulDV n p)) vs' vu)
+                        ∨ (vs = inBool n vs' ∧ valrel d w ptbool vs' vu)
+                        ∨ (vs = inUnit n vs' ∧ valrel d w ptunit vs' vu)
+                        ∨ (vs = inProd n vs' ∧ valrel d w (ptprod (pEmulDV n p) (pEmulDV n p)) vs' vu)
+                        ∨ (vs = inSum n vs' ∧ valrel d w (ptsum (pEmulDV n p) (pEmulDV n p)) vs' vu))
+        by (destruct cases as [?|[?|[?|[?|?]]]]; auto).
+      destruct cases' as [[? vr] | other_cases]; subst.
+      + left. exists vs'.
+        destruct (valrel_implies_Value vr).
+        change vs' with ((var 0) [beta1 vs']) at 4.
+        eauto using caseUVal_eval_arr. 
+      + right. right.
+        enough ((not (∃ tu', vu = U.abs tu') ∧ caseArr n vs -->* stlcOmega (UVal n ⇒ UVal n))) as (? & ?)
             by eauto using divergence_closed_under_evalstar, stlcOmega_div.
         destruct other_cases as [ [? vr] | [ [? vr] | [[? vr] | [? vr]]]];
           destruct (valrel_implies_Value vr); subst;
           crush;
           repeat match goal with
-                     [ |- context [ ((stlcOmega ?tau) [?γ]) ] ]=> rewrite stlcOmega_sub
+                     [ |- context [ ((stlcOmega _) [?γ]) ] ]=> rewrite stlcOmega_sub
                    | [ H : _ ∧ _ |- _ ]=> destruct H
                    | [ H : ∃ _, _ |- _ ]=> destruct H
                    | [ H : _ ∨ _ |- _ ]=> destruct H
-                   | [ |- caseBool _ (_ _ ?vs') -->* stlcOmega tbool   ] => 
-                     (replace (stlcOmega tbool) with ((stlcOmega tbool )[ beta1 vs' ]) by eapply stlcOmega_sub;
+                   | [ |- caseArr _ (_ _ ?vs') -->* stlcOmega (UVal n ⇒ UVal n)] => 
+                     (replace (stlcOmega (UVal n ⇒ UVal n)) with ((stlcOmega (UVal n ⇒ UVal n))[ beta1 vs' ]) by eapply stlcOmega_sub;
                       eauto using caseUVal_eval_unit, caseUVal_eval_bool, caseUVal_eval_prod, caseUVal_eval_sum, caseUVal_eval_arr)
                  end;
-          subst; try inversion 1.
+          subst; intros (? & eq); inversion eq.
   Qed.
 
   (* Lemma termrel_caseUValBool {d w n p vs vu}: *)

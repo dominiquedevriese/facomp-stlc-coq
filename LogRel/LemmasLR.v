@@ -293,6 +293,15 @@ Section ClosedLR.
     eauto using termrel_antired_star.
   Qed.
 
+  Lemma termrel_antired_eval_left {ts ts' tu W d τ} :
+    S.eval ts ts' →
+    termrel d W τ ts' tu →
+    termrel d W τ ts tu.
+  Proof.
+    eauto using termrel_antired_star_left with eval.
+  Qed.
+
+
   (* Lemma termrel_antired' {ts ts' tu tu' W d τ i j} W' : *)
   (*   S.evaln ts ts' i → *)
   (*   U.evaln tu tu' j →  *)

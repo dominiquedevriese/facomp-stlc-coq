@@ -124,6 +124,10 @@ Corollary divergence_closed_under_evalcontext t :
   t⇑ → ∀ p, ECtx p → (pctx_app t p)⇑.
 Proof. eauto using inversion_termination_evalcontext. Qed.
 
+Corollary divergence_closed_under_evalcontext' {t C t'} :
+  t⇑ → t' = pctx_app t C → ECtx C → t'⇑.
+Proof. intros; subst; eauto using divergence_closed_under_evalcontext. Qed.
+
 Definition normal' (t : Tm) := ∀ t', ¬ (t --> t').
 Lemma values_are_normal' {t : Tm} : Value t -> normal' t.
 Proof. induction 2 using eval_ind'; crush. Qed.
@@ -338,7 +342,7 @@ Section EvalInContext.
 End EvalInContext.
 
 Ltac inferContext :=
-  simpl; try reflexivity;
+  cbn; try reflexivity;
   let rec inferC acc t t₀ :=
       match t with
         | t₀ => instantiate (1 := acc)
@@ -351,13 +355,14 @@ Ltac inferContext :=
         | caseof ?t1 ?t2 ?t3 => inferC (pctx_cat (pcaseof₁ phole t2 t3) acc) t1 t₀
         | proj₁ ?t1 => inferC (pctx_cat (pproj₁ phole) acc) t1 t₀
         | proj₂ ?t1 => inferC (pctx_cat (pproj₂ phole) acc) t1 t₀
+        | pctx_app t₀ ?C => instantiate (1 := pctx_cat C acc)
         | pctx_app ?t1 (pctx_cat ?C1 ?C2) => inferC (pctx_app (pctx_app t1 C1) C2) t₀
         | pctx_app ?t1 ?C => inferC (pctx_cat C acc) t1 t₀
       end
   in repeat match goal with
               | [ |- ?t = pctx_app ?t₀ (pctx_cat ?C1 ?C2) ] => (rewrite -> ?pctx_cat_app)
               | [ |- pctx_app ?t0 ?C = pctx_app ?t' ?C ] => f_equal
-              | [ |- ?t = pctx_app ?t₀ ?C ] => (inferC phole t t₀; rewrite -> ?pctx_cat_app; simpl; rewrite -> ?pctx_cat_app in *; reflexivity)
+              | [ |- ?t = pctx_app ?t₀ ?C ] => (inferC phole t t₀; rewrite -> ?pctx_cat_app; cbn; rewrite -> ?pctx_cat_app in *; reflexivity)
             end.
   
 Lemma test_inferContext (t : Tm) (C' : PCtx): True.
@@ -366,3 +371,10 @@ Proof.
   inferContext.
   trivial.
 Qed.
+
+Ltac crushStlcEval :=
+  match goal with
+      [ |- ECtx (pctx_cat _ _) ] => eapply ectx_cat
+    | [ |- ECtx (papp₁ _ _) ] => unfold ECtx
+    | [ |- ECtx (papp₂ _ _) ] => unfold ECtx
+  end.

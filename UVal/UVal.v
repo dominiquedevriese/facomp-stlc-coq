@@ -141,13 +141,32 @@ Qed.
 
 Hint Resolve caseV0_T : uval_typing.
 
-Definition caseUVal (n : nat) (tscrut tunk tcunit tcbool tcprod tcsum tcarr : Tm) :=
-  caseof tscrut
+Definition caseUVal_pctx (tunk tcunit tcbool tcprod tcsum tcarr : Tm) : PCtx :=
+  pcaseof₁ phole
          (tunk [wkm])
          (caseV0 tcunit
                  (caseV0 tcbool
                          (caseV0 tcprod
                                  (caseV0 tcarr tcsum)))).
+Definition caseUVal (tscrut tunk tcunit tcbool tcprod tcsum tcarr : Tm) :=
+  pctx_app tscrut (caseUVal_pctx tunk tcunit tcbool tcprod tcsum tcarr).
+
+Arguments caseUVal tscrut tunk tcunit tcbool tcprod tcsum tcarr : simpl never.
+
+Lemma caseUVal_pctx_T {Γ n tunk tcunit tcbool tcprod tcsum tcarr τ} :
+  ⟪ Γ ⊢ tunk : τ ⟫ →
+  ⟪ Γ ▻ tunit ⊢ tcunit : τ ⟫ →
+  ⟪ Γ ▻ tbool ⊢ tcbool : τ ⟫ →
+  ⟪ Γ ▻ (UVal n × UVal n) ⊢ tcprod : τ ⟫ →
+  ⟪ Γ ▻ (UVal n ⊎ UVal n) ⊢ tcsum : τ ⟫ →
+  ⟪ Γ ▻ (UVal n ⇒ UVal n) ⊢ tcarr : τ ⟫ →
+  ⟪ ⊢ caseUVal_pctx tunk tcunit tcbool tcprod tcsum tcarr : Γ , UVal (S n) → Γ , τ ⟫.
+Proof.
+  unfold caseUVal_pctx. 
+  crushTyping.
+  eauto with typing uval_typing.
+Qed.
+  
 
 Lemma caseUVal_T {Γ n tscrut tunk tcunit tcbool tcprod tcsum tcarr τ} :
   ⟪ Γ ⊢ tscrut : UVal (S n) ⟫ →
@@ -157,11 +176,10 @@ Lemma caseUVal_T {Γ n tscrut tunk tcunit tcbool tcprod tcsum tcarr τ} :
   ⟪ Γ ▻ (UVal n × UVal n) ⊢ tcprod : τ ⟫ →
   ⟪ Γ ▻ (UVal n ⊎ UVal n) ⊢ tcsum : τ ⟫ →
   ⟪ Γ ▻ (UVal n ⇒ UVal n) ⊢ tcarr : τ ⟫ →
-  ⟪ Γ ⊢ caseUVal n tscrut tunk tcunit tcbool tcprod tcsum tcarr : τ ⟫.
+  ⟪ Γ ⊢ caseUVal tscrut tunk tcunit tcbool tcprod tcsum tcarr : τ ⟫.
 Proof.
   unfold caseUVal. 
-  crushTyping.
-  eauto with typing uval_typing.
+  eauto using caseUVal_pctx_T with typing.
 Qed.
 
 Arguments UVal n : simpl never.
@@ -176,6 +194,7 @@ Hint Resolve inBool_pctx_T : uval_typing.
 Hint Resolve inProd_pctx_T : uval_typing.
 Hint Resolve inSum_pctx_T : uval_typing.
 Hint Resolve inArr_pctx_T : uval_typing.
+Hint Resolve caseUVal_pctx_T : uval_typing.
 Hint Resolve caseUVal_T : uval_typing.
 
 Local Ltac crush :=
@@ -313,9 +332,9 @@ Ltac canonUVal :=
   end.
 
 Lemma caseUVal_eval_unk {n tunk tcunit tcbool tcprod tcsum tcarr} :
-  caseUVal n (unkUVal (S n)) tunk tcunit tcbool tcprod tcsum tcarr -->* tunk.
+  caseUVal (unkUVal (S n)) tunk tcunit tcbool tcprod tcsum tcarr -->* tunk.
 Proof.
-  unfold caseUVal, unkUVal.
+  unfold caseUVal, unkUVal; simpl.
   (* why doesn't crush do the following? *)
   assert (Value (inl unit)) by (simpl; trivial).
   crushEvalsInCaseUVal.
@@ -323,7 +342,7 @@ Qed.
   
 Lemma caseUVal_eval_unit {n tunk tcunit tcbool tcprod tcsum tcarr v} :
   Value v →
-  caseUVal n (inUnit n v) tunk tcunit tcbool tcprod tcsum tcarr -->* tcunit [beta1 v].
+  caseUVal (inUnit n v) tunk tcunit tcbool tcprod tcsum tcarr -->* tcunit [beta1 v].
 Proof.
   intros vv.
   unfold caseUVal, inUnit; simpl.
@@ -332,7 +351,7 @@ Qed.
   
 Lemma caseUVal_eval_bool {n tunk tcunit tcbool tcprod tcsum tcarr v} :
   Value v →
-  caseUVal n (inBool n v) tunk tcunit tcbool tcprod tcsum tcarr -->* tcbool [beta1 v].
+  caseUVal (inBool n v) tunk tcunit tcbool tcprod tcsum tcarr -->* tcbool [beta1 v].
 Proof.
   intros vv.
   unfold caseUVal, inBool; simpl.
@@ -341,7 +360,7 @@ Qed.
   
 Lemma caseUVal_eval_prod {n tunk tcunit tcbool tcprod tcsum tcarr v} :
   Value v →
-  caseUVal n (inProd n v) tunk tcunit tcbool tcprod tcsum tcarr -->* tcprod [beta1 v].
+  caseUVal (inProd n v) tunk tcunit tcbool tcprod tcsum tcarr -->* tcprod [beta1 v].
 Proof.
   intros vv.
   unfold caseUVal, inProd; simpl.
@@ -350,7 +369,7 @@ Qed.
 
 Lemma caseUVal_eval_sum {n tunk tcunit tcbool tcprod tcsum tcarr v} :
   Value v →
-  caseUVal n (inSum n v) tunk tcunit tcbool tcprod tcsum tcarr -->* tcsum [beta1 v].
+  caseUVal (inSum n v) tunk tcunit tcbool tcprod tcsum tcarr -->* tcsum [beta1 v].
 Proof.
   intros vv.
   unfold caseUVal, inSum; simpl.
@@ -359,46 +378,140 @@ Qed.
 
 Lemma caseUVal_eval_arr {n tunk tcunit tcbool tcprod tcsum tcarr v} :
   Value v →
-  caseUVal n (inArr n v) tunk tcunit tcbool tcprod tcsum tcarr -->* tcarr [beta1 v].
+  caseUVal (inArr n v) tunk tcunit tcbool tcprod tcsum tcarr -->* tcarr [beta1 v].
 Proof.
   intros vv.
   unfold caseUVal, inArr; simpl.
   crushEvalsInCaseUVal.
 Qed.
 
-Lemma caseUVal_sub {n t tunk tcunit tcbool tcprod tcsum tcarr} γ :
-  (caseUVal n t tunk tcunit tcbool tcprod tcsum tcarr)[γ] =
-  caseUVal n (t[γ]) (tunk[γ]) (tcunit[γ↑]) (tcbool[γ↑]) (tcprod[γ↑]) (tcsum[γ↑]) (tcarr[γ↑]).
+Lemma caseUVal_sub {t tunk tcunit tcbool tcprod tcsum tcarr} γ :
+  (caseUVal t tunk tcunit tcbool tcprod tcsum tcarr)[γ] =
+  caseUVal (t[γ]) (tunk[γ]) (tcunit[γ↑]) (tcbool[γ↑]) (tcprod[γ↑]) (tcsum[γ↑]) (tcarr[γ↑]).
 Proof.
-  unfold caseUVal, caseV0. cbn. 
+  unfold caseUVal, caseUVal_pctx, caseV0. cbn. 
   crush; 
     rewrite <- ?apply_wkm_comm, <- ?(apply_wkm_up_comm); 
     reflexivity.
 Qed.  
 
 
-Arguments caseUVal n tscrut tunk tcunit tcbool tcprod tcsum tcarr : simpl never.
+Arguments caseUVal tscrut tunk tcunit tcbool tcprod tcsum tcarr : simpl never.
+Arguments caseUVal_pctx tunk tcunit tcbool tcprod tcsum tcarr : simpl never.
+
+Lemma caseUVal_pctx_ECtx {tunk tcunit tcbool tcprod tcsum tcarr} :
+  ECtx (caseUVal_pctx tunk tcunit tcbool tcprod tcsum tcarr).
+Proof.
+  simpl; trivial.
+Qed.
 
 
 (* Definition caseUVal (n : nat) (tscrut tunk tcunit tcbool tcprod tcsum tcarr : Tm) := *)
 
-Definition caseUnit n t := caseUVal n t (stlcOmega tunit) (var 0) (stlcOmega tunit) (stlcOmega tunit) (stlcOmega tunit) (stlcOmega tunit).
-Definition caseBool n t := caseUVal n t (stlcOmega tbool) (stlcOmega tbool) (var 0) (stlcOmega tbool) (stlcOmega tbool) (stlcOmega tbool).
-Definition caseProd n t := caseUVal n t (stlcOmega (UVal n × UVal n)) (stlcOmega (UVal n × UVal n)) (stlcOmega (UVal n × UVal n)) (var 0) (stlcOmega (UVal n × UVal n)) (stlcOmega (UVal n × UVal n)).
-Definition caseSum n t := caseUVal n t (stlcOmega (UVal n ⊎ UVal n)) (stlcOmega (UVal n ⊎ UVal n)) (stlcOmega (UVal n ⊎ UVal n)) (stlcOmega (UVal n ⊎ UVal n)) (var 0) (stlcOmega (UVal n ⊎ UVal n)).
-Definition caseArr n t := caseUVal n t (stlcOmega (UVal n ⇒ UVal n)) (stlcOmega (UVal n ⇒ UVal n)) (stlcOmega (UVal n ⇒ UVal n)) (stlcOmega (UVal n ⇒ UVal n)) (stlcOmega (UVal n ⇒ UVal n)) (var 0).
+Definition caseUnit_pctx := caseUVal_pctx (stlcOmega tunit) (var 0) (stlcOmega tunit) (stlcOmega tunit) (stlcOmega tunit) (stlcOmega tunit).
+Definition caseBool_pctx := caseUVal_pctx (stlcOmega tbool) (stlcOmega tbool) (var 0) (stlcOmega tbool) (stlcOmega tbool) (stlcOmega tbool).
+Definition caseProd_pctx n := caseUVal_pctx (stlcOmega (UVal n × UVal n)) (stlcOmega (UVal n × UVal n)) (stlcOmega (UVal n × UVal n)) (var 0) (stlcOmega (UVal n × UVal n)) (stlcOmega (UVal n × UVal n)).
+Definition caseSum_pctx n := caseUVal_pctx (stlcOmega (UVal n ⊎ UVal n)) (stlcOmega (UVal n ⊎ UVal n)) (stlcOmega (UVal n ⊎ UVal n)) (stlcOmega (UVal n ⊎ UVal n)) (var 0) (stlcOmega (UVal n ⊎ UVal n)).
+Definition caseArr_pctx n := caseUVal_pctx (stlcOmega (UVal n ⇒ UVal n)) (stlcOmega (UVal n ⇒ UVal n)) (stlcOmega (UVal n ⇒ UVal n)) (stlcOmega (UVal n ⇒ UVal n)) (stlcOmega (UVal n ⇒ UVal n)) (var 0).
+Definition caseUnit t := pctx_app t caseUnit_pctx.
+Definition caseBool t := pctx_app t caseBool_pctx.
+Definition caseProd n t := pctx_app t (caseProd_pctx n).
+Definition caseSum n t := pctx_app t (caseSum_pctx n).
+Definition caseArr n t := pctx_app t (caseArr_pctx n).
+
+Lemma caseUnit_pctx_ECtx : ECtx caseUnit_pctx.
+Proof.
+  simpl; trivial.
+Qed.
+
+Lemma caseBool_pctx_ECtx : ECtx caseBool_pctx.
+Proof.
+  simpl; trivial.
+Qed.
+
+Lemma caseProd_pctx_ECtx {n}: ECtx (caseProd_pctx n).
+Proof.
+  simpl; trivial.
+Qed.
+
+Lemma caseSum_pctx_ECtx {n}: ECtx (caseSum_pctx n).
+Proof.
+  simpl; trivial.
+Qed.
+
+Lemma caseArr_pctx_ECtx {n}: ECtx (caseArr_pctx n).
+Proof.
+  simpl; trivial.
+Qed.
+
+Lemma caseUnit_sub {t γ} :
+  (caseUnit t) [γ] = caseUnit (t [γ]).
+Proof.
+  unfold caseUnit; crush.
+Qed.
+
+Lemma caseBool_sub {t γ} :
+  caseBool t [γ] = caseBool (t [γ]).
+Proof.
+  unfold caseBool; crush.
+Qed.
+
+Lemma caseProd_sub {n t γ} :
+  caseProd n t [γ] = caseProd n (t [γ]).
+Proof.
+  unfold caseProd; crush.
+Qed.
+
+Lemma caseSum_sub {n t γ} :
+  caseSum n t [γ] = caseSum n (t [γ]).
+Proof.
+  unfold caseSum; crush.
+Qed.
+
+Lemma caseArr_sub {n t γ} :
+  (caseArr n t) [γ] = caseArr n (t [γ]).
+Proof.
+  unfold caseArr; crush.
+Qed.
+
+(* Arguments caseUnit n t : simpl never. *)
+(* Arguments caseBool n t : simpl never. *)
+(* Arguments caseProd n t : simpl never. *)
+(* Arguments caseSum n t : simpl never. *)
+(* Arguments caseArr n t : simpl never. *)
+
+Lemma caseUnit_pctx_T {Γ n} : 
+  ⟪ ⊢ caseUnit_pctx : Γ , UVal (S n) → Γ , tunit ⟫.
+Proof.
+  unfold caseUnit_pctx.
+  eauto using stlcOmegaT with typing uval_typing.
+Qed.
 
 Lemma caseUnit_T {Γ n t} : 
-  ⟪ Γ ⊢ t : UVal (S n) ⟫ → ⟪ Γ ⊢ caseUnit n t : tunit ⟫.
+  ⟪ Γ ⊢ t : UVal (S n) ⟫ → ⟪ Γ ⊢ caseUnit t : tunit ⟫.
 Proof.
   unfold caseUnit.
+  eauto using caseUnit_pctx_T with typing.
+Qed.
+
+Lemma caseBool_pctx_T {Γ n} : 
+  ⟪ ⊢ caseBool_pctx : Γ , UVal (S n) → Γ , tbool ⟫.
+Proof.
+  unfold caseBool_pctx.
   eauto using stlcOmegaT with typing uval_typing.
 Qed.
 
 Lemma caseBool_T {Γ n t} : 
-  ⟪ Γ ⊢ t : UVal (S n) ⟫ → ⟪ Γ ⊢ caseBool n t : tbool ⟫.
+  ⟪ Γ ⊢ t : UVal (S n) ⟫ → ⟪ Γ ⊢ caseBool t : tbool ⟫.
 Proof.
   unfold caseBool.
+  eauto using caseBool_pctx_T with typing.
+Qed.
+
+Lemma caseProd_pctx_T {Γ n} : 
+  ⟪ ⊢ caseProd_pctx n : Γ , UVal (S n) → Γ , UVal n × UVal n ⟫.
+Proof.
+  unfold caseProd_pctx.
   eauto using stlcOmegaT with typing uval_typing.
 Qed.
 
@@ -406,6 +519,13 @@ Lemma caseProd_T {Γ n t} :
   ⟪ Γ ⊢ t : UVal (S n) ⟫ → ⟪ Γ ⊢ caseProd n t : UVal n × UVal n ⟫.
 Proof.
   unfold caseProd.
+  eauto using caseProd_pctx_T with typing.
+Qed.
+
+Lemma caseSum_pctx_T {Γ n} : 
+  ⟪ ⊢ caseSum_pctx n : Γ , UVal (S n) → Γ , UVal n ⊎ UVal n ⟫.
+Proof.
+  unfold caseSum_pctx.
   eauto using stlcOmegaT with typing uval_typing.
 Qed.
 
@@ -413,6 +533,13 @@ Lemma caseSum_T {Γ n t} :
   ⟪ Γ ⊢ t : UVal (S n) ⟫ → ⟪ Γ ⊢ caseSum n t : UVal n ⊎ UVal n ⟫.
 Proof.
   unfold caseSum.
+  eauto using caseSum_pctx_T with typing.
+Qed.
+
+Lemma caseArr_pctx_T {Γ n} : 
+  ⟪ ⊢ caseArr_pctx n : Γ , UVal (S n) → Γ , UVal n ⇒ UVal n ⟫.
+Proof.
+  unfold caseArr_pctx.
   eauto using stlcOmegaT with typing uval_typing.
 Qed.
 
@@ -420,7 +547,7 @@ Lemma caseArr_T {Γ n t} :
   ⟪ Γ ⊢ t : UVal (S n) ⟫ → ⟪ Γ ⊢ caseArr n t : UVal n ⇒ UVal n ⟫.
 Proof.
   unfold caseArr.
-  eauto using stlcOmegaT with typing uval_typing.
+  eauto using caseArr_pctx_T with typing.
 Qed.
 
 Hint Resolve caseUnit_T : uval_typing.

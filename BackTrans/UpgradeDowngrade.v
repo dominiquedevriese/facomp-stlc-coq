@@ -41,7 +41,7 @@ Fixpoint downgrade (n : nat) (d : nat) :=
       (match n with
          | 0 => unkUVal 0
          | S n => 
-           caseUVal (n + d) (var 0)
+           caseUVal (var 0)
                     (unkUVal (S n))
                     (inUnit n (var 0))
                     (inBool n (var 0))
@@ -65,7 +65,7 @@ upgrade (n : nat) (d : nat) :=
       (match n with
          | 0 => unkUVal d
          | S n => 
-           caseUVal n (var 0)
+           caseUVal (var 0)
                     (unkUVal (S n + d))
                     (inUnit (n + d) (var 0))
                     (inBool (n + d) (var 0))
@@ -92,9 +92,9 @@ downgrade_T {Γ n d} :
 Proof.
   (* can I combine eauto and crushTyping somehow? *)
   - induction n; unfold upgrade, downgrade;
-    auto with typing uval_typing.
+    eauto with typing uval_typing.
   - induction n; unfold upgrade, downgrade;
-    auto with typing uval_typing.
+    eauto with typing uval_typing.
 Qed.
 
 Lemma upgrade_T1 {Γ n} :
@@ -177,6 +177,7 @@ Proof.
   - change _ with (Value (inl unit)) in vv.
     eapply evalStepStar. eapply eval₀_to_eval. crush.
     rewrite -> ?(caseUVal_sub (beta1 _)); simpl.
+    change (inl unit) with (unkUVal (S n)) at 1.
     eapply caseUVal_eval_unk.
 Qed.
 
@@ -189,6 +190,7 @@ Proof.
   - change _ with (Value (inl unit)) in vv.
     eapply evalStepStar. eapply eval₀_to_eval. crush.
     rewrite -> ?(caseUVal_sub (beta1 _)); simpl.
+    change (inl unit) with (unkUVal (S n)) at 1.
     eapply caseUVal_eval_unk.
 Qed.
 
