@@ -548,7 +548,7 @@ Ltac crushUtlcEvaluationMatchH2 :=
     | [ |- ECtx (pproj₂ _) ] => cbn
     | [ |- ECtx (papp₁ _ _) ] => cbn
     | [ |- ECtx (papp₂ _ _) ] => cbn
-    | [ |- ECtx (pcaseof₁ _ _) ] => cbn
+    | [ |- ECtx (pcaseof₁ _ _ _) ] => (unfold ECtx; cbn)
   end.
 
 Ltac inferContext :=

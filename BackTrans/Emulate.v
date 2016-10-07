@@ -26,6 +26,10 @@ Definition uvalApp_pctx₁ n ts₂ := S.papp₁ (S.papp₂ (S.abs (UVal n) (S.ab
 Definition uvalApp_pctx₂ n ts₁ := S.papp₂ (S.app (S.abs (UVal n) (S.abs (UVal n) (S.app (caseArrUp n (S.var 1)) (S.var 0)))) ts₁) S.phole.
 Definition uvalApp n ts₁ ts₂ := S.app (S.app (S.abs (UVal n) (S.abs (UVal n) (S.app (caseArrUp n (S.var 1)) (S.var 0)))) ts₁) ts₂.
 
+(* Arguments uvalApp_pctx₁ n ts₂ : simpl never. *)
+(* Arguments uvalApp_pctx₂ n ts₁ : simpl never. *)
+(* Arguments uvalApp n ts₁ ts₂ : simpl never. *)
+
 Lemma uvalApp_T {n ts₁ ts₂ Γ} :
   ⟪ Γ ⊢ ts₁ : UVal n ⟫ →
   ⟪ Γ ⊢ ts₂ : UVal n ⟫ →
@@ -242,18 +246,18 @@ Proof.
       eauto using extend_envrel, envrel_mono.
 Qed.
 
-Lemma compat_emul_pabs {n m d p Γ} :
-  dir_world_prec n m d p →
-  ⟪ ⊩ S.pctx_cat (S.pabs (UVal n) S.phole) (inArrDwn_pctx n) ⟦ d , m ⟧ U.pabs U.phole : Γ p▻ pEmulDV n p , pEmulDV n p → Γ , pEmulDV n p ⟫.
-Proof.
-  intros dwp.
-  split.
-  - eauto using inArrDwn_pctx_T with typing uval_typing.
-  - intros ts tu lr.
-    change (S.pctx_app ts (S.pctx_cat (S.pabs (UVal n) S.phole) (inArrDwn_pctx n)))
-    with (inArrDwn n (S.abs (UVal n) ts)).
-    eauto using compat_emul_abs.
-Qed.
+(* Lemma compat_emul_pabs {n m d p Γ} : *)
+(*   dir_world_prec n m d p → *)
+(*   ⟪ ⊩ S.pctx_cat (S.pabs (UVal n) S.phole) (inArrDwn_pctx n) ⟦ d , m ⟧ U.pabs U.phole : Γ p▻ pEmulDV n p , pEmulDV n p → Γ , pEmulDV n p ⟫. *)
+(* Proof. *)
+(*   intros dwp. *)
+(*   split. *)
+(*   - eauto using inArrDwn_pctx_T with typing uval_typing. *)
+(*   - intros ts tu lr. *)
+(*     change (S.pctx_app ts (S.pctx_cat (S.pabs (UVal n) S.phole) (inArrDwn_pctx n))) *)
+(*     with (inArrDwn n (S.abs (UVal n) ts)). *)
+(*     eauto using compat_emul_abs. *)
+(* Qed. *)
 
 Lemma termrel_uvalApp {d w n p ts₁ tu₁ ts₂ tu₂} :
   dir_world_prec n w d p →
@@ -373,6 +377,93 @@ Proof.
       intros w' fw; eapply tr₂; eauto using envrel_mono with arith.
 Qed.
 
+Lemma termrel_emul_caseof {n w d p ts₁ tu₁ ts₂ tu₂ ts₃ tu₃} :
+  dir_world_prec n w d p →
+  termrel d w (pEmulDV n p) ts₁ tu₁ →
+  (forall w' vs₂ vu₂, w' ≤ w →
+                      valrel d w' (pEmulDV n p) vs₂ vu₂ →
+                      termrel d w' (pEmulDV n p) (ts₂ [beta1 vs₂]) (tu₂ [beta1 vu₂])) →
+  (forall w' vs₃ vu₃, w' ≤ w →
+                      valrel d w' (pEmulDV n p) vs₃ vu₃ →
+                      termrel d w' (pEmulDV n p) (ts₃ [beta1 vs₃]) (tu₃ [beta1 vu₃])) →
+  termrel d w (pEmulDV n p) (S.caseof (caseSumUp n ts₁) ts₂ ts₃) (U.caseof tu₁ tu₂ tu₃).
+Proof.
+  intros dwp tr₁ tr₂ tr₃. 
+  unfold caseSumUp.
+  (* evaluate ts₁ and ts₂ *)
+  eapply (termrel_ectx' tr₁); S.inferContext; U.inferContext; crush;
+  eauto using caseSumUp_pctx_ectx.
+
+  (* continuation bureaucracy *)
+  intros w' fw vs vu vr.
+  unfold caseSumUp_pctx; rewrite S.pctx_cat_app; crush; cbn.
+
+  (* evaluate upgrade *)
+  assert (trupg : termrel d w' (pEmulDV (n + 1) p) (S.app (upgrade n 1) vs) vu)
+    by eauto using upgrade_works', dwp_mono.
+  replace (n + 1) with (S n) in trupg by Omega.omega.
+  eapply (termrel_ectx' trupg); S.inferContext; U.inferContext; crush.
+
+  (* continuation bureaucracy *)
+  intros w'' fw' vs' vu' vr'.
+  fold (caseSum n vs'); cbn.
+
+  (* case analysis *)
+  destruct (valrel_implies_Value vr').
+  eapply invert_valrel_pEmulDV_for_caseUValSum in vr'.
+  destruct vr' as [(vs₁' & ? & es & vr₁')|
+                   [(? & div)| (neql & neqr & div)]]; subst.
+
+  - (* successful caseUValBool *)
+    eapply termrel_antired_star_left.
+    eapply (evalstar_ctx' es); S.inferContext; crush.
+
+    cbn.
+    eapply termrel_caseof; eauto using valrel_in_termrel.
+    + intros w''' vs₂' vu₂' fw'' vr₂. eapply tr₂; eauto with arith.
+    + intros w''' vs₃' vu₃' fw'' vr₃. eapply tr₃; eauto with arith.
+  - (* unk case *)
+    eapply dwp_imprecise in dwp; subst.
+    eapply termrel_div_lt.
+    eapply (divergence_closed_under_evalcontext' div); S.inferContext; crush.
+  - (* other cases *)
+    eapply termrel_div_wrong.
+    + eapply (divergence_closed_under_evalcontext' div); S.inferContext; crush.
+    + right.
+      eapply evalToStar.
+      eapply eval₀_to_eval.
+      eauto with eval.
+Qed.
+
+Lemma compat_emul_caseof {n m d p Γ ts₁ tu₁ ts₂ tu₂ ts₃ tu₃} :
+  dir_world_prec n m d p →
+  ⟪ Γ ⊩ ts₁ ⟦ d , m ⟧ tu₁ : pEmulDV n p ⟫ →
+  ⟪ Γ p▻ pEmulDV n p ⊩ ts₂ ⟦ d , m ⟧ tu₂ : pEmulDV n p ⟫ →
+  ⟪ Γ p▻ pEmulDV n p ⊩ ts₃ ⟦ d , m ⟧ tu₃ : pEmulDV n p ⟫ →
+  ⟪ Γ ⊩ S.caseof (caseSumUp n ts₁) ts₂ ts₃ ⟦ d , m ⟧ U.caseof tu₁ tu₂ tu₃ : pEmulDV n p ⟫.
+Proof.
+  intros dwp lr₁ lr₂ lr₃.
+  split.
+  - destruct lr₁ as [ty₁ _].
+    destruct lr₂ as [ty₂ _].
+    destruct lr₃ as [ty₃ _].
+    simpl in *.
+    eauto with typing uval_typing.
+  - destruct lr₁ as [_ tr₁].
+    destruct lr₂ as [_ tr₂].
+    destruct lr₃ as [_ tr₃].
+    intros w wm γs γu envrel.
+    cbn; crush.
+    rewrite caseSumUp_sub.
+    eapply termrel_emul_caseof; 
+      eauto using envrel_mono, dwp_mono with arith;
+      intros w' vs₂ vu₂ fw vr₂;
+      rewrite ?ap_comp;
+      assert (lev w' ≤ m) by (unfold lev in *; Omega.omega);
+      [eapply tr₂|eapply tr₃]; 
+      eauto using extend_envrel, envrel_mono.
+Qed. 
+      
 Lemma termrel_emul_ite {n w d p ts₁ tu₁ ts₂ tu₂ ts₃ tu₃} :
   dir_world_prec n w d p →
   termrel d w (pEmulDV n p) ts₁ tu₁ →
@@ -557,7 +648,9 @@ Lemma termrel_emul_inl {n w d p ts tu} :
   termrel d w (pEmulDV n p) (inSumDwn n (S.inl ts)) (U.inl tu).
 Proof.
   intros dwp tr.
-  eapply (termrel_ectx' tr); S.inferContext; U.inferContext; crush.  
+  unfold inSumDwn.
+  eapply (termrel_ectx' tr); S.inferContext; U.inferContext; crush;
+  eauto using inSumDwn_pctx_ectx. 
   intros w' fw vs vu vr.
   eapply termrel_inSumDwn; simpl; eauto using valrel_inl, dwp_mono.
 Qed.
@@ -583,8 +676,9 @@ Lemma termrel_emul_inr {n w d p ts tu} :
   termrel d w (pEmulDV n p) ts tu →
   termrel d w (pEmulDV n p) (inSumDwn n (S.inr ts)) (U.inr tu).
 Proof.
-  intros dwp tr.
-  eapply (termrel_ectx' tr); S.inferContext; U.inferContext; crush.  
+  intros dwp tr. unfold inSumDwn.
+  eapply (termrel_ectx' tr); S.inferContext; U.inferContext; crush;  
+  eauto using inSumDwn_pctx_ectx. 
   intros w' fw vs vu vr.
   eapply termrel_inSumDwn; simpl; eauto using valrel_inr, dwp_mono.
 Qed.
@@ -741,11 +835,35 @@ Proof.
   induction 1; simpl; eauto using GetEvarP.
 Qed.
 
+Lemma toEmulDV_repEmulCtx {n p Γ} :
+  repEmulCtx (toEmulDV n p Γ) = toUVals n Γ.
+Proof.
+  induction Γ; cbn; f_equal; trivial.
+Qed.
+
 Lemma emulate_works { Γ tu n p d m} :
   dir_world_prec n m d p →
   ⟨ Γ ⊢ tu ⟩ →
   ⟪ toEmulDV n p Γ ⊩ emulate n tu ⟦ d , m ⟧ tu : pEmulDV n p ⟫.
 Proof.
   intros dwp; induction 1; 
-  eauto using 
-        compat_emul_app, compat_emul_abs, compat_var, toEmulDV_entry, compat_emul_wrong', compat_emul_unit, compat_emul_true, compat_emul_false, compat_emul_pair, compat_emul_ite, compat_emul_inl, compat_emul_inr, compat_emul_proj₁, compat_emul_proj₂, compat_emul_seq.
+  eauto using compat_emul_app, compat_emul_abs, compat_var, toEmulDV_entry, compat_emul_wrong', compat_emul_unit, compat_emul_true, compat_emul_false, compat_emul_pair, compat_emul_ite, compat_emul_inl, compat_emul_inr, compat_emul_proj₁, compat_emul_proj₂, compat_emul_seq, compat_emul_caseof.
+Qed.
+
+
+Lemma emulate_pctx_works { Γ Γ' Cu n p d m} :
+  dir_world_prec n m d p →
+  ⟨ ⊢ Cu : Γ → Γ' ⟩ →
+  ⟪ ⊩ emulate_pctx n Cu ⟦ d , m ⟧ Cu : toEmulDV n p Γ , pEmulDV n p → toEmulDV n p Γ' , pEmulDV n p ⟫.
+Proof.
+  intros dwp scp; unfold OpenLRCtxN; split.
+  - simpl; rewrite ?toEmulDV_repEmulCtx.
+    eauto using emulate_pctx_T.  
+  - induction scp; cbn;
+    intros ts tu lr; 
+    rewrite ?S.pctx_cat_app;
+    eauto using emulate_works, compat_emul_app, compat_emul_abs, compat_var, toEmulDV_entry, compat_emul_wrong', compat_emul_unit, compat_emul_true, compat_emul_false, compat_emul_pair, compat_emul_ite, compat_emul_inl, compat_emul_inr, compat_emul_proj₁, compat_emul_proj₂, compat_emul_seq, compat_emul_caseof;
+    eapply compat_emul_caseof; crush;
+    change (toEmulDV n p γ p▻ pEmulDV n p) with (toEmulDV n p (S γ));
+    eauto using emulate_works.
+Qed.
