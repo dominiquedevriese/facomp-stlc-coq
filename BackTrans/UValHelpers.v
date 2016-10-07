@@ -249,6 +249,11 @@ Section DestructTypes.
     eauto using caseUnitUp_pctx_T with typing.
   Qed.
 
+  Lemma caseUnitUp_pctx_ectx {n} : ECtx (caseUnitUp_pctx n).
+  Proof.
+    unfold caseUnitUp_pctx; simpl; eauto using upgrade_value.
+  Qed.
+
   Lemma caseBoolUp_pctx_T {n Γ} : ⟪ ⊢ caseBoolUp_pctx n : Γ , UVal n → Γ , tbool ⟫.
   Proof.
     unfold caseBoolUp_pctx.

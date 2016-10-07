@@ -478,6 +478,79 @@ Proof.
     eauto using envrel_mono with arith.
 Qed.
 
+Lemma termrel_emul_seq {n w d p ts₁ tu₁ ts₂ tu₂} :
+  dir_world_prec n w d p →
+  termrel d w (pEmulDV n p) ts₁ tu₁ →
+  (forall w', w' ≤ w → termrel d w' (pEmulDV n p) ts₂ tu₂) →
+  termrel d w (pEmulDV n p) (S.seq (caseUnitUp n ts₁) ts₂) (U.seq tu₁ tu₂).
+Proof.
+  intros dwp tr₁ tr₂.
+  unfold caseUnitUp.
+
+  (* evaluate ts₁ and tu₁ *)
+  eapply (termrel_ectx' tr₁); S.inferContext; U.inferContext; cbn; eauto using caseUnitUp_pctx_ectx. 
+
+  (* continuation bureaucracy *)
+  intros w' fw vs vu vr.
+
+  (* do the upgrade *)
+  unfold caseUnitUp_pctx; rewrite S.pctx_cat_app; cbn.
+  assert (trupg : termrel d w' (pEmulDV (n + 1) p) (S.app (upgrade n 1) vs) vu)
+    by eauto using upgrade_works', dwp_mono.
+  replace (n + 1) with (S n) in trupg by Omega.omega.
+  eapply (termrel_ectx' trupg); S.inferContext; U.inferContext; cbn; crush.
+
+  (* continuation bureaucracy *)
+  intros w'' fw' vs' vu' vr'.
+
+  (* case analysis *)
+  destruct (valrel_implies_Value vr').
+  eapply invert_valrel_pEmulDV_for_caseUValUnit in vr'.
+  fold (caseUnit vs').
+  destruct vr' as [(? & ? & es)|
+                   [(? & div)|(? & div)]]; subst.
+  - (* successful caseUValUnit *)
+    eapply termrel_antired_star_left.
+    eapply (evalstar_ctx' es); S.inferContext; crush.
+
+    subst; cbn.
+    eapply termrel_seq.
+    + eauto using valrel_in_termrel, valrel_unit.
+    + intros; eapply tr₂; eauto with arith.
+  - (* unk case *)
+    eapply dwp_imprecise in dwp; subst.
+    eapply termrel_div_lt.
+    eapply (divergence_closed_under_evalcontext' div); S.inferContext; crush.
+  - (* other cases *)
+    eapply termrel_div_wrong.
+    + eapply (divergence_closed_under_evalcontext' div); S.inferContext; crush.
+    + right.
+      eapply evalToStar.
+      eapply eval₀_to_eval.
+      eauto with eval.
+Qed.
+  
+Lemma compat_emul_seq {n m d p Γ ts₁ tu₁ ts₂ tu₂} :
+  dir_world_prec n m d p →
+  ⟪ Γ ⊩ ts₁ ⟦ d , m ⟧ tu₁ : pEmulDV n p ⟫ →
+  ⟪ Γ ⊩ ts₂ ⟦ d , m ⟧ tu₂ : pEmulDV n p ⟫ →
+  ⟪ Γ ⊩ S.seq (caseUnitUp n ts₁) ts₂ ⟦ d , m ⟧ U.seq tu₁ tu₂ : pEmulDV n p ⟫.
+Proof.
+  intros dwp [ty₁ tr₁] [ty₂ tr₂].
+  split.
+  - eauto using caseUnitUp_T with typing uval_typing.
+  - intros w wn γs γu envrel.
+
+    specialize (tr₁ w wn γs γu envrel).
+    assert (dir_world_prec n w d p) by eauto using dwp_mono.
+
+    cbn; crush.
+    rewrite caseUnitUp_sub.
+
+    eapply termrel_emul_seq; eauto.
+    intros w' fw; eapply tr₂; eauto using envrel_mono with arith.
+Qed.
+
 Lemma termrel_emul_inl {n w d p ts tu} :
   dir_world_prec n w d p →
   termrel d w (pEmulDV n p) ts tu →
@@ -675,4 +748,4 @@ Lemma emulate_works { Γ tu n p d m} :
 Proof.
   intros dwp; induction 1; 
   eauto using 
-        compat_emul_app, compat_emul_abs, compat_var, toEmulDV_entry, compat_emul_wrong', compat_emul_unit, compat_emul_true, compat_emul_false, compat_emul_pair, compat_emul_ite, compat_emul_inl, compat_emul_inr, compat_emul_proj₁, compat_emul_proj₂.
+        compat_emul_app, compat_emul_abs, compat_var, toEmulDV_entry, compat_emul_wrong', compat_emul_unit, compat_emul_true, compat_emul_false, compat_emul_pair, compat_emul_ite, compat_emul_inl, compat_emul_inr, compat_emul_proj₁, compat_emul_proj₂, compat_emul_seq.
