@@ -484,7 +484,7 @@ Lemma caseUnit_pctx_T {Γ n} :
   ⟪ ⊢ caseUnit_pctx : Γ , UVal (S n) → Γ , tunit ⟫.
 Proof.
   unfold caseUnit_pctx.
-  eauto using stlcOmegaT with typing uval_typing.
+  eauto with typing uval_typing.
 Qed.
 
 Lemma caseUnit_T {Γ n t} : 
@@ -498,7 +498,7 @@ Lemma caseBool_pctx_T {Γ n} :
   ⟪ ⊢ caseBool_pctx : Γ , UVal (S n) → Γ , tbool ⟫.
 Proof.
   unfold caseBool_pctx.
-  eauto using stlcOmegaT with typing uval_typing.
+  eauto with typing uval_typing.
 Qed.
 
 Lemma caseBool_T {Γ n t} : 
@@ -512,7 +512,7 @@ Lemma caseProd_pctx_T {Γ n} :
   ⟪ ⊢ caseProd_pctx n : Γ , UVal (S n) → Γ , UVal n × UVal n ⟫.
 Proof.
   unfold caseProd_pctx.
-  eauto using stlcOmegaT with typing uval_typing.
+  eauto with typing uval_typing.
 Qed.
 
 Lemma caseProd_T {Γ n t} : 
@@ -526,7 +526,7 @@ Lemma caseSum_pctx_T {Γ n} :
   ⟪ ⊢ caseSum_pctx n : Γ , UVal (S n) → Γ , UVal n ⊎ UVal n ⟫.
 Proof.
   unfold caseSum_pctx.
-  eauto using stlcOmegaT with typing uval_typing.
+  eauto with typing uval_typing.
 Qed.
 
 Lemma caseSum_T {Γ n t} : 
@@ -540,7 +540,7 @@ Lemma caseArr_pctx_T {Γ n} :
   ⟪ ⊢ caseArr_pctx n : Γ , UVal (S n) → Γ , UVal n ⇒ UVal n ⟫.
 Proof.
   unfold caseArr_pctx.
-  eauto using stlcOmegaT with typing uval_typing.
+  eauto with typing uval_typing.
 Qed.
 
 Lemma caseArr_T {Γ n t} : 

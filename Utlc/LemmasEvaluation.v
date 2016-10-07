@@ -540,6 +540,15 @@ End EvalInContext.
 Ltac crushUtlcEvaluationMatchH2 :=
   match goal with
     | [ |- ECtx (pctx_cat _ _)] => eapply ectx_cat
+    | [ |- ECtx phole ] => cbn
+    | [ |- ECtx (pite₁ _ _ _) ] => cbn
+    | [ |- ECtx (pinl _) ] => cbn
+    | [ |- ECtx (pinr _) ] => cbn
+    | [ |- ECtx (pproj₁ _) ] => cbn
+    | [ |- ECtx (pproj₂ _) ] => cbn
+    | [ |- ECtx (papp₁ _ _) ] => cbn
+    | [ |- ECtx (papp₂ _ _) ] => cbn
+    | [ |- ECtx (pcaseof₁ _ _) ] => cbn
   end.
 
 Ltac inferContext :=

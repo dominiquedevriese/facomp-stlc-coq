@@ -12,6 +12,8 @@ Proof.
   unfold stlcOmega. crushTyping.
 Qed.
 
+Hint Resolve stlcOmegaT : typing.
+
 Definition stlcOmegaHelp (ty : Ty) : Tm :=
   app (abs tunit (app (fixt tunit ty (abs (tunit ⇒ ty) (var 0))) (var 0))) unit.
 

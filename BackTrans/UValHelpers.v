@@ -255,6 +255,11 @@ Section DestructTypes.
     eauto using caseBool_pctx_T, upgrade_T1, downgrade_T1 with typing uval_typing.
   Qed.
 
+  Lemma caseBoolUp_pctx_ectx {n} : ECtx (caseBoolUp_pctx n).
+  Proof.
+    unfold caseBoolUp_pctx; simpl; eauto using upgrade_value.
+  Qed.
+
   Lemma caseBoolUp_T {n t Γ} : ⟪ Γ ⊢ t : UVal n ⟫ → ⟪ Γ ⊢ caseBoolUp n t : tbool ⟫.
   Proof.
     unfold caseBoolUp.
