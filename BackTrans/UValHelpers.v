@@ -272,6 +272,12 @@ Section DestructTypes.
     eauto using caseProd_pctx_T, upgrade_T1, downgrade_T1 with typing uval_typing.
   Qed.
 
+  Lemma caseProdUp_pctx_ectx {n} : ECtx (caseProdUp_pctx n).
+  Proof.
+    unfold caseProdUp_pctx; simpl; eauto using upgrade_value.
+  Qed.
+
+
   Lemma caseProdUp_T {n t Γ} : ⟪ Γ ⊢ t : UVal n ⟫ → ⟪ Γ ⊢ caseProdUp n t : UVal n × UVal n ⟫.
   Proof.
     unfold caseProdUp.
@@ -529,6 +535,51 @@ Section DestructProps.
                       eauto using caseUVal_eval_unit, caseUVal_eval_bool, caseUVal_eval_prod, caseUVal_eval_sum, caseUVal_eval_arr)
                  end;
           subst; intros (? & eq); inversion eq.
+  Qed.
+
+  Lemma invert_valrel_pEmulDV_for_caseUValProd {d w n p vs vu} :
+    valrel d w (pEmulDV (S n) p) vs vu →
+    (∃ vs', vs = (inProd n vs') ∧ 
+                caseProd n vs -->* vs' ∧
+                valrel d w (ptprod (pEmulDV n p) (pEmulDV n p)) vs' vu) ∨
+    (p = imprecise ∧ (caseProd n vs) ⇑) ∨
+    ((∀ tu₁' tu₂', vu ≠ U.pair tu₁' tu₂') ∧ (caseProd n vs) ⇑).
+  Proof.
+    intros vr.
+    apply invert_valrel_pEmulDV in vr.
+    destruct vr as [[? ?] | (vs' & cases)]; 
+      subst; unfold caseProd.
+    - right. left.
+      eauto using divergence_closed_under_evalstar, caseUVal_eval_unk, stlcOmega_div.
+    - assert (cases' : (vs = inProd n vs' ∧ valrel d w (ptprod (pEmulDV n p) (pEmulDV n p)) vs' vu)
+                        ∨ (vs = inBool n vs' ∧ valrel d w ptbool vs' vu)
+                        ∨ (vs = inUnit n vs' ∧ valrel d w ptunit vs' vu)
+                        ∨ (vs = inArr n vs' ∧ valrel d w (ptarr (pEmulDV n p) (pEmulDV n p)) vs' vu)
+                        ∨ (vs = inSum n vs' ∧ valrel d w (ptsum (pEmulDV n p) (pEmulDV n p)) vs' vu))
+        by (destruct cases as [?|[?|[?|[?|?]]]]; auto); clear cases.
+      destruct cases' as [[? vr] | other_cases]; subst.
+      + left. exists vs'.
+        destruct (valrel_implies_Value vr).
+        change vs' with ((var 0) [beta1 vs']) at 4.
+        eauto using caseUVal_eval_prod. 
+      + right. right.
+        enough (((∀ tu₁' tu₂', vu ≠ U.pair tu₁' tu₂') ∧ caseProd n vs -->* stlcOmega (UVal n × UVal n))) as (? & ?)
+            by eauto using divergence_closed_under_evalstar, stlcOmega_div.
+        destruct other_cases as [ [? vr] | [ [? vr] | [[? vr] | [? vr]]]];
+          subst;
+          destruct (valrel_implies_Value vr); subst;
+          crush;
+          repeat match goal with
+                     [ |- context [ ((stlcOmega _) [?γ]) ] ]=> rewrite stlcOmega_sub
+                   | [ H : _ ∧ _ |- _ ]=> destruct H
+                   | [ H : ∃ _, _ |- _ ]=> destruct H
+                   | [ H : _ ∨ _ |- _ ]=> destruct H
+                   | [ |- caseProd _ (_ _ ?vs') -->* stlcOmega (UVal n × UVal n)] => 
+                     (replace (stlcOmega (UVal n × UVal n)) with ((stlcOmega (UVal n × UVal n))[ beta1 vs' ]) by eapply stlcOmega_sub;
+                      unfold caseProd, caseProd_pctx;
+                      eauto using caseUVal_eval_unit, caseUVal_eval_bool, caseUVal_eval_prod, caseUVal_eval_sum, caseUVal_eval_arr)
+                 end;
+          subst; intros tu₁' tu₂' eq; inversion eq.
   Qed.
 
   (* Lemma termrel_caseUValBool {d w n p vs vu}: *)

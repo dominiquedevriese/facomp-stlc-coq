@@ -478,6 +478,184 @@ Proof.
     eauto using envrel_mono with arith.
 Qed.
 
+Lemma termrel_emul_inl {n w d p ts tu} :
+  dir_world_prec n w d p →
+  termrel d w (pEmulDV n p) ts tu →
+  termrel d w (pEmulDV n p) (inSumDwn n (S.inl ts)) (U.inl tu).
+Proof.
+  intros dwp tr.
+  eapply (termrel_ectx' tr); S.inferContext; U.inferContext; crush.  
+  intros w' fw vs vu vr.
+  eapply termrel_inSumDwn; simpl; eauto using valrel_inl, dwp_mono.
+Qed.
+
+Lemma compat_emul_inl {n m d p Γ ts tu} :
+  dir_world_prec n m d p →
+  ⟪ Γ ⊩ ts ⟦ d , m ⟧ tu : pEmulDV n p ⟫ →
+  ⟪ Γ ⊩ inSumDwn n (S.inl ts) ⟦ d , m ⟧ U.inl tu : pEmulDV n p ⟫.
+Proof.
+  intros dwp lr.
+  split.
+  - destruct lr as [ty _].
+    simpl in *.
+    eauto using inSumDwn_T with typing uval_typing.
+  - intros w wm γs γu envrel.
+    destruct lr as [_ tr].
+    rewrite inSumDwn_sub.
+    eapply termrel_emul_inl; eauto using dwp_mono.
+Qed.
+    
+Lemma termrel_emul_inr {n w d p ts tu} :
+  dir_world_prec n w d p →
+  termrel d w (pEmulDV n p) ts tu →
+  termrel d w (pEmulDV n p) (inSumDwn n (S.inr ts)) (U.inr tu).
+Proof.
+  intros dwp tr.
+  eapply (termrel_ectx' tr); S.inferContext; U.inferContext; crush.  
+  intros w' fw vs vu vr.
+  eapply termrel_inSumDwn; simpl; eauto using valrel_inr, dwp_mono.
+Qed.
+
+Lemma compat_emul_inr {n m d p Γ ts tu} :
+  dir_world_prec n m d p →
+  ⟪ Γ ⊩ ts ⟦ d , m ⟧ tu : pEmulDV n p ⟫ →
+  ⟪ Γ ⊩ inSumDwn n (S.inr ts) ⟦ d , m ⟧ U.inr tu : pEmulDV n p ⟫.
+Proof.
+  intros dwp lr.
+  split.
+  - destruct lr as [ty _].
+    simpl in *.
+    eauto using inSumDwn_T with typing uval_typing.
+  - intros w wm γs γu envrel.
+    destruct lr as [_ tr].
+    rewrite inSumDwn_sub.
+    eapply termrel_emul_inr; eauto using dwp_mono.
+Qed.
+    
+Lemma termrel_emul_proj₁ {n w d p ts tu} :
+  dir_world_prec n w d p →
+  termrel d w (pEmulDV n p) ts tu →
+  termrel d w (pEmulDV n p) (S.proj₁ (caseProdUp n ts)) (U.proj₁ tu).
+Proof.
+  intros dwp tr.
+  unfold caseProdUp.
+
+  (* evaluate ts and tu *)
+  eapply (termrel_ectx' tr); S.inferContext; U.inferContext; crush; 
+  eauto using caseProdUp_pctx_ectx.
+
+  (* continuation bureaucracy *)
+  intros w' fw vs vu vr.
+  unfold caseProdUp_pctx; rewrite S.pctx_cat_app; cbn.
+
+  (* execute the upgrade *)
+  assert (trupg : termrel d w' (pEmulDV (n + 1) p) (S.app (upgrade n 1) vs) vu)
+    by eauto using upgrade_works', dwp_mono.
+  replace (n + 1) with (S n) in trupg by Omega.omega.
+  eapply (termrel_ectx' trupg); S.inferContext; U.inferContext; crush.
+
+  (* continuation bureaucracy *)
+  intros w'' fw' vs' vu' vr'.
+  destruct (valrel_implies_Value vr').
+  eapply invert_valrel_pEmulDV_for_caseUValProd in vr'.
+  fold (caseProd n vs').
+  destruct vr' as [(vs'' & ? & es & vr'')|
+                   [(? & div)|(? & div)]].
+  - eapply termrel_antired_star_left.
+    eapply (evalstar_ctx' es); S.inferContext; crush.
+    simpl.
+    eauto using termrel_proj₁, valrel_in_termrel.
+  - subst; eapply dwp_imprecise in dwp; subst.
+    eapply termrel_div_lt.
+    eapply (divergence_closed_under_evalcontext' div); S.inferContext; crush.
+  - eapply termrel_div_wrong.
+    + eapply (divergence_closed_under_evalcontext' div); S.inferContext; crush.
+    + right.
+      simpl.
+      eapply evalToStar.
+      eapply eval₀_to_eval.
+      eauto with eval.
+Qed.    
+
+Lemma compat_emul_proj₁ {n m d p Γ ts tu} :
+  dir_world_prec n m d p →
+  ⟪ Γ ⊩ ts ⟦ d , m ⟧ tu : pEmulDV n p ⟫ →
+  ⟪ Γ ⊩ S.proj₁ (caseProdUp n ts) ⟦ d , m ⟧ U.proj₁ tu : pEmulDV n p ⟫.
+Proof.
+  intros dwp lr.
+  split.
+  - destruct lr as [ty _].
+    simpl in *.
+    eauto using inSumDwn_T with typing uval_typing.
+  - intros w wm γs γu envrel.
+    destruct lr as [_ tr].
+    cbn; crush.
+    rewrite caseProdUp_sub.
+    eapply termrel_emul_proj₁; eauto using dwp_mono.
+Qed.
+
+Lemma termrel_emul_proj₂ {n w d p ts tu} :
+  dir_world_prec n w d p →
+  termrel d w (pEmulDV n p) ts tu →
+  termrel d w (pEmulDV n p) (S.proj₂ (caseProdUp n ts)) (U.proj₂ tu).
+Proof.
+  intros dwp tr.
+  unfold caseProdUp.
+
+  (* evaluate ts and tu *)
+  eapply (termrel_ectx' tr); S.inferContext; U.inferContext; crush; 
+  eauto using caseProdUp_pctx_ectx.
+
+  (* continuation bureaucracy *)
+  intros w' fw vs vu vr.
+  unfold caseProdUp_pctx; rewrite S.pctx_cat_app; cbn.
+
+  (* execute the upgrade *)
+  assert (trupg : termrel d w' (pEmulDV (n + 1) p) (S.app (upgrade n 1) vs) vu)
+    by eauto using upgrade_works', dwp_mono.
+  replace (n + 1) with (S n) in trupg by Omega.omega.
+  eapply (termrel_ectx' trupg); S.inferContext; U.inferContext; crush.
+
+  (* continuation bureaucracy *)
+  intros w'' fw' vs' vu' vr'.
+  destruct (valrel_implies_Value vr').
+  eapply invert_valrel_pEmulDV_for_caseUValProd in vr'.
+  fold (caseProd n vs').
+  destruct vr' as [(vs'' & ? & es & vr'')|
+                   [(? & div)|(? & div)]].
+  - eapply termrel_antired_star_left.
+    eapply (evalstar_ctx' es); S.inferContext; crush.
+    simpl.
+    eauto using termrel_proj₂, valrel_in_termrel.
+  - subst; eapply dwp_imprecise in dwp; subst.
+    eapply termrel_div_lt.
+    eapply (divergence_closed_under_evalcontext' div); S.inferContext; crush.
+  - eapply termrel_div_wrong.
+    + eapply (divergence_closed_under_evalcontext' div); S.inferContext; crush.
+    + right.
+      simpl.
+      eapply evalToStar.
+      eapply eval₀_to_eval.
+      eauto with eval.
+Qed.    
+
+Lemma compat_emul_proj₂ {n m d p Γ ts tu} :
+  dir_world_prec n m d p →
+  ⟪ Γ ⊩ ts ⟦ d , m ⟧ tu : pEmulDV n p ⟫ →
+  ⟪ Γ ⊩ S.proj₂ (caseProdUp n ts) ⟦ d , m ⟧ U.proj₂ tu : pEmulDV n p ⟫.
+Proof.
+  intros dwp lr.
+  split.
+  - destruct lr as [ty _].
+    simpl in *.
+    eauto using inSumDwn_T with typing uval_typing.
+  - intros w wm γs γu envrel.
+    destruct lr as [_ tr].
+    cbn; crush.
+    rewrite caseProdUp_sub.
+    eapply termrel_emul_proj₂; eauto using dwp_mono.
+Qed.
+    
 Fixpoint toEmulDV n p (Γ : Dom) : PEnv :=
   match Γ with
       0 => pempty
@@ -497,4 +675,4 @@ Lemma emulate_works { Γ tu n p d m} :
 Proof.
   intros dwp; induction 1; 
   eauto using 
-        compat_emul_app, compat_emul_abs, compat_var, toEmulDV_entry, compat_emul_wrong', compat_emul_unit, compat_emul_true, compat_emul_false, compat_emul_pair, compat_emul_ite.
+        compat_emul_app, compat_emul_abs, compat_var, toEmulDV_entry, compat_emul_wrong', compat_emul_unit, compat_emul_true, compat_emul_false, compat_emul_pair, compat_emul_ite, compat_emul_inl, compat_emul_inr, compat_emul_proj₁, compat_emul_proj₂.
