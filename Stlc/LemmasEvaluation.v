@@ -83,50 +83,40 @@ Proof.
   eauto using termination_closed_under_antireduction.
 Qed.
 
-Lemma eval_ectx_inv C t (ec : ECtx C) t' :
-  pctx_app t C --> t' →
-  Value t ∨ exists t'', t' = pctx_app t'' C ∧ t --> t''.
-Admitted.
-
 Lemma value_ectx_inv C t (ec : ECtx C) :
   Value (pctx_app t C) → Value t.
 Proof.
   intros v; induction C; crush.
 Qed.
 
-Lemma evalStar_ectx_inv C t (ec : ECtx C) v :
-  pctx_app t C -->* v → Value v →
-  exists v', Value v' ∧ t -->* v' ∧ pctx_app v' C -->* v.
+Lemma eval₀_ectx_inv C t (ec : ECtx C) {t' t''} :
+  t'' -->₀ t' → t'' = pctx_app t C →
+  Value t ∨ C = phole.
 Proof.
-  intros es vv; depind es.
-  - exists t; eauto using value_ectx_inv with eval.
-  - destruct (eval_ectx_inv C t ec _ H) as [vt|[t'' [eq e]]].
-    + exists t; crush.
-    + subst.
-      destruct (IHes t'' C ec eq_refl vv) as (v' & vv' & es1' & es2').
-      exists v'; crush.
+  induction 1;
+  destruct C; crush; 
+  try match goal with
+      [ H : _ = pctx_app t C |- _ ] => 
+      (assert (Value (pctx_app t C)) by (rewrite <- H; crush))
+  end; eauto using value_ectx_inv.
+Qed. 
+
+Lemma pctx_cat_phole_leftzero {C} :
+  pctx_cat phole C = C.
+Proof.
+  induction C; crush; f_equal; crush.
 Qed.
-         
+
+Lemma pctx_cat_assoc {C C' C''} :
+  pctx_cat C (pctx_cat C' C'') = pctx_cat (pctx_cat C C') C''.
+Proof.
+  induction C''; crush; f_equal; crush.
+Qed.
+
 Lemma values_terminate {v : Tm} : Value v → v ⇓.
 Proof.
   intros vv. exists v; crush.
 Qed.
-
-Lemma inversion_termination_evalcontext C t (ec: ECtx C) :
-  Terminating (pctx_app t C) → Terminating t.
-Proof.
-  destruct 1 as (v & vv & es).
-  destruct (evalStar_ectx_inv C t ec v es) as (v' & vv' & es1 & es2); subst; crush.
-  exists v'; crush.
-Qed.
-
-Corollary divergence_closed_under_evalcontext t :
-  t⇑ → ∀ p, ECtx p → (pctx_app t p)⇑.
-Proof. eauto using inversion_termination_evalcontext. Qed.
-
-Corollary divergence_closed_under_evalcontext' {t C t'} :
-  t⇑ → t' = pctx_app t C → ECtx C → t'⇑.
-Proof. intros; subst; eauto using divergence_closed_under_evalcontext. Qed.
 
 Definition normal' (t : Tm) := ∀ t', ¬ (t --> t').
 Lemma values_are_normal' {t : Tm} : Value t -> normal' t.
@@ -146,6 +136,195 @@ Proof.
   - omega.
   - eapply stepRel_zero.
 Qed.
+
+
+Section InvertECtxEq.
+
+  Inductive EctxAppEq : ∀ (t : Tm) (C : PCtx) (t' : Tm) (C' : PCtx),  Prop :=
+    | EctxAppEqLeft : ∀ t C C', ECtx C → EctxAppEq (pctx_app t C) C' t (pctx_cat C C')
+    | EctxAppEqRight : ∀ t C C', ECtx C → EctxAppEq t (pctx_cat C C') (pctx_app t C) C'
+    | ECtxValueLeft : ∀ t t' C C', Value t → EctxAppEq t C t' C'
+    | ECtxValueRight : ∀ t t' C C', Value t' → EctxAppEq t C t' C'
+  .
+
+  Lemma ectxAppEqExtend {t C t' C'} C'' :
+    EctxAppEq t C t' C' →
+    EctxAppEq t (pctx_cat C C'') t' (pctx_cat C' C'').
+  Proof.
+    induction 1; rewrite <- ?pctx_cat_assoc; constructor; assumption.
+  Qed.
+
+  Lemma ectxAppEqExtendPAbs {t C t' C' τ} :
+    EctxAppEq t C t' C' →
+    EctxAppEq t (pabs τ C) t' (pabs τ C').
+  Proof.
+    eapply (ectxAppEqExtend (pabs τ phole)).
+  Qed.
+
+  Lemma ectxAppEqExtendPInl {t C t' C'} :
+    EctxAppEq t C t' C' →
+    EctxAppEq t (pinl C) t' (pinl C').
+  Proof.
+    eapply (ectxAppEqExtend (pinl phole)).
+  Qed.
+
+  Lemma ectxAppEqExtendPInr {t C t' C'} :
+    EctxAppEq t C t' C' →
+    EctxAppEq t (pinr C) t' (pinr C').
+  Proof.
+    eapply (ectxAppEqExtend (pinr phole)).
+  Qed.
+
+  Lemma ectxAppEqExtendPProj₁ {t C t' C'} :
+    EctxAppEq t C t' C' →
+    EctxAppEq t (pproj₁ C) t' (pproj₁ C').
+  Proof.
+    eapply (ectxAppEqExtend (pproj₁ phole)).
+  Qed.
+
+  Lemma ectxAppEqExtendPProj₂ {t C t' C'} :
+    EctxAppEq t C t' C' →
+    EctxAppEq t (pproj₂ C) t' (pproj₂ C').
+  Proof.
+    eapply (ectxAppEqExtend (pproj₂ phole)).
+  Qed.
+
+  Lemma ectxAppEqExtendPPair₁ {t C t' C' t₂} :
+    EctxAppEq t C t' C' →
+    EctxAppEq t (ppair₁ C t₂) t' (ppair₁ C' t₂).
+  Proof.
+    eapply (ectxAppEqExtend (ppair₁ phole t₂)).
+  Qed.
+
+  Lemma ectxAppEqExtendPPair₂ {t C t' C' t₁} :
+    EctxAppEq t C t' C' →
+    EctxAppEq t (ppair₂ t₁ C) t' (ppair₂ t₁ C').
+  Proof.
+    eapply (ectxAppEqExtend (ppair₂ t₁ phole)).
+  Qed.
+
+  Lemma ectxAppEqExtendPApp₁ {t C t' C' t₂} :
+    EctxAppEq t C t' C' →
+    EctxAppEq t (papp₁ C t₂) t' (papp₁ C' t₂).
+  Proof.
+    eapply (ectxAppEqExtend (papp₁ phole t₂)).
+  Qed.
+
+  Lemma ectxAppEqExtendPApp₂ {t C t' C' t₁} :
+    EctxAppEq t C t' C' →
+    EctxAppEq t (papp₂ t₁ C) t' (papp₂ t₁ C').
+  Proof.
+    eapply (ectxAppEqExtend (papp₂ t₁ phole)).
+  Qed.
+
+  Lemma ectxAppEqExtendPSeq₁ {t C t' C' t₂} :
+    EctxAppEq t C t' C' →
+    EctxAppEq t (pseq₁ C t₂) t' (pseq₁ C' t₂).
+  Proof.
+    eapply (ectxAppEqExtend (pseq₁ phole t₂)).
+  Qed.
+
+  Lemma ectxAppEqExtendPIte₁ {t C t' C' t₂ t₃} :
+    EctxAppEq t C t' C' →
+    EctxAppEq t (pite₁ C t₂ t₃) t' (pite₁ C' t₂ t₃).
+  Proof.
+    eapply (ectxAppEqExtend (pite₁ phole t₂ t₃)).
+  Qed.
+
+  Lemma ectxAppEqExtendPCaseof₁ {t C t' C' t₂ t₃} :
+    EctxAppEq t C t' C' →
+    EctxAppEq t (pcaseof₁ C t₂ t₃) t' (pcaseof₁ C' t₂ t₃).
+  Proof.
+    eapply (ectxAppEqExtend (pcaseof₁ phole t₂ t₃)).
+  Qed.
+
+  Lemma ectxAppEqExtendPFixt {t C t' C' τ₁ τ₂} :
+    EctxAppEq t C t' C' →
+    EctxAppEq t (pfixt τ₁ τ₂ C) t' (pfixt τ₁ τ₂ C').
+  Proof.
+    eapply (ectxAppEqExtend (pfixt τ₁ τ₂ phole)).
+  Qed.
+
+  Lemma ectxAppEqPHoleRight {t C} : ECtx C → EctxAppEq t C (pctx_app t C) phole.
+  Proof.
+    change C with (pctx_cat C phole); eauto using EctxAppEq.
+  Qed.
+
+  Lemma ectxAppEqPHoleLeft {t C} : ECtx C → EctxAppEq (pctx_app t C) phole t C.
+  Proof.
+    change C with (pctx_cat C phole); eauto using EctxAppEq.
+  Qed.
+
+  Lemma pctx_app_eq t C t' C' :
+    ECtx C → ECtx C' →
+    pctx_app t C = pctx_app t' C' →
+    EctxAppEq t C t' C'.
+  Proof.
+    revert t' C';
+    induction C; intros t' C' eC eC' eq'; 
+    [simpl in *; subst;
+     eauto using ectxAppEqPHoleLeft, ectxAppEqPHoleRight, EctxAppEq
+    |idtac..];
+    (destruct C';
+      [change (pctx_app t' phole) with t' in *; subst; 
+       eauto using ectxAppEqPHoleLeft, ectxAppEqPHoleRight, EctxAppEq
+      |idtac..]);
+    crush;
+    eauto using ectxAppEqExtendPAbs, ectxAppEqExtendPProj₂, ectxAppEqExtendPProj₁, ectxAppEqExtendPInr, ectxAppEqExtendPInl, ectxAppEqExtendPApp₁, ectxAppEqExtendPApp₂, ectxAppEqExtendPPair₁, ectxAppEqExtendPPair₂, ectxAppEqExtendPIte₁, ectxAppEqExtendPCaseof₁, ectxAppEqExtendPSeq₁, ectxAppEqExtendPFixt;
+    eauto using value_ectx_inv, ECtxValueRight, ECtxValueLeft.
+  Qed.
+
+End InvertECtxEq.
+
+Lemma eval_ectx_inv C t (ec : ECtx C) {t' t''} :
+  t'' --> t' → pctx_app t C = t'' →
+  Value t ∨ exists t'', t' = pctx_app t'' C ∧ t --> t''.
+Proof.
+  induction 1.
+  intros eq.
+  pose proof (pctx_app_eq _ _ _ _ ec H0 eq) as inv.
+  induction inv.
+  - right. 
+    exists (pctx_app t' C). 
+    eauto using pctx_cat_app, eval_ctx₀.
+  - destruct (eval₀_ectx_inv C t H1 H eq_refl); crush.
+    right; exists t'.
+    rewrite pctx_cat_phole_leftzero;
+    eauto using (eval_ctx₀ phole).
+  - left; crush.
+  - exfalso.     
+    eapply (values_are_normal H1); exists t'.
+    eapply (eval_ctx₀ phole); crush.
+Qed.
+
+Lemma evalStar_ectx_inv C t (ec : ECtx C) v :
+  pctx_app t C -->* v → Value v →
+  exists v', Value v' ∧ t -->* v' ∧ pctx_app v' C -->* v.
+Proof.
+  intros es vv; depind es.
+  - exists t; eauto using value_ectx_inv with eval.
+  - destruct (eval_ectx_inv C t ec _ H) as [vt|[t'' [eq e]]].
+    + exists t; crush.
+    + subst.
+      destruct (IHes t'' C ec eq_refl vv) as (v' & vv' & es1' & es2').
+      exists v'; crush.
+Qed.
+         
+Lemma inversion_termination_evalcontext C t (ec: ECtx C) :
+  Terminating (pctx_app t C) → Terminating t.
+Proof.
+  destruct 1 as (v & vv & es).
+  destruct (evalStar_ectx_inv C t ec v es) as (v' & vv' & es1 & es2); subst; crush.
+  exists v'; crush.
+Qed.
+
+Corollary divergence_closed_under_evalcontext t :
+  t⇑ → ∀ p, ECtx p → (pctx_app t p)⇑.
+Proof. eauto using inversion_termination_evalcontext. Qed.
+
+Corollary divergence_closed_under_evalcontext' {t C t'} :
+  t⇑ → t' = pctx_app t C → ECtx C → t'⇑.
+Proof. intros; subst; eauto using divergence_closed_under_evalcontext. Qed.
 
 Ltac crushImpossibleEvals :=
   match goal with
