@@ -142,7 +142,8 @@ Section CtxEval.
 
   Lemma ctxevaln_evaln {t t' n} : ctxevaln t t' n → evaln t t' n.
   Proof.
-  Admitted.
+    induction 1; econstructor; eauto using ctxeval_eval with eval.
+  Qed.
 
   (* The following implication is actually an equivalence, but we don't need that. *)
   Lemma ctxeval_eval_ctx {t t'} : ctxeval t t' → forall Cu, ECtx Cu → pctx_app t Cu --> pctx_app t' Cu.
