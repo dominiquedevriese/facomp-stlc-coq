@@ -53,7 +53,7 @@ Section EvaluationContexts.
   Qed.
 
   Lemma pctx_cat_assoc (C₁ C₂ C₃ : PCtx) :
-    pctx_cat (pctx_cat C₁ C₂) C₃ = pctx_cat C₁ (pctx_cat C₂ C₃).
+    pctx_cat C₁ (pctx_cat C₂ C₃) = pctx_cat (pctx_cat C₁ C₂) C₃.
   Proof.
     induction C₃; crush.
   Qed.
@@ -125,6 +125,12 @@ Section Values.
     - destruct C; crush.
       inversion H.
     - destruct C; crush.
+  Qed.
+
+  Corollary wrong_evalStar_inv {t} : wrong -->* t → t = wrong.
+  Proof.
+    intros es. depind es; crush.
+    exfalso; eapply wrong_normal; crush.
   Qed.
 End Values.
 
@@ -410,6 +416,136 @@ Section Determinacy.
   Qed.
 End Determinacy.
 
+Section InvertECtxEq.
+
+  Inductive EctxAppEq : ∀ (t : UTm) (C : PCtx) (t' : UTm) (C' : PCtx),  Prop :=
+    | EctxAppEqLeft : ∀ t C C', ECtx C → EctxAppEq (pctx_app t C) C' t (pctx_cat C C')
+    | EctxAppEqRight : ∀ t C C', ECtx C → EctxAppEq t (pctx_cat C C') (pctx_app t C) C'
+    | ECtxValueLeft : ∀ t t' C C', Value t → EctxAppEq t C t' C'
+    | ECtxValueRight : ∀ t t' C C', Value t' → EctxAppEq t C t' C'
+  .
+
+  Lemma ectxAppEqExtend {t C t' C'} C'' :
+    EctxAppEq t C t' C' →
+    EctxAppEq t (pctx_cat C C'') t' (pctx_cat C' C'').
+  Proof.
+    induction 1; rewrite <- ?pctx_cat_assoc; constructor; assumption.
+  Qed.
+
+  Lemma ectxAppEqExtendPAbs {t C t' C'} :
+    EctxAppEq t C t' C' →
+    EctxAppEq t (pabs C) t' (pabs C').
+  Proof.
+    eapply (ectxAppEqExtend (pabs phole)).
+  Qed.
+
+  Lemma ectxAppEqExtendPInl {t C t' C'} :
+    EctxAppEq t C t' C' →
+    EctxAppEq t (pinl C) t' (pinl C').
+  Proof.
+    eapply (ectxAppEqExtend (pinl phole)).
+  Qed.
+
+  Lemma ectxAppEqExtendPInr {t C t' C'} :
+    EctxAppEq t C t' C' →
+    EctxAppEq t (pinr C) t' (pinr C').
+  Proof.
+    eapply (ectxAppEqExtend (pinr phole)).
+  Qed.
+
+  Lemma ectxAppEqExtendPProj₁ {t C t' C'} :
+    EctxAppEq t C t' C' →
+    EctxAppEq t (pproj₁ C) t' (pproj₁ C').
+  Proof.
+    eapply (ectxAppEqExtend (pproj₁ phole)).
+  Qed.
+
+  Lemma ectxAppEqExtendPProj₂ {t C t' C'} :
+    EctxAppEq t C t' C' →
+    EctxAppEq t (pproj₂ C) t' (pproj₂ C').
+  Proof.
+    eapply (ectxAppEqExtend (pproj₂ phole)).
+  Qed.
+
+  Lemma ectxAppEqExtendPPair₁ {t C t' C' t₂} :
+    EctxAppEq t C t' C' →
+    EctxAppEq t (ppair₁ C t₂) t' (ppair₁ C' t₂).
+  Proof.
+    eapply (ectxAppEqExtend (ppair₁ phole t₂)).
+  Qed.
+
+  Lemma ectxAppEqExtendPPair₂ {t C t' C' t₁} :
+    EctxAppEq t C t' C' →
+    EctxAppEq t (ppair₂ t₁ C) t' (ppair₂ t₁ C').
+  Proof.
+    eapply (ectxAppEqExtend (ppair₂ t₁ phole)).
+  Qed.
+
+  Lemma ectxAppEqExtendPApp₁ {t C t' C' t₂} :
+    EctxAppEq t C t' C' →
+    EctxAppEq t (papp₁ C t₂) t' (papp₁ C' t₂).
+  Proof.
+    eapply (ectxAppEqExtend (papp₁ phole t₂)).
+  Qed.
+
+  Lemma ectxAppEqExtendPApp₂ {t C t' C' t₁} :
+    EctxAppEq t C t' C' →
+    EctxAppEq t (papp₂ t₁ C) t' (papp₂ t₁ C').
+  Proof.
+    eapply (ectxAppEqExtend (papp₂ t₁ phole)).
+  Qed.
+
+  Lemma ectxAppEqExtendPSeq₁ {t C t' C' t₂} :
+    EctxAppEq t C t' C' →
+    EctxAppEq t (pseq₁ C t₂) t' (pseq₁ C' t₂).
+  Proof.
+    eapply (ectxAppEqExtend (pseq₁ phole t₂)).
+  Qed.
+
+  Lemma ectxAppEqExtendPIte₁ {t C t' C' t₂ t₃} :
+    EctxAppEq t C t' C' →
+    EctxAppEq t (pite₁ C t₂ t₃) t' (pite₁ C' t₂ t₃).
+  Proof.
+    eapply (ectxAppEqExtend (pite₁ phole t₂ t₃)).
+  Qed.
+
+  Lemma ectxAppEqExtendPCaseof₁ {t C t' C' t₂ t₃} :
+    EctxAppEq t C t' C' →
+    EctxAppEq t (pcaseof₁ C t₂ t₃) t' (pcaseof₁ C' t₂ t₃).
+  Proof.
+    eapply (ectxAppEqExtend (pcaseof₁ phole t₂ t₃)).
+  Qed.
+
+  Lemma ectxAppEqPHoleRight {t C} : ECtx C → EctxAppEq t C (pctx_app t C) phole.
+  Proof.
+    change C with (pctx_cat C phole); eauto using EctxAppEq.
+  Qed.
+
+  Lemma ectxAppEqPHoleLeft {t C} : ECtx C → EctxAppEq (pctx_app t C) phole t C.
+  Proof.
+    change C with (pctx_cat C phole); eauto using EctxAppEq.
+  Qed.
+
+  Lemma pctx_app_eq t C t' C' :
+    ECtx C → ECtx C' →
+    pctx_app t C = pctx_app t' C' →
+    EctxAppEq t C t' C'.
+  Proof.
+    revert t' C';
+    induction C; intros t' C' eC eC' eq'; 
+    [simpl in *; subst;
+     eauto using ectxAppEqPHoleLeft, ectxAppEqPHoleRight, EctxAppEq
+    |idtac..];
+    (destruct C';
+      [change (pctx_app t' phole) with t' in *; subst; 
+       eauto using ectxAppEqPHoleLeft, ectxAppEqPHoleRight, EctxAppEq
+      |idtac..]);
+    crush;
+    eauto using ectxAppEqExtendPAbs, ectxAppEqExtendPProj₂, ectxAppEqExtendPProj₁, ectxAppEqExtendPInr, ectxAppEqExtendPInl, ectxAppEqExtendPApp₁, ectxAppEqExtendPApp₂, ectxAppEqExtendPPair₁, ectxAppEqExtendPPair₂, ectxAppEqExtendPIte₁, ectxAppEqExtendPCaseof₁, ectxAppEqExtendPSeq₁;
+    eauto using value_ectx_inv, ECtxValueRight, ECtxValueLeft.
+  Qed.
+End InvertECtxEq.
+
 Section Termination'.
 
   Lemma TerminatingD (t: UTm) (m: t⇓) :
@@ -504,38 +640,70 @@ Section Termination'.
       eapply (wrong_normal _ H1).
   Qed.    
 
+  Lemma wrong_pctx_inv {C t} :
+    pctx_app t C = wrong → t = wrong ∧ C = phole.
+  Proof.
+    induction C; crush.
+  Qed.
+
+  Lemma eval₀_ectx_inv C t (ec : ECtx C) {t' t''} :
+    t'' -->₀ t' → t'' = pctx_app t C →
+    Value t ∨ C = phole.
+  Proof.
+    induction 1;
+    destruct C; crush; 
+    try match goal with
+            [ H : _ = pctx_app t C |- _ ] => 
+            (assert (Value (pctx_app t C)) by (rewrite <- H; crush))
+        end; eauto using value_ectx_inv.
+  Qed. 
+
   Lemma eval_ectx_inv C t (ec : ECtx C) {t' t''} :
     t'' --> t' → pctx_app t C = t'' →
-    Value t ∨ exists t'', t' = pctx_app t'' C ∧ t --> t''.
+    Value t ∨
+    (exists C', ECtx C' ∧ t = pctx_app wrong C' ∧ t' = wrong) ∨
+    (exists t'', t' = pctx_app t'' C ∧ t --> t'').
   Proof.
-  (*   induction 1. *)
-  (*   intros eq. *)
-  (*   pose proof (pctx_app_eq _ _ _ _ ec H0 eq) as inv. *)
-  (*   induction inv. *)
-  (*   - right.  *)
-  (*     exists (pctx_app t' C).  *)
-  (*     eauto using pctx_cat_app, eval_ctx₀. *)
-  (*   - destruct (eval₀_ectx_inv C t H1 H eq_refl); crush. *)
-  (*     right; exists t'. *)
-  (*     rewrite pctx_cat_phole_leftzero; *)
-  (*       eauto using (eval_ctx₀ phole). *)
-  (*   - left; crush. *)
-  (*   - exfalso.      *)
-  (*     eapply (values_are_normal H1); exists t'. *)
-  (*     eapply (eval_ctx₀ phole); crush. *)
-  (* Qed. *)
-  Admitted.
+    induction 1 as [C' t₀ t₀' e eC'|].
+    - intros eq.
+      pose proof (pctx_app_eq _ _ _ _ ec eC' eq) as inv.
+      induction inv as [t C C' eC| t C C' eC| t t' C C' vt| t t' C C' vt'].
+      + right; right.
+        exists (pctx_app t₀' C);
+        eauto using pctx_cat_app, eval_ctx₀.
+      + destruct (eval₀_ectx_inv C t eC e eq_refl); crush;
+        right; right.
+        exists t₀';
+        rewrite pctx_cat_phole_leftzero;
+        split; crush.
+        eapply (eval_ctx₀ phole); crush.
+      + left; crush.
+      + exfalso.
+        eapply (values_are_normal vt');
+        eapply (eval_ctx₀ phole); crush.
+    - intros eq.
+      pose proof (pctx_app_eq _ _ _ _ ec H eq) as inv.
+      depind inv.
+      + right; left.
+        exists C; crush.
+      + destruct (wrong_pctx_inv x); subst.
+        right; left.
+        exists phole; crush.
+      + left; crush.
+      + exfalso; crush.
+  Qed.
 
   Lemma evalStar_ectx_inv C t (ec : ECtx C) v :
     pctx_app t C -->* v → Value v →
-    exists v', Value v' ∧ t -->* v' ∧ pctx_app v' C -->* v.
+    (exists v', Value v' ∧ t -->* v' ∧ pctx_app v' C -->* v).
   Proof.
     intros es vv; depind es.
     - exists t; eauto using value_ectx_inv with eval.
-    - destruct (eval_ectx_inv C t ec H eq_refl) as [vt|[t'' [eq e]]].
+    - destruct (eval_ectx_inv C t ec H eq_refl) as [vt|[[C' [eC' [? ?]]]|[t'' [eq e]]]]; subst.
       + exists t; crush.
-      + subst.
-        destruct (IHes t'' C ec eq_refl vv) as (v' & vv' & es1' & es2').
+      + rewrite -> (wrong_evalStar_inv es) in *.
+        crush.
+      + destruct (IHes t'' C ec eq_refl vv) as (v' & vv' & es1' & es2').
         exists v'; crush.
   Qed.
  

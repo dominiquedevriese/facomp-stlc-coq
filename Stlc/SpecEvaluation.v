@@ -78,7 +78,7 @@ Hint Constructors eval₀ : eval.
 Hint Constructors clos_refl_trans_1n : eval.
 Hint Constructors clos_trans_1n : eval.
 
-Definition normal (t : Tm) := not (exists t', t --> t').
+Definition normal (t : Tm) := forall t', not (t --> t').
 
 (* Alternative induction principle without program contexts. *)
 Lemma eval_ind' (P: Tm → Tm → Prop) :

@@ -293,7 +293,7 @@ Proof.
     eauto using (eval_ctx₀ phole).
   - left; crush.
   - exfalso.     
-    eapply (values_are_normal H1); exists t'.
+    eapply (values_are_normal H1 t').
     eapply (eval_ctx₀ phole); crush.
 Qed.
 
@@ -303,7 +303,7 @@ Lemma evalStar_ectx_inv C t (ec : ECtx C) v :
 Proof.
   intros es vv; depind es.
   - exists t; eauto using value_ectx_inv with eval.
-  - destruct (eval_ectx_inv C t ec _ H) as [vt|[t'' [eq e]]].
+  - destruct (eval_ectx_inv C t ec H eq_refl) as [vt|[t'' [eq e]]].
     + exists t; crush.
     + subst.
       destruct (IHes t'' C ec eq_refl vv) as (v' & vv' & es1' & es2').
