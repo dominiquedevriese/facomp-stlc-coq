@@ -96,14 +96,14 @@ Qed.
 
 Section Values.
 
-  Lemma value_pctx_inversion {C} (eC: ECtx C) :
+  Lemma value_ectx_inv {C} (eC: ECtx C) :
     ∀ t, Value (pctx_app t C) → Value t.
   Proof. induction C; cbn in *; intuition. Qed.
 
   Lemma ectx_wrong_not_value {C} : ECtx C -> ¬ (Value (pctx_app wrong C)).
   Proof.
     intros ec val.
-    apply value_pctx_inversion in val; crush.
+    apply value_ectx_inv in val; crush.
   Qed.
 
   Lemma values_are_eval₀_normal {t t'} :
@@ -113,7 +113,7 @@ Section Values.
   Lemma values_are_normal {t : UTm} : Value t → normal t.
   Proof.
     intros vt; induction 1 as [? ? ? r'|?];
-      apply value_pctx_inversion in vt;
+      apply value_ectx_inv in vt;
       eauto using values_are_eval₀_normal.
   Qed.
   Global Arguments values_are_normal {_} _ {_} _.
@@ -315,7 +315,7 @@ Section Determinacy.
         elim (values_are_eval₀_normal V H)
       (* Value strengthening *)
       | [V: Value (pctx_app _ ?C), E: ECtx ?C |- _] =>
-        apply (value_pctx_inversion E) in V; cbn in V
+        apply (value_ectx_inv E) in V; cbn in V
       (* Strengthen with eval₀ determinacy. *)
       | [H1: ?s -->₀ ?t, H2: ?s -->₀ ?u |- _] =>
         pose proof (eval₀_determinacy H1 H2);
@@ -504,14 +504,77 @@ Section Termination'.
       eapply (wrong_normal _ H1).
   Qed.    
 
-  Lemma div_ectx {t C} :
+  Lemma eval_ectx_inv C t (ec : ECtx C) {t' t''} :
+    t'' --> t' → pctx_app t C = t'' →
+    Value t ∨ exists t'', t' = pctx_app t'' C ∧ t --> t''.
+  Proof.
+  (*   induction 1. *)
+  (*   intros eq. *)
+  (*   pose proof (pctx_app_eq _ _ _ _ ec H0 eq) as inv. *)
+  (*   induction inv. *)
+  (*   - right.  *)
+  (*     exists (pctx_app t' C).  *)
+  (*     eauto using pctx_cat_app, eval_ctx₀. *)
+  (*   - destruct (eval₀_ectx_inv C t H1 H eq_refl); crush. *)
+  (*     right; exists t'. *)
+  (*     rewrite pctx_cat_phole_leftzero; *)
+  (*       eauto using (eval_ctx₀ phole). *)
+  (*   - left; crush. *)
+  (*   - exfalso.      *)
+  (*     eapply (values_are_normal H1); exists t'. *)
+  (*     eapply (eval_ctx₀ phole); crush. *)
+  (* Qed. *)
+  Admitted.
+
+  Lemma evalStar_ectx_inv C t (ec : ECtx C) v :
+    pctx_app t C -->* v → Value v →
+    exists v', Value v' ∧ t -->* v' ∧ pctx_app v' C -->* v.
+  Proof.
+    intros es vv; depind es.
+    - exists t; eauto using value_ectx_inv with eval.
+    - destruct (eval_ectx_inv C t ec H eq_refl) as [vt|[t'' [eq e]]].
+      + exists t; crush.
+      + subst.
+        destruct (IHes t'' C ec eq_refl vv) as (v' & vv' & es1' & es2').
+        exists v'; crush.
+  Qed.
+ 
+  Lemma inversion_termination_evalcontext C t (ec: ECtx C) :
+    (pctx_app t C) ⇓ → t ⇓.
+  Proof.
+    destruct 1 as (v & vv & es).
+    destruct (evalStar_ectx_inv C t ec v es) as (v' & vv' & es1 & es2); subst; crush.
+    exists v'; crush.
+  Qed.
+
+  Corollary div_ectx {t C} :
     ECtx C → t ⇑ → (pctx_app t C) ⇑.
-  Admitted.
-    
-  Lemma eval_to_wrong_ectx {t C} :
-    ECtx C → t -->* wrong → (pctx_app t C) -->* wrong.
-  Admitted.
-    
+  Proof. eauto using inversion_termination_evalcontext. Qed.
+
+  Lemma pctx_cat_phole {C C'} : C ≠ phole → pctx_cat C C' ≠ phole.
+  Proof.
+    induction C'; simpl; crush.
+  Qed.
+
+  Lemma eval_to_wrong_ectx {t C} (eC : ECtx C):
+    t -->* wrong → (pctx_app t C) -->* wrong.
+  Proof.
+    intros es.
+    depind es.
+    - assert (phole_or_not : C = phole ∨ C ≠ phole)
+        by (destruct C; [left|right..]; crush).
+      destruct (phole_or_not); subst.
+      + simpl; crush.
+      + eapply evalToStar.
+        eauto with eval.
+    - induction H.
+      + refine (evalStepStar _ _ IHes).
+        rewrite <- ?pctx_cat_app.
+        eauto using ectx_cat with eval.
+      + rewrite <- ?pctx_cat_app.
+        eapply evalToStar.
+        eauto using pctx_cat_phole, ectx_cat with eval.
+  Qed.
 
 End Termination'.
 
