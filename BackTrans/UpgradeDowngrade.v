@@ -130,17 +130,15 @@ Qed.
 
 Lemma upgrade_sub {n d γ} : (upgrade n d)[γ] = upgrade n d.
 Proof.
-  (* Sigh why is coq not finding this instance??? *) 
-(*   About wsApTm. *)
-(*   apply wsClosed_invariant.  *)
-(*   eapply upgrade_closed. *)
-(* Qed. *)
-Admitted.
+  apply wsClosed_invariant.
+  eapply upgrade_closed.
+Qed.
 
 Lemma downgrade_sub {n d γ} : (downgrade n d)[γ] = downgrade n d.
 Proof.
-Admitted.
-
+  apply wsClosed_invariant.
+  eapply downgrade_closed.
+Qed.
 
 Lemma downgrade_value {n d} : Value (downgrade n d).
 Proof.

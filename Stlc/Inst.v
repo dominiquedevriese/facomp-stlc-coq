@@ -66,6 +66,13 @@ End TmKit.
 Module InstTm := Inst TmKit.
 Export InstTm. (* Export for shorter names. *)
 
+Instance wsVrTm: WsVr Tm.
+Proof.
+  constructor.
+  - now constructor.
+  - now inversion 1.
+Qed.
+
 Section Application.
 
   Context {Y: Type}.
@@ -98,3 +105,11 @@ Section Application.
       + apply IHwt3; inversion 1; crush.
   Qed.
 End Application.
+
+Instance wsWkTm: WsWk Tm.
+Proof.
+  constructor; crush.
+  - refine (wsAp _ H); eauto.
+    constructor; eauto.
+  - admit.
+Admitted.
