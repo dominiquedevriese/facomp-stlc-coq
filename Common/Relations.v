@@ -56,6 +56,12 @@ Section RtProperties.
     t -->* t' → t = t' ∨ (t -->+ t').
   Proof. inversion 1; eauto using evalPlusStarToPlus with eval. Qed.
 
+  Lemma inversion_evalPlus {t t'} :
+    t -->+ t' → ∃ t'', t --> t'' ∧ t'' -->* t'.
+  Proof. induction 1 as [t t' e|t t'' t' e ePlus];
+         [exists t'|exists t''] ; eauto using evalPlusToStar with eval. 
+  Qed.
+
 End RtProperties.
 
 Section StepRel.

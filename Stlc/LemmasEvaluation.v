@@ -423,7 +423,17 @@ Proof. eauto using termination_closed_under_evalstar. Qed.
 
 Lemma cycles_dont_terminate {t} :
   t -->+ t → t⇑.
-Admitted.
+Proof.
+  intros cycle.
+  destruct 1 as (v & vv & ?).
+  enough (forall t', t' -->+ t → t' -->* v → False) by eauto with eval.
+  intros ? cycle'.
+  induction 1 as [?|? ? ? e' ? IHes''];
+    destruct (inversion_evalPlus cycle') as (? & cycleStart & ?).
+  - refine (values_are_normal vv _ cycleStart).
+  - rewrite <- ?(determinacy e' cycleStart) in *.
+    eauto using IHes'', evalStarPlusToPlus.
+Qed.
 
 Lemma TerminatingN_lt {t n n'} :
   TerminatingN t n → n ≤ n' → TerminatingN t n'.
