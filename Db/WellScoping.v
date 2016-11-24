@@ -225,12 +225,13 @@ Section Stuff.
   (*     + easy. *)
   (* Qed. *)
 
-  Lemma wsClosed_invariant {x: X} (wx: ⟨ 0 ⊢ x ⟩) :
-    ∀ (ξ: Sub X), x[ξ] = x.
+  Lemma wsClosed_invariant {Y} {vrY : Vr Y} {apXY : Ap X Y} {wsY : Ws Y} {wsApY : WsAp X Y} {x: X} (wx: ⟨ 0 ⊢ x ⟩) :
+    ∀ (ξ: Sub Y), x[ξ] = x.
   Proof.
     intros.
-    replace x with x[idm X] at 2 by crush.
-    eapply (wsApExt wx); inversion 1.
+    replace x with x[idm Y] at 2 by crush.
+    eapply (wsApExt wx). 
+    inversion 1.
   Qed.
 
   Lemma closed_invar_sub {d1 d2 t0} (wt0: ⟨ 0 ⊢ t0 ⟩) :

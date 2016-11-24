@@ -90,6 +90,7 @@ Proof.
   induction τ;
   intros n w vs vu dwp vr; simpl.
   - (* τ₁ ⇒ τ₂ *) 
+    destruct (valrel_implies_OfType vr) as ((_ & tvs) & (closed_vu & _)).
     destruct (valrel_implies_Value vr) as (vvs & vvu).
     eapply termrel₀_antired_star.
     + eapply evalToStar.
@@ -103,4 +104,6 @@ Proof.
       crushTyping.
       rewrite inject_sub, extract_sub; cbn.
       crushUtlcScoping.
-      rewrite protect_sub, confine_sub.
+      rewrite ?protect_sub, ?confine_sub.
+      rewrite (wsClosed_invariant (wt_implies_ws tvs)).
+      rewrite (wsClosed_invariant closed_vu).

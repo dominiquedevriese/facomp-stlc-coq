@@ -280,7 +280,7 @@ Notation "⟨  γ ⊢ t  ⟩" := (ws γ t) (at level 0, γ at level 99, t at lev
 
 Instance WsIx : Ws Ix := { ws := wsIx }.
 
-Definition WsSub {X} {wsX: Ws X} (γ δ: Dom) (ξ: Sub X) : Prop :=
+Definition WsSub {X Y} {wsX: Ws X} {wsY : Ws Y} (γ δ: Dom) (ξ: Sub Y) : Prop :=
   ∀ (i: Ix), γ ∋ i → ⟨ δ ⊢ ξ i ⟩.
 Notation "⟨ ξ : γ => δ ⟩" := (WsSub γ δ ξ)
  (at level 0, ξ at level 99, γ at level 99, δ at level 99).
