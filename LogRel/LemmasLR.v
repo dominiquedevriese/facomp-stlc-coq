@@ -11,6 +11,7 @@ Require Import Stlc.SpecTyping.
 Require Import Utlc.SpecSyntax.
 Require Import Utlc.SpecEvaluation.
 Require Import Utlc.LemmasEvaluation.
+Require Import Utlc.LemmasScoping.
 Require Import Utlc.Inst.
 
 Require Import Omega.
@@ -192,6 +193,16 @@ Section ClosedLR.
     destruct (valrel_implies_OfType vr) as [[_ ots] _].
     unfold OfTypeStlc in ots.
     subst. exact ots.
+  Qed.
+
+  Lemma envrel_implies_WsSub {d W Γ γs γu}:
+    envrel d W Γ γs γu → WsSub (pdom Γ) 0 γu.
+  Proof.
+    intros er i wsi.
+    destruct (pdom_works_inv wsi) as (τ & τinΓ).
+    specialize (er i τ τinΓ).
+    destruct (valrel_implies_OfType er) as (_ & ws & _).
+    exact ws.
   Qed.
 
   Local Ltac crush :=
@@ -419,9 +430,12 @@ Section OpenLR.
     ⟪ i : τ p∈ Γ ⟫ →
     ⟪ Γ ⊩ S.var i ⟦ d , n ⟧ U.var i : τ ⟫.
   Proof.
-    intros iτ. constructor.
+    intros iτ. unfold OpenLRN.
+    split;[|split].
     - crushTyping.
       eauto using repEmulCtx_works.
+    - crushUtlcScoping.
+      eauto using pdom_works.
     - intros ? _ ? ? er.
       apply valrel_in_termrel.
       refine (er _ _ iτ).
@@ -434,7 +448,7 @@ Section OpenLR.
     U.Terminating tu.
   Proof.
     intros lr term ineq.
-    destruct lr as [ty lr].
+    destruct lr as (tsty & tuscp & lr).
     set (w := n).
     assert (le_w : lev w ≤ n) by (unfold lev, w; omega).
     assert (er : envrel dir_lt w pempty (idm S.Tm) (idm U.UTm)) by apply envrel_triv.
@@ -450,7 +464,7 @@ Section OpenLR.
     S.Terminating ts.
   Proof.
     intros lr term ineq.
-    destruct lr as [ty lr].
+    destruct lr as (tsty & tuscp & lr).
     set (w := n).
     assert (le_w : lev w ≤ n) by (unfold lev, w; omega).
     assert (er : envrel dir_lt w pempty (idm S.Tm) (idm U.UTm)) by apply envrel_triv.
@@ -468,16 +482,17 @@ Section TermRelZero.
   Proof.
     intros vr.
     destruct (valrel_implies_OfType vr) as [[? ?] ?].
-    unfold termrel₀. simpl.
-    exists ts, tu.
+    unfold termrel₀. simpl. 
+    left. exists ts, tu.
     eauto with eval.
   Qed.
 
   Lemma termrel₀_in_termrel {d w τ ts tu} :
     termrel₀ d w τ ts tu → termrel d w τ ts tu.
   Proof.
-    destruct 1 as (vs & vu & ess & esu & vr).
-    eauto using termrel_antired_star, valrel_in_termrel.
+    destruct 1 as [(vs & vu & ess & esu & vr)|div].
+    - eauto using termrel_antired_star, valrel_in_termrel.
+    - unfold termrel, termrel'; eauto.
   Qed.
 
   Lemma termrel₀_antired_star {ts ts' tu tu' W d τ} :
@@ -487,10 +502,15 @@ Section TermRelZero.
     termrel₀ d W τ ts tu.
   Proof.
     intros es eu tr.
-    destruct tr as (vs & vu & ess & esu & vr).
-    exists vs, vu.
-    simpl in *.
-    eauto using evalStepTrans.
+    destruct tr as [(vs & vu & ess & esu & vr)|div].
+    - left; exists vs, vu.
+      simpl in *.
+      eauto using evalStepTrans.
+    - right. intros Cs Cu eCs eCu.
+      destruct (evalTrans_to_stepRel (evalstar_ctx Cs eCs es)) as (? & es').
+      destruct (evalTrans_to_stepRel eu) as (? & eu').
+      pose proof (ctxevaln_evaln_ctx eu' Cu eCu) as eu''.
+      eapply (obs_antired (W' := W) es' eu''); eauto with arith.
   Qed.
 
   Lemma termrel₀_antired_star_left {ts ts' tu W d τ} :
@@ -508,10 +528,15 @@ Section TermRelZero.
     termrel₀ d w τ₂ (S.pctx_app ts Cs) (U.pctx_app tu Cu).
   Proof.
     intros trtm trcont.
-    destruct trtm as (vs & vu & ess & esu & vr).
-    specialize (trcont vs vu vr).
-    refine (termrel₀_antired_star _ _ trcont);
-    eauto using evalstar_ctx, extend_ctxevalStar.
+    destruct trtm as [(vs & vu & ess & esu & vr)|div].
+    - specialize (trcont vs vu vr).
+      refine (termrel₀_antired_star _ _ trcont);
+        eauto using evalstar_ctx, extend_ctxevalStar.
+    - right.
+      intros Cs' Cu' eCs' eC'.
+      rewrite <- S.pctx_cat_app.
+      rewrite <- U.pctx_cat_app.
+      eauto using S.ectx_cat, U.ectx_cat.
   Qed.
 
   Lemma termrel₀_ectx' {d w τ₁ τ₂ ts Cs tu ts' tu' Cu} :

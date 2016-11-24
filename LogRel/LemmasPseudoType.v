@@ -1,5 +1,6 @@
 Require Import Stlc.CanForm.
 Require Import Stlc.LemmasTyping.
+Require Import Utlc.LemmasScoping.
 Require Export LogRel.PseudoType.
 Require Import UVal.UVal.
 
@@ -36,11 +37,12 @@ Qed.
 Section OfType.
 
   Local Ltac crush :=
-    unfold OfType, OfTypeStlc, OfTypeUtlc; intros;
+    unfold OfType, OfTypeStlc, OfTypeUtlc, OfTypeUtlc'; intros;
     repeat
       (subst;
        stlcCanForm;
        crushTyping;
+       crushUtlcScoping;
        destruct_conjs;
        repeat
          match goal with
@@ -80,6 +82,7 @@ Section OfType.
 
   Lemma OfType_lambda {τ₁ τ₂ τ₁' tsb tub} :
     τ₁' = repEmul τ₁ →
+    ⟨ 1 ⊢ tub ⟩ →
     ⟪ empty ⊢ S.abs (repEmul τ₁) tsb : repEmul τ₁ ⇒ repEmul τ₂ ⟫ →
     OfType (ptarr τ₁ τ₂) (S.abs τ₁' tsb) (U.abs tub).
   Proof. crush. Qed.
@@ -117,7 +120,7 @@ Section OfType.
 
   Lemma OfTypeUtlc_inversion_ptarr {τ₁ τ₂ tu} :
     OfTypeUtlc (ptarr τ₁ τ₂) tu →
-    ∃ tu', tu = U.abs tu'.
+    ∃ tu', tu = U.abs tu' ∧ ⟨ 1 ⊢ tu' ⟩.
   Proof. crush. Qed.
 
   Lemma OfTypeUtlc_inversion_ptprod {τ₁ τ₂ tu} :
@@ -136,21 +139,31 @@ Section OfType.
     ∃ ts' tu',
       ts = S.abs (repEmul τ₁) ts' ∧
       tu = U.abs tu' ∧
-      ⟪ empty ▻ repEmul τ₁ ⊢ ts' : repEmul τ₂ ⟫.
+      ⟪ empty ▻ repEmul τ₁ ⊢ ts' : repEmul τ₂ ⟫ ∧
+      ⟨ 1 ⊢ tu' ⟩.
   Proof. crush. Qed.
 
   Lemma OfType_inversion_pEmulDV {n p ts tu} :
     OfType (pEmulDV n p) ts tu →
     S.Value ts ∧ U.Value tu ∧
-    ⟪ empty ⊢ ts : UVal n ⟫.
+    ⟪ empty ⊢ ts : UVal n ⟫ ∧
+    ⟨ 0 ⊢ tu ⟩.
   Proof. crush. Qed.
+
+  Lemma OfTypeUtlc'_implies_Value {τ tu} :
+    OfTypeUtlc' τ tu →
+    U.Value tu.
+  Proof.
+    revert tu.
+    induction τ; crush.
+  Qed.
 
   Lemma OfTypeUtlc_implies_Value {τ tu} :
     OfTypeUtlc τ tu →
     U.Value tu.
   Proof.
-    revert tu.
-    induction τ; crush.
+    destruct 1 as (ctu & otu).
+    eauto using OfTypeUtlc'_implies_Value.
   Qed.
 
   Lemma OfType_implies_Value {τ ts tu} :
@@ -165,6 +178,7 @@ Section OfType.
   Lemma OfType_pEmulDV {n p ts tu} :
     S.Value ts ∧ U.Value tu ∧
     ⟪ empty ⊢ ts : UVal n ⟫ → 
+    ⟨ 0 ⊢ tu ⟩ →
     OfType (pEmulDV n p) ts tu.
   Proof. crush. Qed.
 
@@ -178,15 +192,14 @@ Ltac crushOfType :=
       | [ H: OfType (ptsum _ _) _ _ |- _ ] => apply OfType_inversion_ptsum in H
       | [ H: OfType (ptprod _ _) _ _ |- _ ] => apply OfType_inversion_ptprod in H
       | [ H: OfType (ptarr _ _) _ _ |- _ ] => apply OfType_inversion_ptarr in H
+      | [ H: OfTypeUtlc _ ?t |- ⟨ 0 ⊢ ?t ⟩ ] => exact (proj1 H)
+      | [ H: OfTypeUtlc ?τ ?t |- OfTypeUtlc' ?τ ?t ] => exact (proj2 H)
       | [ H: OfTypeUtlc (ptarr _ _) _ |- _ ] => apply OfTypeUtlc_inversion_ptarr in H
       | [ H: OfTypeUtlc (ptprod _ _) _ |- _ ] => apply OfTypeUtlc_inversion_ptprod in H
       | [ H: OfTypeUtlc (ptsum _ _) _ |- _ ] => apply OfTypeUtlc_inversion_ptsum in H
       | [ H: OfType (pEmulDV _ _) _ _ |- _ ] => apply OfType_inversion_pEmulDV in H
-      (* | [ H: OfTypeUtlc (ptprod _ _) ?t  |- _ ] => destruct t; cbn in H; try discriminate *)
-      (* | [ H: OfTypeUtlc (ptsum _ _) ?t  |- _ ] => destruct t; cbn in H; try discriminate *)
       (* | [ H: OfTypeUtlc ptbool ?t  |- _ ] =>  change (OfTypeUtlc ptbool t) with (t = U.true ∨ t = U.false) in H *)
       (* | [ H: OfTypeUtlc ptunit ?t  |- _ ] => change (OfTypeUtlc ptunit t) with (t = U.unit) in H; subst t *)
-      (* | [ H: OfTypeUtlc (ptarr _ _) ?t  |- _ ] => destruct t; cbn in H; try discriminate *)
       | [ |- OfType ptunit S.unit U.unit ] => apply OfType_unit
       | [ |- OfType ptbool S.true U.true ] => apply OfType_true
       | [ |- OfType ptbool S.false U.false ] => apply OfType_false
@@ -194,5 +207,6 @@ Ltac crushOfType :=
       | [ |- OfType (ptsum _ _) (S.inr _) (U.inr _)] => apply OfType_inr
       | [ |- OfType (ptprod _ _) (S.pair _ _) (U.pair _ _) ] => apply OfType_pair
       | [ |- OfType (ptarr _ _) (S.abs _ _) (U.abs _) ] => apply OfType_lambda
+      | [ |- OfTypeUtlc _ _ ] => split
       | [ |- OfType (pEmulDV _ _) _ _ ] => apply OfType_pEmulDV
     end.

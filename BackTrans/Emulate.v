@@ -142,6 +142,8 @@ Local Ltac crush :=
           repeat crushStlcEval; 
           repeat crushUtlcEvaluationMatchH; 
           repeat crushUtlcEvaluationMatchH2; 
+          repeat crushUtlcEvaluationMatchH2; 
+          repeat crushUtlcScopingMatchH;
           repeat crushDbSyntaxMatchH;
           repeat crushDbLemmasMatchH;
           repeat crushDbLemmasRewriteH;
@@ -160,7 +162,7 @@ Qed.
 Lemma compat_emul_wrong {Γ pτ d m} :
   ⟪ Γ ⊩ stlcOmega (repEmul pτ) ⟦ d , m ⟧ wrong : pτ ⟫.
 Proof.
-  split; eauto with typing uval_typing.
+  split; [|split]; crush.
   intros w wn γs γu envrel.
   rewrite stlcOmega_sub.
   eauto using termrel_omega_wrong.
@@ -178,11 +180,13 @@ Lemma compat_emul_unit {Γ d n p m} :
   ⟪ Γ ⊩ inUnitDwn n S.unit ⟦ d , m ⟧ U.unit : pEmulDV n p ⟫.
 Proof.
   intros dwp.
-  split; eauto using inUnitDwn_T with typing uval_typing.
-  intros w wn γs γu envrel.
-  rewrite inUnitDwn_sub.
-  simpl.
-  eauto using termrel_inUnitDwn, dwp_mono, valrel_in_termrel, valrel_unit with arith.
+  split; [|split]. 
+  - eauto using inUnitDwn_T with typing uval_typing.
+  - crush.
+  - intros w wn γs γu envrel.
+    rewrite inUnitDwn_sub.
+    simpl.
+    eauto using termrel_inUnitDwn, dwp_mono, valrel_in_termrel, valrel_unit with arith.
 Qed.
 
 Lemma compat_emul_true {Γ d n p m} :
@@ -190,11 +194,13 @@ Lemma compat_emul_true {Γ d n p m} :
   ⟪ Γ ⊩ inBoolDwn n S.true ⟦ d , m ⟧ U.true : pEmulDV n p ⟫.
 Proof.
   intros dwp.
-  split; eauto using inBoolDwn_T with typing uval_typing.
-  intros w wn γs γu envrel.
-  rewrite inBoolDwn_sub.
-  simpl.
-  eauto using termrel_inBoolDwn, dwp_mono, valrel_in_termrel, valrel_true with arith.
+  split; [|split].
+  - eauto using inBoolDwn_T with typing uval_typing.
+  - crush.
+  - intros w wn γs γu envrel.
+    rewrite inBoolDwn_sub.
+    simpl.
+    eauto using termrel_inBoolDwn, dwp_mono, valrel_in_termrel, valrel_true with arith.
 Qed.
 
 Lemma compat_emul_false {Γ d n p m} :
@@ -202,11 +208,13 @@ Lemma compat_emul_false {Γ d n p m} :
   ⟪ Γ ⊩ inBoolDwn n S.false ⟦ d , m ⟧ U.false : pEmulDV n p ⟫.
 Proof.
   intros dwp.
-  split; eauto using inBoolDwn_T with typing uval_typing.
-  intros w wn γs γu envrel.
-  rewrite inBoolDwn_sub.
-  simpl.
-  eauto using termrel_inBoolDwn, dwp_mono, valrel_in_termrel, valrel_false with arith.
+  split; [|split].
+  - eauto using inBoolDwn_T with typing uval_typing.
+  - crush.
+  - intros w wn γs γu envrel.
+    rewrite inBoolDwn_sub.
+    simpl.
+    eauto using termrel_inBoolDwn, dwp_mono, valrel_in_termrel, valrel_false with arith.
 Qed.
 
 Lemma compat_emul_abs {n m d p Γ ts tu} :
@@ -214,15 +222,17 @@ Lemma compat_emul_abs {n m d p Γ ts tu} :
   ⟪ Γ p▻ pEmulDV n p ⊩ ts ⟦ d , m ⟧ tu : pEmulDV n p ⟫ →
   ⟪ Γ ⊩ inArrDwn n (S.abs (UVal n) ts) ⟦ d , m ⟧ U.abs tu : pEmulDV n p ⟫.
 Proof.
-  intros dwp [ty tr].
-  split.
+  intros dwp [ty [closed tr]].
+  split; [|split].
   - eauto using inArrDwn_T with typing uval_typing.
+  - crush.
   - intros w wn γs γu envrel.
 
     assert (OfType (ptarr (pEmulDV n p) (pEmulDV n p))
                    (S.abs (repEmul (pEmulDV n p)) 
                           (ts [γs↑])) (U.abs (tu [γu↑])))
       by (pose proof (envrel_implies_WtSub envrel);
+          pose proof (envrel_implies_WsSub envrel);
           crush).
 
     assert (dir_world_prec n w d p) by eauto using dwp_mono.
@@ -273,7 +283,7 @@ Proof.
 
   (* continuation boilerplate *)
   intros w' futw vs₁ vu₁ vr₁.
-  destruct (valrel_implies_OfType vr₁) as [[vvs₁ ?] ?].
+  destruct (valrel_implies_OfType vr₁) as [[vvs₁ ?] [? ?]].
   rewrite S.pctx_cat_app; cbn.
 
   (* beta-reduce the outer let *)
@@ -358,11 +368,11 @@ Lemma compat_emul_pair {n m d p Γ ts₁ tu₁ ts₂ tu₂} :
   ⟪ Γ ⊩ inProdDwn n (S.pair ts₁ ts₂) ⟦ d , m ⟧ U.pair tu₁ tu₂ : pEmulDV n p ⟫.
 Proof.
   intros dwp tr₁ tr₂.
-  split.
-  - destruct tr₁ as [ty₁ _].
-    destruct tr₂ as [ty₂ _].
-    simpl in ty₁, ty₂.
-    eauto using inProdDwn_T with typing uval_typing.
+  destruct tr₁ as (? & ? & tr₁).
+  destruct tr₂ as (? & ? & tr₂).
+  split; [|split].
+  - eauto using inProdDwn_T with typing uval_typing.
+  - crushUtlcScoping.
   - intros w wm γs γu envrel.
     rewrite inProdDwn_sub.
     enough (termrel d w (ptprod (pEmulDV n p) (pEmulDV n p)) (S.pair ts₁ ts₂)[γs] (U.pair tu₁ tu₂)[γu]) as trp.
@@ -370,9 +380,7 @@ Proof.
       intros w' futw vs vu vr.
       eapply termrel_inProdDwn;
         eauto using termrel_inProdDwn, dwp_mono with arith.
-    + destruct tr₁ as [_ tr₁].
-      destruct tr₂ as [_ tr₂].
-      eapply termrel_pair;
+    + eapply termrel_pair;
       fold apTm apUTm; crush.
       intros w' fw; eapply tr₂; eauto using envrel_mono with arith.
 Qed.
@@ -443,16 +451,13 @@ Lemma compat_emul_caseof {n m d p Γ ts₁ tu₁ ts₂ tu₂ ts₃ tu₃} :
   ⟪ Γ ⊩ S.caseof (caseSumUp n ts₁) ts₂ ts₃ ⟦ d , m ⟧ U.caseof tu₁ tu₂ tu₃ : pEmulDV n p ⟫.
 Proof.
   intros dwp lr₁ lr₂ lr₃.
-  split.
-  - destruct lr₁ as [ty₁ _].
-    destruct lr₂ as [ty₂ _].
-    destruct lr₃ as [ty₃ _].
-    simpl in *.
-    eauto with typing uval_typing.
-  - destruct lr₁ as [_ tr₁].
-    destruct lr₂ as [_ tr₂].
-    destruct lr₃ as [_ tr₃].
-    intros w wm γs γu envrel.
+  destruct lr₁ as (? & ? & tr₁).
+  destruct lr₂ as (? & ? & tr₂).
+  destruct lr₃ as (? & ? & tr₃).
+  split; [|split].
+  - eauto with typing uval_typing.
+  - crushUtlcScoping.
+  - intros w wm γs γu envrel.
     cbn; crush.
     rewrite caseSumUp_sub.
     eapply termrel_emul_caseof; 
@@ -526,16 +531,14 @@ Lemma compat_emul_ite {n m d p Γ ts₁ tu₁ ts₂ tu₂ ts₃ tu₃} :
   ⟪ Γ ⊩ S.ite (caseBoolUp n ts₁) ts₂ ts₃ ⟦ d , m ⟧ U.ite tu₁ tu₂ tu₃ : pEmulDV n p ⟫.
 Proof.
   intros dwp lr₁ lr₂ lr₃.
-  split.
-  - destruct lr₁ as [ty₁ _].
-    destruct lr₂ as [ty₂ _].
-    destruct lr₃ as [ty₃ _].
-    simpl in *.
+  destruct lr₁ as (? & ? & tr₁).
+  destruct lr₂ as (? & ? & tr₂).
+  destruct lr₃ as (? & ? & tr₃).
+  split; [|split].
+  - simpl in *.
     eauto with typing uval_typing.
-  - destruct lr₁ as [_ tr₁].
-    destruct lr₂ as [_ tr₂].
-    destruct lr₃ as [_ tr₃].
-    intros w wm γs γu envrel.
+  - crushUtlcScoping.
+  - intros w wm γs γu envrel.
     cbn; crush.
     rewrite caseBoolUp_sub.
     eapply termrel_emul_ite; eauto using envrel_mono, dwp_mono with arith.
@@ -547,10 +550,11 @@ Lemma compat_emul_app {n m d p Γ ts₁ tu₁ ts₂ tu₂} :
   ⟪ Γ ⊩ ts₂ ⟦ d , m ⟧ tu₂ : pEmulDV n p ⟫ →
   ⟪ Γ ⊩ uvalApp n ts₁ ts₂ ⟦ d , m ⟧ U.app tu₁ tu₂ : pEmulDV n p ⟫.
 Proof.
-  intros dwp [ty₁ tr₁] [ty₂ tr₂].
-  split.
+  intros dwp (? & ? & tr₁) (? & ? & tr₂).
+  split; [|split].
   - unfold uvalApp.
     eauto using caseArrUp_T with typing uval_typing.
+  - crushUtlcScoping.
   - intros w wn γs γu envrel.
     unfold lev in *.
 
@@ -627,9 +631,10 @@ Lemma compat_emul_seq {n m d p Γ ts₁ tu₁ ts₂ tu₂} :
   ⟪ Γ ⊩ ts₂ ⟦ d , m ⟧ tu₂ : pEmulDV n p ⟫ →
   ⟪ Γ ⊩ S.seq (caseUnitUp n ts₁) ts₂ ⟦ d , m ⟧ U.seq tu₁ tu₂ : pEmulDV n p ⟫.
 Proof.
-  intros dwp [ty₁ tr₁] [ty₂ tr₂].
-  split.
+  intros dwp (? & ? & tr₁) (? & ? & tr₂).
+  split; [|split].
   - eauto using caseUnitUp_T with typing uval_typing.
+  - crushUtlcScoping.
   - intros w wn γs γu envrel.
 
     specialize (tr₁ w wn γs γu envrel).
@@ -661,12 +666,12 @@ Lemma compat_emul_inl {n m d p Γ ts tu} :
   ⟪ Γ ⊩ inSumDwn n (S.inl ts) ⟦ d , m ⟧ U.inl tu : pEmulDV n p ⟫.
 Proof.
   intros dwp lr.
-  split.
-  - destruct lr as [ty _].
-    simpl in *.
+  destruct lr as (? & ? & tr).
+  split; [|split].
+  - simpl in *.
     eauto using inSumDwn_T with typing uval_typing.
+  - crushUtlcScoping.
   - intros w wm γs γu envrel.
-    destruct lr as [_ tr].
     rewrite inSumDwn_sub.
     eapply termrel_emul_inl; eauto using dwp_mono.
 Qed.
@@ -689,12 +694,12 @@ Lemma compat_emul_inr {n m d p Γ ts tu} :
   ⟪ Γ ⊩ inSumDwn n (S.inr ts) ⟦ d , m ⟧ U.inr tu : pEmulDV n p ⟫.
 Proof.
   intros dwp lr.
-  split.
-  - destruct lr as [ty _].
-    simpl in *.
+  destruct lr as (? & ? & tr).
+  split; [|split].
+  - simpl in *.
     eauto using inSumDwn_T with typing uval_typing.
+  - crushUtlcScoping.
   - intros w wm γs γu envrel.
-    destruct lr as [_ tr].
     rewrite inSumDwn_sub.
     eapply termrel_emul_inr; eauto using dwp_mono.
 Qed.
@@ -750,12 +755,12 @@ Lemma compat_emul_proj₁ {n m d p Γ ts tu} :
   ⟪ Γ ⊩ S.proj₁ (caseProdUp n ts) ⟦ d , m ⟧ U.proj₁ tu : pEmulDV n p ⟫.
 Proof.
   intros dwp lr.
-  split.
-  - destruct lr as [ty _].
-    simpl in *.
+  destruct lr as (? & ? & tr).
+  split; [|split].
+  - simpl in *.
     eauto using inSumDwn_T with typing uval_typing.
+  - crushUtlcScoping.
   - intros w wm γs γu envrel.
-    destruct lr as [_ tr].
     cbn; crush.
     rewrite caseProdUp_sub.
     eapply termrel_emul_proj₁; eauto using dwp_mono.
@@ -812,12 +817,12 @@ Lemma compat_emul_proj₂ {n m d p Γ ts tu} :
   ⟪ Γ ⊩ S.proj₂ (caseProdUp n ts) ⟦ d , m ⟧ U.proj₂ tu : pEmulDV n p ⟫.
 Proof.
   intros dwp lr.
-  split.
-  - destruct lr as [ty _].
-    simpl in *.
+  destruct lr as (? & ? & tr).
+  split; [|split].
+  - simpl in *.
     eauto using inSumDwn_T with typing uval_typing.
+  - crushUtlcScoping.
   - intros w wm γs γu envrel.
-    destruct lr as [_ tr].
     cbn; crush.
     rewrite caseProdUp_sub.
     eapply termrel_emul_proj₂; eauto using dwp_mono.

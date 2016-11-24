@@ -38,7 +38,7 @@ Proof.
   eauto using ectx_cat with eval.
 Qed.
 
-Lemma evalstar_ctx C t t' (eC: ECtx C) :
+Lemma evalstar_ctx {t t'} C (eC: ECtx C) :
   t -->* t' → pctx_app t C -->* pctx_app t' C.
 Proof. 
   induction 1; eauto using eval_ctx with eval.

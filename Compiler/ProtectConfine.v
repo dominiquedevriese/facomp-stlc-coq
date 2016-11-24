@@ -96,15 +96,23 @@ Proof.
 Qed.
 
 
-Lemma protect_closed {τ} : ⟨ 0 ⊢ protect τ ⟩
-with confine_closed {τ}: ⟨ 0 ⊢ confine τ ⟩.
+Lemma protect_closed {δ τ} : ⟨ δ ⊢ protect τ ⟩
+with confine_closed {δ τ}: ⟨ δ ⊢ confine τ ⟩.
 Proof.
-  - induction τ; crush;
-    try apply weakening; auto;
-    try apply (weakenings 2); auto.
-  - induction τ; crush;
-    try apply weakening; auto;
-    try apply (weakenings 2); auto.
+  - induction τ; crush.
+  - induction τ; crush.
+Qed.
+
+Lemma protect_sub {τ γ} : (protect τ)[γ] = protect τ.
+Proof.
+  apply wsClosed_invariant.
+  eapply protect_closed.
+Qed.
+
+Lemma confine_sub {τ γ} : (confine τ)[γ] = confine τ.
+Proof.
+  apply wsClosed_invariant.
+  eapply confine_closed.
 Qed.
 
 Lemma protect_prod {τ1 τ2 vu1 vu2 vu1' vu2'} :
@@ -275,6 +283,7 @@ Proof.
   revert vu.
   induction τ; intros vu oft_vu;
   pose proof (OfTypeUtlc_implies_Value oft_vu) as vvu;
+  pose proof (proj1 oft_vu) as vu_closed;
   crush.
   - (* ptarr *)
     exists
@@ -284,12 +293,11 @@ Proof.
             (app
                vu[wkm]
                (app (confine τ1)[wkm] (var 0))))).
-    crush.
+    crush; eauto using protect_closed, confine_closed.
     apply evalToStar, U.eval₀_ctxeval; crush.
     apply U.eval_beta''; crush.
-
   - (* ptunit *)
-    exists U.unit; crush.
+    exists vu; crush.
     apply evalToStar, U.eval₀_ctxeval; crush.
     apply U.eval_beta''; crush.
   - (* ptbool *)
@@ -327,6 +335,7 @@ Proof.
   revert vu.
   induction τ; intros vu oft_vu; 
   pose proof (OfTypeUtlc_implies_Value oft_vu) as vvu;
+  destruct ((fun x => x) oft_vu) as (closed_vu & oft_vu');
   crush.
   - exists (abs
          (app
@@ -334,7 +343,7 @@ Proof.
             (app
                (vu[wkm])
                (app (protect τ1)[wkm] (var 0))))).
-    crush.
+    crush; eauto using protect_closed, confine_closed.
     apply evalToStar, U.eval₀_ctxeval; crush.
     apply U.eval_beta''; crush.
   - (* ptunit *)
@@ -350,7 +359,7 @@ Proof.
     apply U.eval₀_ctxeval; crush.
     apply U.eval_beta''; crush.
     apply evalToStar, U.eval₀_ctxeval; crush.
-    destruct oft_vu; subst; [apply eval_ite_true|apply eval_ite_false]; crush.
+    destruct oft_vu'; subst; [apply eval_ite_true|apply eval_ite_false]; crush.
   - (* ptprod *)
     destruct oft_vu as (vu1 & vu2 & ? & H1 & H2).
 
@@ -537,13 +546,13 @@ Proof.
   pose proof (valrel_implies_Value vr) as vvu.
 
   apply valrel_ptarr_inversion in vr.
-  destruct vr as (tsb & tub & ? & ? & wtsb & bodyrel).
+  destruct vr as (tsb & tub & ? & ? & wtsb & wstub & bodyrel).
   exists (abs
        (app
           (protect τ₂)[wkm]
           (app vu[wkm]
                (app (confine τ₁)[wkm] (var 0))))).
-  crush.
+  crush; eauto using protect_closed, confine_closed.
   - apply evalToStar, eval₀_ctxeval; crush.
     apply eval_beta''; crush.
   - intros w₂ vs₂ vu₂ fw₂ vr₂; crush.
@@ -594,8 +603,8 @@ Proof.
                (app vu[wkm]
                     (app (protect τ₁)[wkm] (var 0))))).
   apply valrel_ptarr_inversion in vr.
-  destruct vr as (tsb & tub & ? & ? & wtsb & bodyrel).
-  crush.
+  destruct vr as (tsb & tub & ? & ? & wtsb & wstub & bodyrel).
+  crush; eauto using protect_closed, confine_closed.
   - apply evalToStar, eval₀_ctxeval; crush.
     apply eval_beta''; crush.
   - intros w' vs' vu' fw vr'; crush.
@@ -713,7 +722,7 @@ Lemma protect_transp_open {d n τ ts tu Γ} :
   ⟪ Γ ⊩ ts ⟦ d , n ⟧ U.app (protect τ) tu : embed τ ⟫.
 Proof.
   destruct 1 as [ot lr].
-  unfold OpenLRN; crush; intros; crush.
+  unfold OpenLRN; crush; intros; crush; eauto using protect_closed.
   rewrite -> (wsClosed_invariant protect_closed γu).
   eapply protect_transp''; crush.
 Qed.

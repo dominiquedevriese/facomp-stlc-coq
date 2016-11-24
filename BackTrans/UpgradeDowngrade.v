@@ -580,13 +580,14 @@ Proof.
   destruct (invert_valrel_pEmulDV_inProd' vr) as (vs₁ & vs₂ & vu₁ & vu₂ & ? & ? & vr₁ & vr₂); subst.
   destruct w.
   * (* w = 0 *)
+    destruct H1 as (wsPair & vpair).
     simpl in H0.
     canonUVal; crush.
     stlcCanForm.
-    inversion H2; subst; clear H2.
-    destruct_conjs; destruct H3 as [vx vx0].
-    destruct (downgrade_reduces H5 vx) as (vs₁' & vvs₁' & ty₁' & es₁).
-    destruct (downgrade_reduces H7 vx0) as (vs₂' & vvs₂' & ty₂' & es₂).
+    inversion H1; subst; clear H1.
+    destruct_conjs; destruct H2 as [vx vx0].
+    destruct (downgrade_reduces H4 vx) as (vs₁' & vvs₁' & ty₁' & es₁).
+    destruct (downgrade_reduces H6 vx0) as (vs₂' & vvs₂' & ty₂' & es₂).
     exists (inProd n (S.pair vs₁' vs₂')).
     assert (forall w', w' < 0 → valrel dir w' (pEmulDV n p) vs₁' vu₁) by (intros; exfalso; Omega.omega).
     assert (forall w', w' < 0 → valrel dir w' (pEmulDV n p) vs₂' vu₂) by (intros; exfalso; Omega.omega).
@@ -621,13 +622,14 @@ Proof.
   destruct (invert_valrel_pEmulDV_inProd' vr) as (vs₁ & vs₂ & vu₁ & vu₂ & ? & ? & vr₁ & vr₂); subst.
   destruct w.
   * (* w = 0 *)
+    destruct H1 as (wsPair & vpair).
     simpl in H0.
     canonUVal; crush.
     stlcCanForm.
-    inversion H2; subst; clear H2.
-    destruct_conjs; destruct H3 as [vx vx0].
-    destruct (upgrade_reduces d H5 vx) as (vs₁' & vvs₁' & ty₁' & es₁).
-    destruct (upgrade_reduces d H7 vx0) as (vs₂' & vvs₂' & ty₂' & es₂).
+    inversion H1; subst; clear H1.
+    destruct_conjs; destruct H2 as [vx vx0].
+    destruct (upgrade_reduces d H4 vx) as (vs₁' & vvs₁' & ty₁' & es₁).
+    destruct (upgrade_reduces d H6 vx0) as (vs₂' & vvs₂' & ty₂' & es₂).
     exists (inProd (n + d) (S.pair vs₁' vs₂')).
     assert (forall w', w' < 0 → valrel dir w' (pEmulDV (n + d) p) vs₁' vu₁) by (intros; exfalso; Omega.omega).
     assert (forall w', w' < 0 → valrel dir w' (pEmulDV (n + d) p) vs₂' vu₂) by (intros; exfalso; Omega.omega).
@@ -670,6 +672,7 @@ Proof.
       [exists (inSum n (inl vs''))|exists (inSum n (inr vs''))];
       destruct H2 as [[eq1 eq2] | [eq1 eq2]];
       inversion eq1; inversion eq2; subst; clear eq1;
+      destruct H1 as (closed_vu & vvu);
       (split;
        [refine (downgrade_eval_inSum _ _ _ es'); crush|
         assert (ot' : OfType (pEmulDV n p) vs'' vu') by crush;
@@ -709,6 +712,7 @@ Proof.
       [exists (inSum n (inl vs''))|exists (inSum n (inr vs''))];
       destruct H2 as [[eq1 eq2] | [eq1 eq2]];
       inversion eq1; inversion eq2; subst; clear eq1;
+      destruct H1 as (closed_vu & value_vu);
       (split;
        [refine (upgrade_eval_inSum _ _ _ es'); crush|
         assert (ot' : OfType (pEmulDV (n + d) p) vs'' vu') by crush;
@@ -778,13 +782,13 @@ Proof.
         eapply (eval_from_eval₀ e₀); inferContext; crush; eauto using downgrade_value).
      
     (* now execute the application *)
-    specialize (H3 w' _ _ H0 vr').
-    eapply (termrel_ectx' H3); S.inferContext; U.inferContext; crush;
+    specialize (H4 w' _ _ H0 vr').
+    eapply (termrel_ectx' H4); S.inferContext; U.inferContext; crush;
     eauto using downgrade_value.
 
     (* now execute the downgrade *)
     assert (wlt0 : w'0 < w) by Omega.omega.
-    specialize (ihd w'0 _ _ wlt0 H19).
+    specialize (ihd w'0 _ _ wlt0 H21).
     destruct ihd as (vs'' & edowns & vr'').
     enough (termrel dir w'0 (pEmulDV n p)
                     vs'' vu0) as tr'
@@ -850,13 +854,13 @@ Proof.
         eapply (eval_from_eval₀ e₀); inferContext; crush; eauto using upgrade_value).
      
     (* now execute the application *)
-    specialize (H3 w' _ _ H0 vr').
-    eapply (termrel_ectx' H3); S.inferContext; U.inferContext; crush;
+    specialize (H4 w' _ _ H0 vr').
+    eapply (termrel_ectx' H4); S.inferContext; U.inferContext; crush;
     eauto using upgrade_value.
 
     (* now execute the upgrade *)
     assert (wlt0 : w'0 < w) by Omega.omega.
-    specialize (ihu w'0 _ _ wlt0 H19).
+    specialize (ihu w'0 _ _ wlt0 H21).
     destruct ihu as (vs'' & eups & vr'').
     enough (termrel dir w'0 (pEmulDV (n + d) p)
                     vs'' vu0) as tr'
@@ -878,7 +882,8 @@ Proof.
   destruct (valrel_implies_OfType vr) as [[vv ty] otu];
   exists (unkUVal 0).
   destruct (dwp_zero dwp).
-  eauto using downgrade_zero_eval, valrel_unk, dwp_zero.
+  destruct otu as (closed_vu & vvu); unfold OfTypeUtlc' in vvu.
+  eauto using downgrade_zero_eval, valrel_unk.
 Qed.
 
 Lemma downgrade_S_works {n d v vu dir w p} :
@@ -896,7 +901,7 @@ Lemma downgrade_S_works {n d v vu dir w p} :
 Proof.
   intros dwp vr IHdown IHup.
   destruct (valrel_implies_Value vr);
-  destruct (valrel_implies_OfType vr) as [[vv ty] otu];
+  destruct (valrel_implies_OfType vr) as [[vv ty] [closed_vu otu]];
    unfold repEmul in ty.
   canonUVal.
   - (* unkUVal *)
@@ -929,7 +934,7 @@ Lemma upgrade_zero_works {d v vu dir w p} :
     valrel dir w (pEmulDV d p) v' vu.
 Proof.
   intros dwp vr;
-  destruct (valrel_implies_OfType vr) as [[vv ty] otu];
+  destruct (valrel_implies_OfType vr) as [[vv ty] [closed_vu otu]];
   exists (unkUVal d).
   destruct (dwp_zero dwp).
   eauto using upgrade_zero_eval, valrel_unk, dwp_zero.
@@ -951,7 +956,7 @@ Proof.
   change (S n + d) with (S (n + d)).
   intros dwp vr IHdown IHup.
   destruct (valrel_implies_Value vr);
-  destruct (valrel_implies_OfType vr) as [[vv ty] otu];
+  destruct (valrel_implies_OfType vr) as [[vv ty] [closed_vu otu]];
    unfold repEmul in ty.
   canonUVal.
   - (* unkUVal *)
@@ -1034,11 +1039,12 @@ Proof.
   intros.
   repeat crushLRMatch.
   - eauto using upgrade_T with typing.
+  - crushUtlcScoping.
   - intros.
-    specialize (H1 w H2 _ _ H3).
+    specialize (H2 w H3 _ _ H4).
     simpl; repeat crushStlcSyntaxMatchH.
     rewrite upgrade_sub.
-    eapply (termrel_ectx' H1); S.inferContext; U.inferContext; crush;
+    eapply (termrel_ectx' H2); S.inferContext; U.inferContext; crush;
     eauto using upgrade_value.
     simpl.
     eauto using upgrade_works', dwp_mono.
@@ -1052,11 +1058,12 @@ Proof.
   intros.
   repeat crushLRMatch.
   - eauto using downgrade_T with typing.
+  - crushUtlcScoping.
   - intros.
-    specialize (H1 w H2 _ _ H3).
+    specialize (H2 w H3 _ _ H4).
     simpl; repeat crushStlcSyntaxMatchH.
     rewrite downgrade_sub.
-    eapply (termrel_ectx' H1); S.inferContext; U.inferContext; crush;
+    eapply (termrel_ectx' H2); S.inferContext; U.inferContext; crush;
     eauto using downgrade_value.
     simpl.
     eauto using downgrade_works', dwp_mono.

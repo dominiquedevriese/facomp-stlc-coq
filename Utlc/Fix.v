@@ -68,3 +68,11 @@ Proof.
   unfold ufix, ufix₁.
   crush.
 Qed.
+
+(* TODO: simplify using result about scoping under subst... *)
+Lemma ufix₁_ws {γ t} :
+  ⟨ γ ⊢ t ⟩ → ⟨ γ ⊢ ufix₁ t ⟩.
+Proof.
+  unfold ufix₁.
+  crush.
+Qed.

@@ -96,6 +96,7 @@ Section ValrelInversion.
     ∃ tsb tub,
       vs = S.abs (repEmul τ₁) tsb ∧ vu = U.abs tub ∧
       ⟪ empty ▻ repEmul τ₁ ⊢ tsb : repEmul τ₂ ⟫ ∧
+      ⟨ 1 ⊢ tub ⟩ ∧
       ∀ w' vs' vu',
         w' < w → valrel d w' τ₁ vs' vu' →
         termrel d w' τ₂ (tsb[beta1 vs']) (tub[beta1 vu']).
@@ -186,7 +187,7 @@ Section ValrelInversion.
     valrel dir w (ptprod (pEmulDV n p) (pEmulDV n p)) vs vu.
   Proof.
     intros vr.
-    destruct (valrel_implies_OfType vr) as [[? ?] ?].
+    destruct (valrel_implies_OfType vr) as [[? ?] [? ?]].
     destruct (invert_valrel_pEmulDV_inProd' vr) as (? & ? & ? & ? & ? & ? & ? & ?); subst.
     apply valrel_pair''; crush.
   Qed.
@@ -211,7 +212,7 @@ Section ValrelInversion.
     valrel dir w (ptsum (pEmulDV n p) (pEmulDV n p)) vs vu.
   Proof.
     intros vr.
-    destruct (valrel_implies_OfType vr) as [[? ?] ?].
+    destruct (valrel_implies_OfType vr) as [[? ?] [? ?]].
     destruct (invert_valrel_pEmulDV_inSum' vr) as (? & ? & [[? ?]|[? ?]] & ?); 
       subst; [apply valrel_inl''| apply valrel_inr'']; 
       crush.

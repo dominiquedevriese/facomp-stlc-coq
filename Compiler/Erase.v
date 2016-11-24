@@ -14,9 +14,7 @@ Require Import LogRel.LemmasLR.
 Require Import LogRel.LemmasIntro.
 Require Import Omega.
 Require Import Db.Lemmas.
-Require Utlc.Fix.
-
-Require Import Coq.Lists.List.
+Require Import Utlc.Fix.
 
 Fixpoint erase (t : S.Tm) : U.UTm :=
   match t with
@@ -100,9 +98,10 @@ Section CompatibilityLemmas.
     ⟪ Γ ⊩ (S.abs (repEmul τ') ts) ⟦ d , n ⟧ U.abs tu : ptarr τ' τ ⟫.
   Proof.
     crush.
+    - eauto using wsSub_up, envrel_implies_WsSub, wsAp.
     - eauto using wtSub_up, envrel_implies_WtSub.
     - rewrite -> ?ap_comp.
-      apply H0; crush.
+      apply H1; crush.
   Qed.
 
   Lemma compat_lambda_embed {Γ τ' ts d n tu τ} :
@@ -138,7 +137,7 @@ Section CompatibilityLemmas.
   Proof.
     crush.
     apply termrel_pair; crush.
-    refine (H1 w' _ _ _ _); unfold lev in *; try omega.
+    refine (H2 w' _ _ _ _); unfold lev in *; try omega.
     eauto using envrel_mono.
   Qed.
 
@@ -149,7 +148,7 @@ Section CompatibilityLemmas.
   Proof.
     crush.
     refine (termrel_app _ _); crush.
-    refine (H1 w' _ _ _ _); unfold lev in *; try omega.
+    refine (H2 w' _ _ _ _); unfold lev in *; try omega.
     crush.
   Qed.
 
@@ -176,7 +175,7 @@ Section CompatibilityLemmas.
   Proof.
     crush.
     apply termrel_seq; crush.
-    refine (H1 w' _ _ _ _); crush.
+    refine (H2 w' _ _ _ _); crush.
   Qed.
 
   Lemma compat_proj₂ {Γ d n ts tu τ₁ τ₂} :
@@ -203,8 +202,8 @@ Section CompatibilityLemmas.
   Proof.
     crush.
     apply termrel_ite; crush.
+    - refine (H5 w' _ _ _ _); crush.
     - refine (H3 w' _ _ _ _); crush.
-    - refine (H2 w' _ _ _ _); crush.
   Qed.
 
   Lemma compat_caseof {Γ d n ts₁ tu₁ ts₂ tu₂ ts₃ tu₃ τ₁ τ₂ τ} :
@@ -216,8 +215,8 @@ Section CompatibilityLemmas.
     crush.
     refine (termrel_caseof _ _ _); crush;
     rewrite -> ?ap_comp.
+    - refine (H5 w' _ _ _ _); crush.
     - refine (H3 w' _ _ _ _); crush.
-    - refine (H2 w' _ _ _ _); crush.
   Qed.
 
   Lemma compat_fix {Γ d n ts tu τ₁ τ₂} :
@@ -225,7 +224,8 @@ Section CompatibilityLemmas.
     ⟪ Γ ⊩ S.fixt (repEmul τ₁) (repEmul τ₂) ts ⟦ d , n ⟧ U.app U.ufix tu : ptarr τ₁ τ₂ ⟫.
   Proof.
     crush.
-    refine (termrel_fix _); crush.
+    - eapply ufix_ws.
+    - refine (termrel_fix _); crush.
   Qed.
 
   Lemma compat_fix' {Γ d n ts tu τ₁ τ₂} :

@@ -133,6 +133,13 @@ Section Stuff.
   Lemma wsSub_idm (γ: Dom) : ⟨ idm X : γ => γ ⟩.
   Proof. unfold WsSub, idm; crush. Qed.
 
+  Lemma wsSub_wkm (γ: Dom) : ⟨ wkm : γ => S γ ⟩.
+  Proof. unfold WsSub; crush. Qed.
+
+  Lemma wsSub_wkms (γ: Dom) d : ⟨ wkms d : γ => d + γ ⟩.
+  Proof. unfold WsSub, wkms; induction d; crush. Qed.
+
+
   Definition WsSubNatural (γ₁ γ₂: Dom) (ξ₁ ξ₂ : Sub X) : Prop :=
     ∀ (i: Ix), ⟨ γ₁ ⊢ ξ₁ i ⟩ → ⟨ γ₂ ⊢ ξ₂ i ⟩.
 

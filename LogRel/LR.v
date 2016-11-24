@@ -165,6 +165,7 @@ Section LogicalRelation.
 
   Definition OpenLRN (n : nat) (Γ : PEnv) (ts : S.Tm) (tu : U.UTm) (τ : PTy) : Prop :=
     ⟪ repEmulCtx Γ ⊢ ts : repEmul τ ⟫ ∧
+    ⟨ pdom Γ ⊢ tu ⟩ ∧
     ∀ w, lev w ≤ n → ∀ γs γu, envrel w Γ γs γu → termrel w τ (ts [ γs ]) (tu [ γu ]).
 
   Definition OpenLR (Γ : PEnv) (ts : S.Tm) (tu : U.UTm) (τ : PTy) : Prop :=
@@ -214,8 +215,9 @@ Notation "⟪ ⊩ Cs ⟦ d ⟧ Cu : Γ₀ , τ₀ → Γ , τ ⟫" := (OpenLRCtx
 
 Section TermRelZero.
   Definition termrel₀ d w τ ts tu :=
-    ∃ vs vu, clos_refl_trans_1n S.Tm S.eval ts vs ∧ U.ctxevalStar tu vu ∧
-             valrel d w τ vs vu.
+    (∃ vs vu, clos_refl_trans_1n S.Tm S.eval ts vs ∧ U.ctxevalStar tu vu ∧
+              valrel d w τ vs vu) ∨
+    (forall Cs Cu, S.ECtx Cs → U.ECtx Cu → Obs d w (S.pctx_app ts Cs) (U.pctx_app tu Cu)).
   
   Arguments termrel₀ d w τ ts tu : simpl never.
 

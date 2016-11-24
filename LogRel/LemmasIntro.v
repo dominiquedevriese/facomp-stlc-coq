@@ -7,6 +7,7 @@ Require Import Stlc.SpecEvaluation.
 Require Import Stlc.LemmasEvaluation.
 Require Import Utlc.SpecScoping.
 Require Import Utlc.LemmasScoping.
+Require Import Utlc.LemmasScoping.
 Require Import Utlc.DecideEval.
 Require Import UVal.UVal.
 Require Import LogRel.PseudoType.
@@ -35,13 +36,13 @@ Local Ltac crushLRMatch :=
 Local Ltac crush :=
   repeat
     (try assumption;
-     cbn;
+     simpl;
      destruct_conjs;
      subst*;
      repeat crushLRMatch;
      crushOfType;
      crushTyping;
-     repeat crushUtlcSyntaxMatchH;
+     crushUtlcScoping;
      trivial
     ); try omega; eauto.
 
@@ -53,7 +54,7 @@ Section ValueRelation.
     (∀ w' vs vu, w' < w → valrel d w' τ' vs vu → termrel d w' τ (ts [beta1 vs]) (tu [beta1 vu])) →
     valrel d w (ptarr τ' τ) (S.abs (repEmul τ') ts) (U.abs tu).
   Proof.
-    intros ot hyp; crush.
+    intros ot hyp. crush.
     intros; apply hyp; crush.
   Qed.
 
@@ -146,10 +147,10 @@ Section ValueRelation.
   Proof. crush. Qed.
 
   Lemma valrel_unk {d w n p vu} :
-    p = imprecise → U.Value vu →
+    p = imprecise → U.Value vu → ⟨ 0 ⊢ vu ⟩ →
     valrel d w (pEmulDV n p) (unkUVal n) vu.
   Proof.
-    intros eq vvu; subst.
+    intros eq vvu cvu; subst.
     repeat crushLRMatch.
     - unfold OfType, OfTypeStlc, OfTypeUtlc; split; simpl;
       eauto using unkUVal_Value, unkUValT.
@@ -164,7 +165,7 @@ Section ValueRelation.
     repeat crushLRMatch.
     - assert (⟪ empty ⊢ S.unit : tunit ⟫) by constructor.
       unfold OfType, OfTypeStlc, OfTypeUtlc; split; simpl;
-      eauto using inUnit_Value, inUnitT.
+      eauto using inUnit_Value, inUnitT, wsUTm.
     - right. exists S.unit. left. eauto.
   Qed.
 
@@ -189,7 +190,7 @@ Section ValueRelation.
     - assert (⟪ empty ⊢ vs : tbool ⟫);
       destruct eqs as [[? ?]|[? ?]]; subst; try constructor;
       unfold OfType, OfTypeStlc, OfTypeUtlc; simpl;
-      eauto using inBool_Value, inBoolT.
+      eauto using inBool_Value, inBoolT, wsUTm.
     - right. exists vs. right. left. eauto.
   Qed.
 
@@ -240,13 +241,13 @@ Section ValueRelation.
     simpl in vr; unfold prod_rel in vr.
     destruct vs; try contradiction.
     destruct vu; try contradiction.
-    destruct val as ((? & ?) & ? & ?).
+    destruct val as ((? & ?) & (? & ? & ?)).
     destruct vr as (? & ?).
     simpl in H0.
     stlcCanForm.
     destruct H as (? & ?).
-    inversion H5; subst.
-    eapply valrel_inProd; crushOfType; auto.
+    inversion H6; subst.
+    eapply valrel_inProd; crushOfType; crushUtlcScoping; auto.
   Qed.
 
   Lemma valrel_inSum {d w n p vs vs' vu vu'} :
@@ -261,6 +262,8 @@ Section ValueRelation.
     assert (U.Value vu') by (destruct eqs as [[? ?]|[? ?]]; crush).
     assert ⟪ empty ⊢ vs' : UVal n ⊎ UVal n ⟫
       by (destruct eqs as [[? ?]|[? ?]]; crush).
+    assert ⟨ 0 ⊢ vu' ⟩
+           by (destruct eqs as [[? ?]|[? ?]]; crush).
     crush.
     right. exists vs'. right. right. right. left.
     destruct eqs as [[? ?]|[? ?]]; crush.
@@ -282,14 +285,14 @@ Section ValueRelation.
    intros vr. 
    rewrite valrel_fixp in vr.
    destruct vr as [val vr].
-   destruct val as ((? & ?) & ?).
+   destruct val as ((? & ?) & ? & ?).
    simpl in H0.
    stlcCanForm;
-   simpl in vr; unfold sum_rel in vr;
-   destruct vu; try contradiction;
-   eapply valrel_inSum; auto;
-   unfold OfType, OfTypeUtlc, OfTypeStlc; 
-   eauto using inSum_T with typing.
+     simpl in vr; unfold sum_rel in vr;
+     destruct vu; try contradiction;
+     eapply valrel_inSum; auto;
+     crush;
+     eauto using inSum_T with typing.
   Qed.
 
   Lemma valrel_inArr {d w n p vs vu} :
@@ -300,6 +303,8 @@ Section ValueRelation.
     crush.
     - destruct (valrel_implies_OfType vr) as [[_ ?] _].
       eauto using inArr_T with typing.
+    - destruct (valrel_implies_OfType vr) as (_ & ? & _).
+      auto.
     - right. exists vs. do 4 right.
       rewrite valrel_fixp in vr; destruct vr as [[_ ?] vrarr].
       crush.
@@ -665,6 +670,7 @@ Section TermRelation.
     unfold valrel'; cbn; split; intros.
     - (* first the OfType relation *)
       crush.
+      admit.
     - (* prove the termrel of the body of the abstractions *)
       refine (termrel_app (τ₁ := τ₁) (τ₂ := τ₂)_ _); crush.
       change (abs (tub[wkm↑][wkm↑][(beta1 tu')↑↑])) with ((abs tub)[wkm][wkm][(beta1 tu')↑]).
@@ -678,7 +684,7 @@ Section TermRelation.
       refine (indHyp _ _ _ _ _); crush.
       (* why do I need to call crush again? *)
       eapply hyp; crush.
-  Qed.
+  Admitted.
 
   Lemma termrel_fix {d w τ₁ τ₂ ts tu} :
     termrel d w (ptarr (ptarr τ₁ τ₂) (ptarr τ₁ τ₂)) ts tu →

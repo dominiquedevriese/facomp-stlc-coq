@@ -57,7 +57,7 @@ Fixpoint repEmul (τ : PTy) : Ty :=
 Definition OfTypeStlc (τ : PTy) (t : S.Tm) : Prop :=
   S.Value t ∧ ⟪ empty ⊢ t : repEmul τ ⟫.
 
-Fixpoint OfTypeUtlc (τ : PTy) (t : U.UTm) : Prop :=
+Fixpoint OfTypeUtlc' (τ : PTy) (t : U.UTm) : Prop :=
   match τ with
     | ptarr τ₁ τ₂ =>
       match t with
@@ -68,17 +68,21 @@ Fixpoint OfTypeUtlc (τ : PTy) (t : U.UTm) : Prop :=
     | ptbool => t = U.true ∨ t = U.false
     | ptprod τ₁ τ₂ =>
       match t with
-        | U.pair t₁ t₂ => OfTypeUtlc τ₁ t₁ ∧ OfTypeUtlc τ₂ t₂
+        | U.pair t₁ t₂ => OfTypeUtlc' τ₁ t₁ ∧ OfTypeUtlc' τ₂ t₂
         | _            => False
       end
     | ptsum τ₁ τ₂ =>
       match t with
-        | U.inl t₁ => OfTypeUtlc τ₁ t₁
-        | U.inr t₂ => OfTypeUtlc τ₂ t₂
+        | U.inl t₁ => OfTypeUtlc' τ₁ t₁
+        | U.inr t₂ => OfTypeUtlc' τ₂ t₂
         | _        => False
       end
     | pEmulDV n p => U.Value t
   end.
+Arguments OfTypeUtlc' !τ !t /.
+
+Definition OfTypeUtlc (τ : PTy) (t : U.UTm) : Prop :=
+  wsUTm 0 t ∧ OfTypeUtlc' τ t.
 Arguments OfTypeUtlc !τ !t /.
 
 Definition OfType (τ : PTy) (t₁ : S.Tm) (t₂ : U.UTm) : Prop :=
@@ -90,6 +94,12 @@ Inductive PEnv : Set :=
 
 Notation "Γ p▻ T" := (pevar Γ T) (at level 55, left associativity).
 
+Fixpoint pdom (Γ : PEnv) : Dom :=
+  match Γ with
+    | pempty => 0
+    | pevar Γ _ => S (pdom Γ)
+  end.
+
 Reserved Notation "⟪  i : T p∈ Γ  ⟫"
   (at level 0, i at level 98, Γ at level 98).
 Inductive GetEvarP : PEnv → Ix → PTy → Prop :=
@@ -99,6 +109,25 @@ Inductive GetEvarP : PEnv → Ix → PTy → Prop :=
       ⟪   i : T p∈ Γ      ⟫ →
       ⟪ S i : T p∈ Γ p▻ T' ⟫
 where "⟪  i : T p∈ Γ  ⟫" := (GetEvarP Γ i T).
+
+Lemma pdom_works {i T Γ} :
+  ⟪ i : T p∈ Γ ⟫ → pdom Γ ∋ i.
+Proof.
+  induction 1; constructor; eauto.
+Qed.  
+    
+Lemma pdom_works_inv {i Γ} :
+  pdom Γ ∋ i → ∃ τ, ⟪ i : τ p∈ Γ ⟫.
+Proof.
+  revert i. induction Γ; intros i.
+  - inversion 1.
+  - inversion 1.
+    + subst. exists τ. constructor.
+    + subst. destruct (IHΓ i0 H1) as (τ0 & iinΓ).
+      exists τ0. constructor. assumption.
+Qed.
+    
+                            
 
 Fixpoint repEmulCtx (Γ : PEnv) : Env :=
   match Γ with

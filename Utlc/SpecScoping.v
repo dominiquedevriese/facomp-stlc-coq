@@ -1,4 +1,5 @@
 Require Export Utlc.SpecSyntax.
+Require Import Db.WellScoping.
 
 Section WellScoping.
 
@@ -106,7 +107,7 @@ Ltac crushUtlcScopingMatchH :=
     | [ H: context[wsUTm ?γ ?t]  |- _ ] =>
       change (wsUTm γ t) with ⟨ γ ⊢ t ⟩ in H
     | [ H: ⟨ _ ⊢ var _         ⟩ |- _ ] => inversion H; clear H
-    | [ H: ⟨ _ ⊢ abs _ _       ⟩ |- _ ] => inversion H; clear H
+    | [ H: ⟨ _ ⊢ abs _         ⟩ |- _ ] => inversion H; clear H
     | [ H: ⟨ _ ⊢ app _ _       ⟩ |- _ ] => inversion H; clear H
     | [ H: ⟨ _ ⊢ unit          ⟩ |- _ ] => inversion H; clear H
     | [ H: ⟨ _ ⊢ true          ⟩ |- _ ] => inversion H; clear H
@@ -136,8 +137,16 @@ Ltac crushUtlcScopingMatchH :=
     | [ |- ⟨ _ ⊢ inr _        ⟩ ] => econstructor
     | [ |- ⟨ _ ⊢ caseof _ _ _ ⟩ ] => econstructor
     | [ |- ⟨ _ ⊢ seq _ _      ⟩ ] => econstructor
+    | [ |- ⟨ _ ⊢ wrong        ⟩ ] => econstructor
+    | [ |- ⟨ _ ⊢ ?t [?ξ]      ⟩ ] => eapply wsAp
 
-    | [ |- ⟨ ⊢ phole : _ → _        ⟩ ] => econstructor
+    | [ |- ⟨ wkm : _ => _     ⟩ ] => eapply wsSub_wkm
+    | [ |- ⟨ (wkms ?d) : ?δ => _  ⟩ ] => eapply (wsSub_wkms δ d)
+    | [ |- ⟨ (wkms _) : _ => _  ⟩ ] => eapply wsSub_wkms
+    | [ |- ⟨ idm : _ => _     ⟩ ] => eapply wsSub_idm
+    | [ |- ⟨ (?ξ) ↑ : _ => _  ⟩ ] => eapply wsSub_up
+
+    | [ |- ⟨ ⊢ phole : _ → _         ⟩ ] => econstructor
     | [ |- ⟨ ⊢ pabs _ : _ → _        ⟩ ] => econstructor
     | [ |- ⟨ ⊢ papp₁ _ _ : _ → _     ⟩ ] => econstructor
     | [ |- ⟨ ⊢ papp₂ _ _ : _ → _     ⟩ ] => econstructor

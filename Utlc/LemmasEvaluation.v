@@ -157,6 +157,12 @@ Section CtxEval.
     destruct 1; intros; rewrite <- ?pctx_cat_app; eauto using ectx_cat with eval.
   Qed.
 
+  Lemma ctxevaln_evaln_ctx {t t' n} : ctxevaln t t' n → forall Cu, ECtx Cu → evaln (pctx_app t Cu) (pctx_app t' Cu) n.
+  Proof.
+    induction 1; unfold evaln in *;
+    econstructor; eauto using ctxeval_eval_ctx with eval.
+  Qed.
+
   Lemma extend_ctxeval tu tu' Cu : ECtx Cu → ctxeval tu tu' → ctxeval (pctx_app tu Cu) (pctx_app tu' Cu).
   Proof.
     intros eCu ce. 
