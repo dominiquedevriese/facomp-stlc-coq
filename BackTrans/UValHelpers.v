@@ -166,26 +166,26 @@ Section IntroProps.
     eapply downgrade_sub.
   Qed.
 
-  Lemma termrel_inUnitDwn {d w n p vs vu} :
+  Lemma termrel₀_inUnitDwn {d w n p vs vu} :
     dir_world_prec n w d p →
     valrel d w ptunit vs vu →
-    termrel d w (pEmulDV n p) (inUnitDwn n vs) vu.
+    termrel₀ d w (pEmulDV n p) (inUnitDwn n vs) vu.
   Proof.
    intros dwp vr. 
    unfold inUnitDwn.
-   apply downgrade_works'; trivial.
+   apply downgrade_works''; trivial.
    replace (n + 1) with (S n) by omega.
    apply valrel_inUnit'; trivial.
   Qed.
 
-  Lemma termrel_inBoolDwn {d w n p vs vu} :
+  Lemma termrel₀_inBoolDwn {d w n p vs vu} :
     dir_world_prec n w d p →
     valrel d w ptbool vs vu →
-    termrel d w (pEmulDV n p) (inBoolDwn n vs) vu.
+    termrel₀ d w (pEmulDV n p) (inBoolDwn n vs) vu.
   Proof.
    intros dwp vr. 
    unfold inBoolDwn.
-   apply downgrade_works'; trivial.
+   apply downgrade_works''; trivial.
    replace (n + 1) with (S n) by omega.
    apply valrel_inBool'; trivial.
   Qed.
@@ -214,14 +214,14 @@ Section IntroProps.
    apply valrel_inSum''; trivial.
   Qed.
 
-  Lemma termrel_inArrDwn {d w n p vs vu} :
+  Lemma termrel₀_inArrDwn {d w n p vs vu} :
     dir_world_prec n w d p →
     valrel d w (ptarr (pEmulDV n p) (pEmulDV n p)) vs vu →
-    termrel d w (pEmulDV n p) (inArrDwn n vs) vu.
+    termrel₀ d w (pEmulDV n p) (inArrDwn n vs) vu.
   Proof.
    intros dwp vr. 
    unfold inArrDwn.
-   apply downgrade_works'; trivial.
+   apply downgrade_works''; trivial.
    replace (n + 1) with (S n) by omega.
    apply valrel_inArr; trivial.
   Qed.

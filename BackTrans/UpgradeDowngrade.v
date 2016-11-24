@@ -1020,6 +1020,17 @@ Proof.
   refine (termrel_antired_star_left es vr').
 Qed.
 
+Lemma downgrade_works'' {n d v vu dir w p} :
+  dir_world_prec n w dir p →
+  valrel dir w (pEmulDV (n + d) p) v vu →
+  termrel₀ dir w (pEmulDV n p) (app (downgrade n d) v) vu.
+Proof.
+  intros dwp vr.
+  destruct (downgrade_works dwp vr) as (v' & es & vr').
+  apply valrel_in_termrel₀ in vr'.
+  refine (termrel₀_antired_star_left es vr').
+Qed.
+
 Lemma upgrade_works' {n v vu dir w p} d :
   dir_world_prec n w dir p →
   valrel dir w (pEmulDV n p) v vu →
@@ -1029,6 +1040,17 @@ Proof.
   destruct (upgrade_works d dwp vr) as (v' & es & vr').
   apply valrel_in_termrel in vr'.
   refine (termrel_antired_star_left es vr').
+Qed.
+
+Lemma upgrade_works'' {n v vu dir w p} d :
+  dir_world_prec n w dir p →
+  valrel dir w (pEmulDV n p) v vu →
+  termrel₀ dir w (pEmulDV (n + d) p) (app (upgrade n d) v) vu.
+Proof.
+  intros dwp vr.
+  destruct (upgrade_works d dwp vr) as (v' & es & vr').
+  apply valrel_in_termrel₀ in vr'.
+  refine (termrel₀_antired_star_left es vr').
 Qed.
 
 Lemma compat_upgrade {Γ ts dir m tu n p} d :

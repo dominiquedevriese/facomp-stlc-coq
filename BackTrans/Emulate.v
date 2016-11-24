@@ -238,7 +238,8 @@ Proof.
     assert (dir_world_prec n w d p) by eauto using dwp_mono.
 
     rewrite inArrDwn_sub.
-    eapply termrel_inArrDwn; try assumption.
+    eapply termrel₀_in_termrel.
+    eapply termrel₀_inArrDwn; try assumption.
 
     change (UVal n) with (repEmul (pEmulDV n p)).
 
