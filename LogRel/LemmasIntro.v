@@ -16,7 +16,7 @@ Require Import LogRel.LR.
 Require Import LogRel.LemmasLR.
 Require Import Omega.
 Require Import Db.Lemmas.
-Require Utlc.Fix.
+Require Import Utlc.Fix.
 
 Local Ltac crushLRMatch :=
   match goal with
@@ -670,7 +670,8 @@ Section TermRelation.
     unfold valrel'; cbn; split; intros.
     - (* first the OfType relation *)
       crush.
-      admit.
+      eapply ufix₁_ws.
+      crush.
     - (* prove the termrel of the body of the abstractions *)
       refine (termrel_app (τ₁ := τ₁) (τ₂ := τ₂)_ _); crush.
       change (abs (tub[wkm↑][wkm↑][(beta1 tu')↑↑])) with ((abs tub)[wkm][wkm][(beta1 tu')↑]).
@@ -684,7 +685,7 @@ Section TermRelation.
       refine (indHyp _ _ _ _ _); crush.
       (* why do I need to call crush again? *)
       eapply hyp; crush.
-  Admitted.
+  Qed.
 
   Lemma termrel_fix {d w τ₁ τ₂ ts tu} :
     termrel d w (ptarr (ptarr τ₁ τ₂) (ptarr τ₁ τ₂)) ts tu →
