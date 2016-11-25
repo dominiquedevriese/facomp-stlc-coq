@@ -76,6 +76,10 @@ Section StepRel.
     induction 1 as [|t t' t'' e es [n IHn]]; eauto using stepRel_zero, stepRel_step.
   Qed.
 
+  Lemma stepRel_to_evalStar {A R t t' n} : stepRel R t t' n → clos_refl_trans_1n A R t t'.
+  Proof.
+    induction 1; eauto using clos_refl_trans_1n.
+  Qed.
 End StepRel.
 
 Hint Constructors stepRel : eval.

@@ -338,15 +338,10 @@ Ltac crushImpossibleEvals :=
         | [ Hx : Value ?x,  H' : inr ?x --> _ |- _ ] => exfalso; refine (values_are_normal' _ _ H'); crush
   end.
 
-Lemma evaln_to_evalStar {t t' n} : evaln t t' n → t -->* t'.
-Proof.
-  induction 1; crush.
-Qed.
-
 Lemma TerminatingN_Terminating {t : Tm} {n} : t ⇓_ n -> t ⇓.
 Proof.
   destruct 1 as (v & m & vv & ineq & es).
-  exists v; eauto using evaln_to_evalStar.
+  exists v; eauto using stepRel_to_evalStar.
 Qed.
 
 Lemma evalStar_to_evaln {t t'} : t -->* t' → exists n, evaln t t' n.

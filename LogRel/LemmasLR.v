@@ -126,7 +126,7 @@ Section Obs.
         enough (min i j ≤ i) by omega.
         auto using le_min_l.
     - refine (S.termination_closed_under_antireductionStar _ _).
-      + refine (S.evaln_to_evalStar es).
+      + refine (stepRel_to_evalStar es).
       + apply obs; clear obs.
         assert (obs : Observe (S W) (U.TerminatingN tu)) by (simpl; intuition).
         rewrite -> (U_Observe_TerminatingN_evaln (lev W') eu).
