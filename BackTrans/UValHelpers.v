@@ -202,14 +202,14 @@ Section IntroProps.
    apply valrel_inProd''; trivial.
   Qed.
 
-  Lemma termrel_inSumDwn {d w n p vs vu} :
+  Lemma termrel₀_inSumDwn {d w n p vs vu} :
     dir_world_prec n w d p →
     valrel d w (ptsum (pEmulDV n p) (pEmulDV n p)) vs vu →
-    termrel d w (pEmulDV n p) (inSumDwn n vs) vu.
+    termrel₀ d w (pEmulDV n p) (inSumDwn n vs) vu.
   Proof.
    intros dwp vr. 
    unfold inProdDwn.
-   apply downgrade_works'; trivial.
+   apply downgrade_works''; trivial.
    replace (n + 1) with (S n) by omega.
    apply valrel_inSum''; trivial.
   Qed.
@@ -445,10 +445,10 @@ Section DestructProps.
       subst; inversion 1.
   Qed.
 
-  Lemma termrel_caseUValUnit {d w n p vs vu}:
+  Lemma termrel₀_caseUValUnit {d w n p vs vu}:
     dir_world_prec n w d p →
     valrel d w (pEmulDV (S n) p) vs vu →
-    termrel d w ptunit (caseUnit vs) (U.seq vu U.unit).
+    termrel₀ d w ptunit (caseUnit vs) (U.seq vu U.unit).
   Proof.
     unfold caseUnit.
     intros dwp vr.
@@ -456,15 +456,15 @@ Section DestructProps.
     apply invert_valrel_pEmulDV_for_caseUValUnit in vr.
     destruct vr as [(? & ? & ?)|[(? & ?)|(? & ?)]].
     - subst.
-      eapply termrel_antired_star.
+      eapply termrel₀_antired_star.
       + eapply caseUVal_eval_unit; crush.
       + eapply evalToStar.
         eapply U.eval₀_ctxeval.
         eauto with eval.
-      + simpl; crush.
-    - subst; eapply dwp_imprecise in dwp; subst.
-      eapply (termrel_div_lt H2).
-    - apply (termrel_div_wrong H2).
+      + simpl; eauto using valrel_in_termrel₀, valrel_unit.
+    - subst; eapply dwp_invert_imprecise in dwp; subst.
+      eapply (termreli₀_div_lt H2).
+    - apply (termreli₀_div_wrong H2).
       right.
       eauto using evalToStar, U.eval₀_to_eval with eval.
   Qed.
@@ -650,28 +650,31 @@ Section DestructProps.
           subst; intros tu₁' eq; inversion eq.
   Qed.
 
-  (* Lemma termrel_caseUValBool {d w n p vs vu}: *)
-  (*   dir_world_prec n w d p → *)
-  (*   valrel d w (pEmulDV (S n) p) vs vu → *)
-  (*   termrel d w ptbool (caseBool n vs) (U.ite vu U.true U.false). *)
-  (* Proof. *)
-  (*   unfold caseBool. *)
-  (*   intros dwp vr. *)
-  (*   destruct (valrel_implies_Value vr). *)
-  (*   apply invert_valrel_pEmulDV_for_caseUValBool in vr. *)
-  (*   destruct vr as [(? & ? & ?)|[(? & ?)|(? & ?)]]. *)
-  (*   - subst. *)
-  (*     eapply termrel_antired_star. *)
-  (*     + eapply caseUVal_eval_bool; crush. *)
-  (*     + eapply evalToStar. *)
-  (*       eapply U.eval₀_ctxeval. *)
-  (*       eauto with eval. *)
-  (*     + simpl; crush. *)
-  (*   - subst; eapply dwp_imprecise in dwp; subst. *)
-  (*     eapply (termrel_div_lt H2). *)
-  (*   - apply (termrel_div_wrong H2). *)
-  (*     right. *)
-  (*     eauto using evalToStar, U.eval₀_to_eval with eval. *)
-  (* Qed. *)
+  Lemma termrel₀_caseUValBool {d w n p vs vu}:
+    dir_world_prec n w d p →
+    valrel d w (pEmulDV (S n) p) vs vu →
+    termrel₀ d w ptbool (caseBool vs) (U.ite vu U.true U.false).
+  Proof.
+    unfold caseBool.
+    intros dwp vr.
+    destruct (valrel_implies_Value vr).
+    apply invert_valrel_pEmulDV_for_caseUValBool in vr.
+    destruct vr as [(? & ? & ? & vr')|[(? & ?)|(? & ? & ?)]].
+    - subst.
+      eapply termrel₀_antired_star.
+      + eapply caseUVal_eval_bool; crush.
+      + eapply evalToStar.
+        eapply U.eval₀_ctxeval.
+
+        destruct vr' as (ot & [(? & ?) | (? & ?)]); subst;
+        eauto with eval.
+      + cbn; eauto using valrel_in_termrel₀, valrel_unit.
+    - subst; eapply dwp_invert_imprecise in dwp; subst.
+      eapply (termreli₀_div_lt H2).
+    - apply (termreli₀_div_wrong H3).
+      right.
+      eauto using evalToStar, U.eval₀_to_eval with eval.
+  Qed.
 
 End DestructProps.
+

@@ -535,7 +535,17 @@ Proof.
   - auto.
 Qed.
 
-Lemma dwp_imprecise {n w d} : dir_world_prec n w d imprecise → d = dir_lt.
+Lemma dwp_precise {n d w} : lev w < n → dir_world_prec n w d precise.
+Proof.
+  left; auto.
+Qed.
+
+Lemma dwp_imprecise {n w} : dir_world_prec n w dir_lt imprecise.
+Proof.
+  right; auto.
+Qed.
+
+Lemma dwp_invert_imprecise {n w d} : dir_world_prec n w d imprecise → d = dir_lt.
 Proof.
   destruct 1 as [[? ?]|[? ?]].
   - inversion H0.

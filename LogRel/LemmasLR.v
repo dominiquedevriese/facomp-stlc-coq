@@ -560,6 +560,25 @@ Section TermRelZero.
       omega.
   Qed.
 
+  Lemma termreli₀_div_lt {w dfc τ ts tu} : not (S.Terminating ts) → termreli₀ dir_lt dfc w τ ts tu.
+  Proof.
+    intros div. right. intros  Cs Cu eCs eCu.
+    eauto using Diverge_Obs_lt, S.divergence_closed_under_evalcontext.
+  Qed.
+
+  Lemma termreli₀_div_wrong {d dfc w τ ts tu} : 
+    not (S.Terminating ts) → 
+    (not (U.Terminating tu) ∨ clos_refl_trans_1n UTm U.eval tu U.wrong) → 
+    termreli₀ d dfc w τ ts tu.
+  Proof.
+    intros div divw. right. intros Cs Cu eCs eCu.
+    eauto using Diverge_Wrong_Obs, S.divergence_closed_under_evalcontext.
+    eapply Diverge_Wrong_Obs.
+    - eauto using S.divergence_closed_under_evalcontext.
+    - destruct divw as [divu | termwu]; [left|right].
+      + eapply div_ectx; trivial.
+      + eapply eval_to_wrong_ectx; trivial.
+  Qed.
   Lemma termrel₀_antired_star {ts ts' tu tu' W d τ} :
     clos_refl_trans_1n S.Tm S.eval ts ts' →
     U.ctxevalStar tu tu' →
