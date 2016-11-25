@@ -20,6 +20,12 @@ Inductive Direction : Set :=
 
 Definition World := nat.
 Definition lev : World → nat := fun w => w.
+Definition later : World → World := pred.
+Fixpoint lateri (i : nat) : World → World :=
+  match i with 
+    | 0 => id
+    | S i => fun w => pred (lateri i w)
+  end.
 
 Definition PTRel := PTy → S.Tm → U.UTm → Prop.
 Definition PCRel := PTy → S.PCtx → U.PCtx → Prop.
@@ -214,10 +220,15 @@ Notation "⟪ ⊩ Cs ⟦ d ⟧ Cu : Γ₀ , τ₀ → Γ , τ ⟫" := (OpenLRCtx
    format "⟪  ⊩  Cs ⟦ d ⟧ Cu  :  Γ₀ ,  τ₀  →  Γ ,  τ  ⟫").
 
 Section TermRelZero.
-  Definition termrel₀ d w τ ts tu :=
+  Definition termreli₀ d dfc w τ ts tu :=
     (∃ vs vu, clos_refl_trans_1n S.Tm S.eval ts vs ∧ U.ctxevalStar tu vu ∧
               valrel d w τ vs vu) ∨
-    (forall Cs Cu, S.ECtx Cs → U.ECtx Cu → Obs d w (S.pctx_app ts Cs) (U.pctx_app tu Cu)).
+    (forall Cs Cu, S.ECtx Cs → U.ECtx Cu → Obs d (lateri dfc w) (S.pctx_app ts Cs) (U.pctx_app tu Cu)).
+
+  Arguments termreli₀ d dfc w τ ts tu : simpl never.
+
+  Definition termrel₀ d w τ ts tu :=
+    termreli₀ d 0 w τ ts tu.
   
   Arguments termrel₀ d w τ ts tu : simpl never.
 

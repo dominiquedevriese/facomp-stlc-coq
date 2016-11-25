@@ -190,14 +190,14 @@ Section IntroProps.
    apply valrel_inBool'; trivial.
   Qed.
 
-  Lemma termrel_inProdDwn {d w n p vs vu} :
+  Lemma termrel₀_inProdDwn {d w n p vs vu} :
     dir_world_prec n w d p →
     valrel d w (ptprod (pEmulDV n p) (pEmulDV n p)) vs vu →
-    termrel d w (pEmulDV n p) (inProdDwn n vs) vu.
+    termrel₀ d w (pEmulDV n p) (inProdDwn n vs) vu.
   Proof.
    intros dwp vr. 
    unfold inProdDwn.
-   apply downgrade_works'; trivial.
+   apply downgrade_works''; trivial.
    replace (n + 1) with (S n) by omega.
    apply valrel_inProd''; trivial.
   Qed.

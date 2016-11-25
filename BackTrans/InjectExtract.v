@@ -201,19 +201,92 @@ Proof.
         eapply termrel₀_inBoolDwn; try assumption.
     + (* tprod τ₁ τ₂ *)
       
-      eapply termrel₀_antired_star.
-      * eapply evalToStar.
+      destruct (valrel_ptprod_inversion vr) as (vs₁ & vs₂ & vu₁ & vu₂ & ? & ? & ot₁ & ot₂ & vrs).
+      subst.
+      destruct ((fun x => x) vvs) as (vvs₁ & vvs₂).
+      destruct ((fun x => x) vvu) as (vvu₁ & vvu₂).
+
+      assert (0 + Nat.min 2 2 ≥ 1) as ineq by eauto with arith.
+      
+      eapply (termreli₀_antired 0 ineq).
+      * (* beta-reduce *)
+        eapply stepRel_step.
         eapply (S.eval_ctx₀ S.phole); simpl;
         eauto using S.eval_beta.
-      * eapply evalToStar.
+        rewrite inProdDwn_sub. cbn. repeat crushStlcSyntaxMatchH.
+        rewrite ?inject_sub; cbn.
+
+        (* project *)
+        eapply stepRel_step.
+        assert (S.eval₀ (S.proj₁ (S.pair vs₁ vs₂)) vs₁) as proj_eval₀ by crush.
+        unfold inProdDwn.
+        eapply (S.eval_from_eval₀ proj_eval₀); S.inferContext; crush;
+        eauto using downgrade_value, inject_value.
+        
+        eapply stepRel_zero.
+
+      * (* beta-reduce *)
+        eapply stepRel_step.
         eapply U.eval₀_ctxeval.
         eapply U.eval_beta; eauto.
-      * rewrite inProdDwn_sub. cbn. crush. rewrite ?inject_sub, ?protect_sub; cbn.
+        cbn. repeat crushUtlcSyntaxMatchH. rewrite ?protect_sub.
 
-        destruct (valrel_ptprod_inversion vr) as (vs₁ & vs₂ & vu₁ & vu₂ & ? & ? & ot₁ & ot₂ & vrs).
+        (* project *)
+        eapply stepRel_step.
+        assert (U.eval₀ (U.proj₁ (U.pair vu₁ vu₂)) vu₁) as proj_eval₀ by crush.
+        eapply (U.ctxeval_from_eval₀ proj_eval₀); U.inferContext; crush;
+        eauto using protect_Value.
 
-        (* execute first inject/protects *)
-        pose proof (inject_and_protect_work _ _ _ _ τ1 _ _ _ vr') as extr_tr. 
-        eapply termrel₀_in_termrel in extr_tr.
-        eapply (termrel_ectx' extr_tr); S.inferContext; U.inferContext; 
-        crush; eauto using inject_value, protect_Value with eval.
+        eapply stepRel_zero.
+      * rewrite ?S.pctx_cat_app.
+        cbn.
+        destruct w.
+        { eapply termrel₀_zero. }
+        {
+          assert (w < S w) as fw by eauto with arith.
+          specialize (vrs w fw).
+          destruct vrs as (vr₁ & vr₂).
+
+          (* execute first inject/protects *)
+          assert (dir_world_prec n w d p) as dwp' by eauto using dwp_mono.
+          pose proof (inject_and_protect_work n w d p τ1 _ _ dwp' vr₁) as inj₁_tr. 
+
+          change w with (lateri 1 (S w)) in inj₁_tr.
+          assert (lev (S w) ≥ 1) by (unfold lev; omega).
+          eapply (termreli₀_ectx' inj₁_tr); S.inferContext; U.inferContext;
+          crush; eauto using downgrade_value.
+
+          (* execute second projection *)
+          intros vs₁' vu₁' vr₁'.
+          destruct (valrel_implies_Value vr₁') as (? & ?).
+          rewrite S.pctx_cat_app; cbn.
+          eapply termreli₀_antired_star.
+          - eapply evalToStar.
+            assert (S.eval₀ (S.proj₂ (S.pair vs₁ vs₂)) vs₂) as proj_eval₀ by crush.
+            unfold inProdDwn.
+            eapply (S.eval_from_eval₀ proj_eval₀); S.inferContext; crush;
+            eauto using downgrade_value, inject_value.
+          - eapply evalToStar.
+            assert (U.eval₀ (U.proj₂ (U.pair vu₁ vu₂)) vu₂) as proj_eval₀ by crush.
+            eapply (U.ctxeval_from_eval₀ proj_eval₀); U.inferContext; crush;
+            eauto using protect_Value.
+          - rewrite ?S.pctx_cat_app, ?U.pctx_cat_app; cbn.
+
+            (* execute second inject/protect *)
+            pose proof (inject_and_protect_work n w d p τ2 _ _ dwp' vr₂) as inj₂_tr. 
+            
+            change w with (lateri 1 (S w)) in inj₂_tr.
+            assert (lev (S w) ≥ 1) by (unfold lev; omega).
+            eapply (termreli₀_ectx' inj₂_tr); S.inferContext; U.inferContext;
+            crush; eauto using downgrade_value.
+          
+            intros vs₂' vu₂' vr₂'.
+            rewrite ?S.pctx_cat_app; cbn.
+
+            pose proof (valrel_pair' vr₁' vr₂') as vrp.
+            eapply termrel₀_inProdDwn in vrp.
+            eapply (termreli₀_dfc_mono vrp); eauto with arith.
+            exact dwp.
+        }
+    + (* τ₁ ⊎ τ₂ *)
+      rewrite ?protect_sub.

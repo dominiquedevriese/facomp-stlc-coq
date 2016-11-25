@@ -186,7 +186,8 @@ Proof.
   - intros w wn γs γu envrel.
     rewrite inUnitDwn_sub.
     simpl.
-    eauto using termrel_inUnitDwn, dwp_mono, valrel_in_termrel, valrel_unit with arith.
+    eapply termrel₀_in_termrel.
+    eauto using termrel₀_inUnitDwn, dwp_mono, valrel_in_termrel, valrel_unit with arith.
 Qed.
 
 Lemma compat_emul_true {Γ d n p m} :
@@ -200,7 +201,8 @@ Proof.
   - intros w wn γs γu envrel.
     rewrite inBoolDwn_sub.
     simpl.
-    eauto using termrel_inBoolDwn, dwp_mono, valrel_in_termrel, valrel_true with arith.
+    eapply termrel₀_in_termrel.
+    eauto using termrel₀_inBoolDwn, dwp_mono, valrel_in_termrel, valrel_true with arith.
 Qed.
 
 Lemma compat_emul_false {Γ d n p m} :
@@ -214,7 +216,8 @@ Proof.
   - intros w wn γs γu envrel.
     rewrite inBoolDwn_sub.
     simpl.
-    eauto using termrel_inBoolDwn, dwp_mono, valrel_in_termrel, valrel_false with arith.
+    eapply termrel₀_in_termrel.
+    eauto using termrel₀_inBoolDwn, dwp_mono, valrel_in_termrel, valrel_false with arith.
 Qed.
 
 Lemma compat_emul_abs {n m d p Γ ts tu} :
@@ -379,8 +382,9 @@ Proof.
     enough (termrel d w (ptprod (pEmulDV n p) (pEmulDV n p)) (S.pair ts₁ ts₂)[γs] (U.pair tu₁ tu₂)[γu]) as trp.
     + eapply (termrel_ectx' trp); S.inferContext; U.inferContext; simpl; crush.
       intros w' futw vs vu vr.
-      eapply termrel_inProdDwn;
-        eauto using termrel_inProdDwn, dwp_mono with arith.
+      eapply termrel₀_in_termrel.
+      eapply termrel₀_inProdDwn;
+        eauto using dwp_mono with arith.
     + eapply termrel_pair;
       fold apTm apUTm; crush.
       intros w' fw; eapply tr₂; eauto using envrel_mono with arith.
