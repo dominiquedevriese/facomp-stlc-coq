@@ -111,5 +111,10 @@ Proof.
   constructor; crush.
   - refine (wsAp _ H); eauto.
     constructor; eauto.
-  - admit.
-Admitted.
+Qed.
+(*   - admit. *)
+(*     (* induction x; cbn in H; inversion H. *) *)
+(*     (* + change (wk i) with (S i) in *. *) *)
+(*     (*   inversion H1; subst. eapply WsVar; eassumption. *) *)
+(*     (* +  *) *)
+(* Admitted. *)

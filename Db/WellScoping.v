@@ -47,8 +47,8 @@ Ltac crushScopingMatchH :=
     | [ H: S _    ∋ O            |- _ ] => clear H
     | [ H: S _ ∋ S _             |- _ ] => apply wsiS in H
     | [ H: S _ ∋ wk _             |- _ ] => apply wsiS in H
-    | [ H: @ws ?X ?wsX (S ?δ) (@wk ?X ?vrX ?wkX ?x) |- _
-      ] => apply (@wsiWk X wsX vrX wkX _ δ x) in H
+    (* | [ H: @ws ?X ?wsX (S ?δ) (@wk ?X ?vrX ?wkX ?x) |- _ *)
+    (*   ] => apply (@wsiWk X wsX vrX wkX _ δ x) in H *)
     | [H: ∀ i, S _ ∋ i → _ |- _] =>
       let HS := fresh in
       let HO := fresh in
@@ -126,9 +126,9 @@ Section Stuff.
     ∀ γ (x: X), ⟨ γ ⊢ x ⟩ → ⟨ γ ∪ δ ⊢ wks δ x ⟩.
   Proof. induction δ; crush. Qed.
 
-  Lemma wsi_wks (δ: Dom) :
-    ∀ γ (x: X), ⟨ γ ∪ δ ⊢ wks δ x ⟩ → ⟨ γ ⊢ x ⟩.
-  Proof. induction δ; crush. Qed.
+  (* Lemma wsi_wks (δ: Dom) : *)
+  (*   ∀ γ (x: X), ⟨ γ ∪ δ ⊢ wks δ x ⟩ → ⟨ γ ⊢ x ⟩. *)
+  (* Proof. induction δ; crush. Qed. *)
 
   Lemma wsSub_idm (γ: Dom) : ⟨ idm X : γ => γ ⟩.
   Proof. unfold WsSub, idm; crush. Qed.
@@ -163,23 +163,23 @@ Section Stuff.
   Proof. unfold up, WsSub; crush. Qed.
   Hint Resolve wsSub_up : ws.
 
-  Lemma wsiSub_up (γ₁ γ₂: Dom) (ξ: Sub X) :
-    ⟨ ξ↑ : S γ₁ => S γ₂ ⟩ → ⟨ ξ : γ₁ => γ₂ ⟩.
-  Proof.
-    unfold WsSub; crush.
-    eauto using wsiWk.
-  Qed.
-  Hint Resolve wsiSub_up : wsi.
+  (* Lemma wsiSub_up (γ₁ γ₂: Dom) (ξ: Sub X) : *)
+  (*   ⟨ ξ↑ : S γ₁ => S γ₂ ⟩ → ⟨ ξ : γ₁ => γ₂ ⟩. *)
+  (* Proof. *)
+  (*   unfold WsSub; crush. *)
+  (*   eauto using wsiWk. *)
+  (* Qed. *)
+  (* Hint Resolve wsiSub_up : wsi. *)
 
   Lemma wsSub_ups (γ₁ γ₂ δ: Dom) (ξ: Sub X) :
     WsSub γ₁ γ₂ ξ → WsSub (γ₁ ∪ δ) (γ₂ ∪ δ) (ξ ↑⋆ δ).
   Proof. induction δ; crush. Qed.
   Hint Resolve wsSub_ups : ws.
 
-  Lemma wsiSub_ups (γ₁ γ₂ δ: Dom) (ξ: Sub X) :
-    WsSub (γ₁ ∪ δ) (γ₂ ∪ δ) (ξ ↑⋆ δ) → WsSub γ₁ γ₂ ξ.
-  Proof. induction δ; crush. Qed.
-  Hint Resolve wsiSub_ups : wsi.
+  (* Lemma wsiSub_ups (γ₁ γ₂ δ: Dom) (ξ: Sub X) : *)
+  (*   WsSub (γ₁ ∪ δ) (γ₂ ∪ δ) (ξ ↑⋆ δ) → WsSub γ₁ γ₂ ξ. *)
+  (* Proof. induction δ; crush. Qed. *)
+  (* Hint Resolve wsiSub_ups : wsi. *)
 
   Lemma wsSub_closed (ξ: Sub X) (δ: Dom) : ⟨ ξ : 0 => δ ⟩.
   Proof. unfold WsSub; crush. Qed.
@@ -271,31 +271,31 @@ Section Stuff.
   Proof. unfold WsSub; induction δ; crush. Qed.
   Hint Resolve wsSub_beta : ws.
 
-  Lemma wsSubNatural_up (γ₁ γ₂: Dom) (ξ₁ ξ₂: Sub X) :
-    WsSubNatural γ₁ γ₂ ξ₁ ξ₂ →
-    WsSubNatural (S γ₁) (S γ₂) (ξ₁ ↑) (ξ₂ ↑).
-  Proof. intros H i; destruct i; crush. Qed.
-  Hint Resolve wsSubNatural_up : ws.
+  (* Lemma wsSubNatural_up (γ₁ γ₂: Dom) (ξ₁ ξ₂: Sub X) : *)
+  (*   WsSubNatural γ₁ γ₂ ξ₁ ξ₂ → *)
+  (*   WsSubNatural (S γ₁) (S γ₂) (ξ₁ ↑) (ξ₂ ↑). *)
+  (* Proof. intros H i; destruct i; crush. Qed. *)
+  (* Hint Resolve wsSubNatural_up : ws. *)
 
-  Lemma wsSubNatural_ups (δ: Dom) :
-    ∀ (γ₁ γ₂: Dom) (f g: Sub X) (wfg: WsSubNatural γ₁ γ₂ f g),
-      WsSubNatural (γ₁ ∪ δ) (γ₂ ∪ δ) (f ↑⋆ δ) (g ↑⋆ δ).
-  Proof. induction δ; crush. Qed.
-  Hint Resolve wsSubNatural_ups : ws.
+  (* Lemma wsSubNatural_ups (δ: Dom) : *)
+  (*   ∀ (γ₁ γ₂: Dom) (f g: Sub X) (wfg: WsSubNatural γ₁ γ₂ f g), *)
+  (*     WsSubNatural (γ₁ ∪ δ) (γ₂ ∪ δ) (f ↑⋆ δ) (g ↑⋆ δ). *)
+  (* Proof. induction δ; crush. Qed. *)
+  (* Hint Resolve wsSubNatural_ups : ws. *)
 
   Lemma wsSub_sub_beta1 γ t (wt: ⟨ γ ⊢ t ⟩) :
     ⟨ beta1 t : S γ => γ ⟩.
   Proof. apply (wsSub_beta γ 1); crush. Qed.
   Hint Resolve wsSub_sub_beta1 : ws.
 
-  Lemma wsSubNatural_wks_id δ :
-    ∀ γ, WsSubNatural (γ ∪ δ) γ (wkms δ) (idm X).
-  Proof.
-    unfold WsSubNatural; intros.
-    eapply wsi_wks.
-    rewrite ap_wks, ap_vr; simpl; eauto.
-  Qed.
-  Hint Resolve wsSubNatural_wks_id : wsi.
+  (* Lemma wsSubNatural_wks_id δ : *)
+  (*   ∀ γ, WsSubNatural (γ ∪ δ) γ (wkms δ) (idm X). *)
+  (* Proof. *)
+  (*   unfold WsSubNatural; intros. *)
+  (*   (* eapply wsi_wks. *) *)
+  (*   rewrite ap_wks, ap_vr; simpl; eauto. *)
+  (* Qed. *)
+  (* Hint Resolve wsSubNatural_wks_id : wsi. *)
 
   (* Lemma wsiSub_comp_wkms δ ξ : *)
   (*   ∀ γ₁ γ₂, *)

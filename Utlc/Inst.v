@@ -115,8 +115,9 @@ Proof.
   constructor; crush.
   - refine (wsAp _ H); eauto.
     constructor; eauto.
-  - admit.
-Admitted.
+Qed.
+(*   - admit. *)
+(* Admitted. *)
 
 Section ApplicationPCtx.
 

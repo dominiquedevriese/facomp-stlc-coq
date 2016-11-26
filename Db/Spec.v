@@ -293,7 +293,7 @@ Section BasicLemmas.
     }.
   Class WsWk (X: Type) {wsX: Ws X} {vrX: Vr X} {wkX: Wk X} :=
     {wsWk: ∀ (δ: Dom) (x: X), ⟨ δ ⊢ x ⟩ → ⟨ S δ ⊢ wk x ⟩;
-     wsiWk: ∀ (δ: Dom) (x: X), ⟨ S δ ⊢ wk x ⟩ → ⟨ δ ⊢ x ⟩
+     (* wsiWk: ∀ (δ: Dom) (x: X), ⟨ S δ ⊢ wk x ⟩ → ⟨ δ ⊢ x ⟩ *)
     }.
   Class WsAp (X Y: Type) {vrY: Vr Y} {ap: Ap X Y} {wsX: Ws X} {wsY: Ws Y} :=
     {wsAp: ∀ {ξ γ δ x}, ⟨ ξ : γ => δ ⟩ → ⟨ γ ⊢ x ⟩ → ⟨ δ ⊢ x[ξ] ⟩;
@@ -363,7 +363,7 @@ Section IndexInstances.
   Proof.
     constructor.
     - now constructor.
-    - now inversion 1.
+    (* - now inversion 1. *)
   Qed.
   Global Instance wsApIxIx : WsAp Ix Ix.
   Proof. constructor; auto. Qed.
