@@ -688,7 +688,7 @@ Proof.
       eapply evalToStar.
       eapply eval₀_to_eval.
       eauto with eval.
-Qed.    
+Qed.
 
 Lemma compat_emul_proj₂ {n m d p Γ ts tu} :
   dir_world_prec n m d p →

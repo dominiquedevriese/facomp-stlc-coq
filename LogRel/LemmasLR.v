@@ -597,15 +597,15 @@ Section TermRelZero.
     eauto using termrel₀_antired_star.
   Qed.
 
-  Lemma termrel₀_ectx {d w τ₁ τ₂ ts Cs tu Cu} (eCs : S.ECtx Cs) (eCu : U.ECtx Cu) :
-    termrel₀ d w τ₁ ts tu →
-    (∀ vs vu, valrel d w τ₁ vs vu → termrel₀ d w τ₂ (S.pctx_app vs Cs) (U.pctx_app vu Cu)) →
-    termrel₀ d w τ₂ (S.pctx_app ts Cs) (U.pctx_app tu Cu).
+  Lemma termrel₀_ectx {d dfc w τ₁ τ₂ ts Cs tu Cu} (eCs : S.ECtx Cs) (eCu : U.ECtx Cu) :
+    termreli₀ d dfc w τ₁ ts tu →
+    (∀ vs vu, valrel d w τ₁ vs vu → termreli₀ d dfc w τ₂ (S.pctx_app vs Cs) (U.pctx_app vu Cu)) →
+    termreli₀ d dfc w τ₂ (S.pctx_app ts Cs) (U.pctx_app tu Cu).
   Proof.
     intros trtm trcont.
     destruct trtm as [(vs & vu & ess & esu & vr)|div].
     - specialize (trcont vs vu vr).
-      refine (termrel₀_antired_star _ _ trcont);
+      refine (termreli₀_antired_star _ _ trcont);
         eauto using evalstar_ctx, extend_ctxevalStar.
     - right.
       intros Cs' Cu' eCs' eC'.
@@ -614,13 +614,13 @@ Section TermRelZero.
       eauto using S.ectx_cat, U.ectx_cat.
   Qed.
 
-  Lemma termrel₀_ectx' {d w τ₁ τ₂ ts Cs tu ts' tu' Cu} :
-    termrel₀ d w τ₁ ts tu →
-    (∀ vs vu, valrel d w τ₁ vs vu → termrel₀ d w τ₂ (S.pctx_app vs Cs) (U.pctx_app vu Cu)) →
+  Lemma termrel₀_ectx' {d dfc w τ₁ τ₂ ts Cs tu ts' tu' Cu} :
+    termreli₀ d dfc w τ₁ ts tu →
+    (∀ vs vu, valrel d w τ₁ vs vu → termreli₀ d dfc w τ₂ (S.pctx_app vs Cs) (U.pctx_app vu Cu)) →
     ts' = S.pctx_app ts Cs →
     tu' = U.pctx_app tu Cu →
     S.ECtx Cs → U.ECtx Cu →
-    termrel₀ d w τ₂ ts' tu'.
+    termreli₀ d dfc w τ₂ ts' tu'.
   Proof.
     intros. subst.
     eauto using termrel₀_ectx.
@@ -632,6 +632,37 @@ Section TermRelZero.
     right.
     intros Cs Cu eCs eCu.
     eapply obs_zero.
+  Qed.
+
+  Lemma termrel₀_ectx'' {d w' w τ₁ τ₂ ts Cs tu Cu} (eCs : S.ECtx Cs) (eCu : U.ECtx Cu) :
+    termrel₀ d w' τ₁ ts tu →
+    (∀ vs vu, valrel d w' τ₁ vs vu → termrel₀ d w τ₂ (S.pctx_app vs Cs) (U.pctx_app vu Cu)) →
+    w ≤ w' →
+    termrel₀ d w τ₂ (S.pctx_app ts Cs) (U.pctx_app tu Cu).
+  Proof.
+    intros trtm trcont ineq.
+    destruct trtm as [(vs & vu & ess & esu & vr)|div].
+    - specialize (trcont vs vu vr).
+      refine (termrel₀_antired_star _ _ trcont);
+        eauto using evalstar_ctx, extend_ctxevalStar.
+    - right.
+      intros Cs' Cu' eCs' eC'.
+      rewrite <- S.pctx_cat_app.
+      rewrite <- U.pctx_cat_app.
+      eauto using S.ectx_cat, U.ectx_cat, obs_mono.
+  Qed.
+
+  Lemma termrel₀_ectx''' {d w w' τ₁ τ₂ ts Cs tu ts' tu' Cu} :
+    termrel₀ d w' τ₁ ts tu →
+    (∀ vs vu, valrel d w' τ₁ vs vu → termrel₀ d w τ₂ (S.pctx_app vs Cs) (U.pctx_app vu Cu)) →
+    ts' = S.pctx_app ts Cs →
+    tu' = U.pctx_app tu Cu →
+    S.ECtx Cs → U.ECtx Cu →
+    w ≤ w' →
+    termrel₀ d w τ₂ ts' tu'.
+  Proof.
+    intros. subst.
+    eauto using termrel₀_ectx''.
   Qed.
 
   Lemma termreli₀_dfc_mono {d dfc dfc' w τ ts tu}:

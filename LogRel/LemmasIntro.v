@@ -500,6 +500,60 @@ Section TermRelation.
     apply vr₁; intuition; omega.
   Qed.
 
+  Lemma termrel₀_proj₁ {d w τ₁ τ₂ ts tu} :
+    valrel d (S w) (ptprod τ₁ τ₂) ts tu →
+    termrel₀ d w τ₁ (S.proj₁ ts) (U.proj₁ tu).
+  Proof.
+    intros vr.
+
+    rewrite -> valrel_fixp in vr.
+    destruct vr as [ot hyp]; subst; cbn in hyp.
+    apply OfType_inversion_ptprod in ot.
+    destruct ot as (vs₁ & vu₁ & vs₂ & vu₂ & ? & ? & ot₁ & ot₂); subst.
+    destruct (OfType_implies_Value ot₁) as [vvs₁ vvs₂].
+    destruct (OfType_implies_Value ot₂) as [vvu₁ vvu₂].
+    destruct hyp as [vr₁ vr₂].
+
+    assert (S.eval (S.proj₁ (S.pair vs₁ vs₂)) vs₁) by
+        (apply (S.eval_ctx₀ S.phole); try refine (S.eval_proj₁ _ _); simpl; crush).
+    assert (esn : clos_refl_trans_1n S.Tm S.eval (S.proj₁ (S.pair vs₁ vs₂)) vs₁) by (eauto with eval).
+    assert (U.ctxeval (U.proj₁ (U.pair vu₁ vu₂)) vu₁) by
+        (apply (U.mkCtxEval U.phole); try refine (U.eval_proj₁ _); simpl; intuition).
+    assert (eun : U.ctxevalStar (U.proj₁ (U.pair vu₁ vu₂)) vu₁)
+      by (unfold U.ctxevalStar; eauto with eval).
+    refine (termrel₀_antired_star esn eun _); crush.
+
+    eapply valrel_in_termrel₀.
+    apply vr₁; crush.
+  Qed.
+
+  Lemma termrel₀_proj₂ {d w τ₁ τ₂ ts tu} :
+    valrel d (S w) (ptprod τ₁ τ₂) ts tu →
+    termrel₀ d w τ₂ (S.proj₂ ts) (U.proj₂ tu).
+  Proof.
+    intros vr.
+
+    rewrite -> valrel_fixp in vr.
+    destruct vr as [ot hyp]; subst; cbn in hyp.
+    apply OfType_inversion_ptprod in ot.
+    destruct ot as (vs₁ & vu₁ & vs₂ & vu₂ & ? & ? & ot₁ & ot₂); subst.
+    destruct (OfType_implies_Value ot₁) as [vvs₁ vvs₂].
+    destruct (OfType_implies_Value ot₂) as [vvu₁ vvu₂].
+    destruct hyp as [vr₁ vr₂].
+
+    assert (S.eval (S.proj₂ (S.pair vs₁ vs₂)) vs₂) by
+        (apply (S.eval_ctx₀ S.phole); try refine (S.eval_proj₂ _ _); simpl; intuition).
+    assert (esn : clos_refl_trans_1n S.Tm S.eval (S.proj₂ (S.pair vs₁ vs₂)) vs₂) by (eauto with eval).
+    assert (U.ctxeval (U.proj₂ (U.pair vu₁ vu₂)) vu₂) by
+        (apply (U.mkCtxEval U.phole); try refine (U.eval_proj₂ _); simpl; intuition).
+    assert (eun : U.ctxevalStar (U.proj₂ (U.pair vu₁ vu₂)) vu₂)
+      by (unfold U.ctxevalStar; eauto with eval).
+    refine (termrel₀_antired_star esn eun _); crush.
+
+    eapply valrel_in_termrel₀.
+    apply vr₂; crush.
+  Qed.
+
   (* Proj₂ *)
   Lemma termrel_proj₂ {d w τ₁ τ₂ ts tu} :
     termrel d w (ptprod τ₁ τ₂) ts tu →
@@ -596,6 +650,37 @@ Section TermRelation.
       assert (eun : U.ctxevaln (U.caseof (U.inr vu') tu₂ tu₃) (tu₃ [beta1 vu']) 1) by (unfold U.ctxevaln; eauto with eval).
       destruct w'; try apply termrel_zero.
       refine (termrel_antired w' esn eun _ _ _); crush.
+  Qed.
+
+  Lemma termreli₀_caseof {d dfc w τ τ₁ τ₂ vs₁ ts₂ ts₃ vu₁ tu₂ tu₃} :
+    valrel d (S w) (ptsum τ₁ τ₂) vs₁ vu₁ →
+    (∀ vs₁ vu₁, valrel d w τ₁ vs₁ vu₁ → termreli₀ d dfc (S w) τ (ts₂ [beta1 vs₁]) (tu₂ [ beta1 vu₁])) →
+    (∀ vs₂ vu₂, valrel d w τ₂ vs₂ vu₂ → termreli₀ d dfc (S w) τ (ts₃ [beta1 vs₂]) (tu₃ [ beta1 vu₂])) →
+    termreli₀ d dfc (S w) τ (S.caseof vs₁ ts₂ ts₃) (U.caseof vu₁ tu₂ tu₃).
+  Proof.
+    intros vr₁ tr₂ tr₃.
+
+    (* then evaluate the caseof *)
+    rewrite -> valrel_fixp in vr₁.
+    destruct vr₁ as [ot hyp]; subst; cbn in hyp.
+    apply OfType_inversion_ptsum in ot.
+    destruct ot as (vs' & vu' & [(? & ? & ot)|[(? & ?)|[(? & ?)|(? & ? & ot)]]]);
+      subst; cbn in *; try contradiction;
+      destruct (OfType_implies_Value ot) as [vvs vvu]; clear ot.
+    - assert (S.eval (S.caseof (S.inl vs') ts₂ ts₃) (ts₂ [beta1 vs'])) by
+          (apply (S.eval_ctx₀ S.phole); try refine (S.eval_case_inl _); simpl; intuition).
+      assert (esn : clos_refl_trans_1n S.Tm S.eval (S.caseof (S.inl vs') ts₂ ts₃) (ts₂ [beta1 vs'])) by (eauto with eval).
+      assert (U.ctxeval (U.caseof (U.inl vu') tu₂ tu₃) (tu₂ [beta1 vu'])) by
+          (apply (U.mkCtxEval U.phole); try refine (U.eval_case_inl _ _); simpl; intuition).
+      assert (eun : U.ctxevalStar (U.caseof (U.inl vu') tu₂ tu₃) (tu₂ [beta1 vu'])) by (unfold U.ctxevalStar; eauto with eval).
+      refine (termreli₀_antired_star esn eun _); crush.
+    - assert (S.eval (S.caseof (S.inr vs') ts₂ ts₃) (ts₃ [beta1 vs'])) by
+          (apply (S.eval_ctx₀ S.phole); try refine (S.eval_case_inr _); simpl; intuition).
+      assert (esn : clos_refl_trans_1n S.Tm S.eval (S.caseof (S.inr vs') ts₂ ts₃) (ts₃ [beta1 vs'])) by (eauto with eval).
+      assert (U.ctxeval (U.caseof (U.inr vu') tu₂ tu₃) (tu₃ [beta1 vu'])) by
+          (apply (U.mkCtxEval U.phole); try refine (U.eval_case_inr _ _); simpl; intuition).
+      assert (eun : U.ctxevalStar (U.caseof (U.inr vu') tu₂ tu₃) (tu₃ [beta1 vu'])) by (unfold U.ctxevalStar; eauto with eval).
+      refine (termreli₀_antired_star esn eun _); crush.
   Qed.
 
   (* Seq *)

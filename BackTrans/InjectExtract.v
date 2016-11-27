@@ -159,6 +159,135 @@ Proof.
   exact (termrel₀_caseUValBool dwp vr').
 Qed.
   
+Lemma termrel₀_extract_proj₁ {n w d p vs vu} :
+  dir_world_prec n (S w) d p →
+  valrel d (S w) (pEmulDV n p) vs vu →
+  termrel₀ d w (pEmulDV n p) (S.proj₁ (caseProdUp n vs)) (U.proj₁ vu).
+Proof.
+  intros dwp tr.
+  unfold caseProdUp.
+  unfold caseProdUp_pctx; rewrite S.pctx_cat_app; cbn.
+
+  (* execute the upgrade *)
+  assert (trupg : termrel₀ d (S w) (pEmulDV (n + 1) p) (S.app (upgrade n 1) vs) vu)
+    by eauto using upgrade_works''.
+  replace (n + 1) with (S n) in trupg by Omega.omega.
+  eapply (termrel₀_ectx''' trupg); S.inferContext; U.inferContext; crush.
+
+  (* continuation bureaucracy *)
+  intros vs' vu' vr'.
+  destruct (valrel_implies_Value vr').
+  eapply invert_valrel_pEmulDV_for_caseUValProd in vr'.
+  fold (caseProd n vs').
+  destruct vr' as [(vs'' & ? & es & vr'')|
+                   [(? & div)|(? & div)]].
+  - eapply termrel₀_antired_star_left.
+    eapply (evalstar_ctx' es); S.inferContext; crush.
+    simpl.
+    eauto using termrel₀_proj₁, valrel_in_termrel₀.
+  - subst; eapply dwp_invert_imprecise in dwp; subst.
+    eapply termreli₀_div_lt.
+    eapply (divergence_closed_under_evalcontext' div); S.inferContext; crush.
+  - eapply termreli₀_div_wrong.
+    + eapply (divergence_closed_under_evalcontext' div); S.inferContext; crush.
+    + right.
+      simpl.
+      eapply evalToStar.
+      eapply eval₀_to_eval.
+      eauto with eval.
+Qed.
+
+Lemma termrel₀_extract_proj₂ {n w d p vs vu} :
+  dir_world_prec n (S w) d p →
+  valrel d (S w) (pEmulDV n p) vs vu →
+  termrel₀ d w (pEmulDV n p) (S.proj₂ (caseProdUp n vs)) (U.proj₂ vu).
+Proof.
+  intros dwp tr.
+  unfold caseProdUp.
+  unfold caseProdUp_pctx; rewrite S.pctx_cat_app; cbn.
+
+  (* execute the upgrade *)
+  assert (trupg : termrel₀ d (S w) (pEmulDV (n + 1) p) (S.app (upgrade n 1) vs) vu)
+    by eauto using upgrade_works''.
+  replace (n + 1) with (S n) in trupg by Omega.omega.
+  eapply (termrel₀_ectx''' trupg); S.inferContext; U.inferContext; crush.
+
+  (* continuation bureaucracy *)
+  intros vs' vu' vr'.
+  destruct (valrel_implies_Value vr').
+  eapply invert_valrel_pEmulDV_for_caseUValProd in vr'.
+  fold (caseProd n vs').
+  destruct vr' as [(vs'' & ? & es & vr'')|
+                   [(? & div)|(? & div)]].
+  - eapply termrel₀_antired_star_left.
+    eapply (evalstar_ctx' es); S.inferContext; crush.
+    simpl.
+    eauto using termrel₀_proj₂, valrel_in_termrel₀.
+  - subst; eapply dwp_invert_imprecise in dwp; subst.
+    eapply termreli₀_div_lt.
+    eapply (divergence_closed_under_evalcontext' div); S.inferContext; crush.
+  - eapply termreli₀_div_wrong.
+    + eapply (divergence_closed_under_evalcontext' div); S.inferContext; crush.
+    + right.
+      simpl.
+      eapply evalToStar.
+      eapply eval₀_to_eval.
+      eauto with eval.
+Qed.
+
+Lemma termreli₀_extract_ptsum {n w d dfc p τ' vs₁ vu₁ ts₂ tu₂ ts₃ tu₃} :
+  dir_world_prec n (S w) d p →
+  valrel d (S w) (pEmulDV n p) vs₁ vu₁ →
+  (forall vs₂ vu₂, 
+                      valrel d w (pEmulDV n p) vs₂ vu₂ →
+                      termreli₀ d dfc (S w) τ' (ts₂ [beta1 vs₂]) (tu₂ [beta1 vu₂])) →
+  (forall vs₃ vu₃, 
+                      valrel d w (pEmulDV n p) vs₃ vu₃ →
+                      termreli₀ d dfc (S w) τ' (ts₃ [beta1 vs₃]) (tu₃ [beta1 vu₃])) →
+  termreli₀ d dfc (S w) τ' (S.caseof (caseSumUp n vs₁) ts₂ ts₃) (U.caseof vu₁ tu₂ tu₃).
+Proof.
+  intros dwp vr₁ tr₂ tr₃. 
+  unfold caseSumUp.
+  unfold caseSumUp_pctx.
+  rewrite S.pctx_cat_app; crush; cbn.
+
+  (* evaluate upgrade *)
+  assert (trupg : termrel₀ d (S w) (pEmulDV (n + 1) p) (S.app (upgrade n 1) vs₁) vu₁)
+    by eauto using upgrade_works''.
+  replace (n + 1) with (S n) in trupg by Omega.omega.
+  eapply termreli₀_dfc_mono in trupg; try omega.
+  eapply (termrel₀_ectx' trupg); S.inferContext; U.inferContext; crush.
+
+  (* continuation bureaucracy *)
+  intros vs' vu' vr'.
+  fold (caseSum n vs'); cbn.
+
+  (* case analysis *)
+  destruct (valrel_implies_Value vr').
+  eapply invert_valrel_pEmulDV_for_caseUValSum in vr'.
+  destruct vr' as [(vs₁' & ? & es & vr₁')|
+                   [(? & div)| (neql & neqr & div)]]; subst.
+
+  - (* successful caseUValBool *)
+    eapply termreli₀_antired_star.
+    + eapply (evalstar_ctx' es); S.inferContext; crush.
+    + eapply rt1n_refl. 
+    + cbn.
+      
+      eapply termreli₀_caseof; eauto using valrel_in_termreli₀.
+  - (* unk case *)
+    eapply dwp_invert_imprecise in dwp; subst.
+    eapply termreli₀_div_lt.
+    eapply (divergence_closed_under_evalcontext' div); S.inferContext; crush.
+  - (* other cases *)
+    eapply termreli₀_div_wrong.
+    + eapply (divergence_closed_under_evalcontext' div); S.inferContext; crush.
+    + right.
+      eapply evalToStar.
+      eapply eval₀_to_eval.
+      eauto with eval.
+Qed.
+
 Lemma inject_and_protect_work {n w d p τ vs vu} :
   dir_world_prec n w d p →
   valrel d w (embed τ) vs vu →
@@ -556,173 +685,99 @@ Proof.
         cbn. repeat crushUtlcSyntaxMatchH. rewrite ?confine_sub.
 
         eapply stepRel_zero.
-      * admit.
+      * destruct w; try eapply termrel₀_zero.
 
-        (* rewrite ?S.pctx_cat_app. *)
-        (* cbn. *)
-        (* destruct w. *)
-        (* { eapply termrel₀_zero. } *)
-        (* { *)
-        (*   assert (w < S w) as fw by eauto with arith. *)
-        (*   specialize (vrs w fw). *)
-        (*   destruct vrs as (vr₁ & vr₂). *)
+        (* execute proj₁s *)
+        pose proof (termrel₀_extract_proj₁ dwp vr) as proj₁_tr. 
+        change w with (lateri 1 (S w)) in proj₁_tr.
+        eapply (termreli₀_ectx' proj₁_tr); S.inferContext; U.inferContext; crush; unfold lev in *; eauto using extract_value, confine_Value with arith.
 
-        (*   (* execute first inject/protects *) *)
-        (*   assert (dir_world_prec n w d p) as dwp' by eauto using dwp_mono. *)
-        (*   pose proof (inject_and_protect_work n w d p τ1 _ _ dwp' vr₁) as inj₁_tr.  *)
+        (* continuation boilerplate *)
+        intros vs₁' vu₁' vr₁'.
+        rewrite U.pctx_cat_app; cbn.
+        
+        (* execute first extract/confine *)
+        assert (dir_world_prec n w d p) as dwp' by eauto using dwp_mono.
+        pose proof (extract_and_confine_work _ _ _ _ τ1 _ _ dwp' vr₁') as extract₁_tr.
+        change w with (lateri 1 (S w)) in extract₁_tr.
+        eapply (termreli₀_ectx' extract₁_tr); S.inferContext; U.inferContext; crush; unfold lev; eauto with arith.
 
-        (*   change w with (lateri 1 (S w)) in inj₁_tr. *)
-        (*   assert (lev (S w) ≥ 1) by (unfold lev; omega). *)
-        (*   eapply (termreli₀_ectx' inj₁_tr); S.inferContext; U.inferContext; *)
-        (*   crush; eauto using downgrade_value. *)
+        (* continuation boilerplate *)
+        intros vs₁'' vu₁'' vr₁''.
+        rewrite U.pctx_cat_app; cbn.
+        destruct (valrel_implies_Value vr₁'').
+        
+        (* execute proj₂s *)
+        pose proof (termrel₀_extract_proj₂ dwp vr) as proj₂_tr. 
+        change w with (lateri 1 (S w)) in proj₂_tr.
+        eapply (termreli₀_ectx' proj₂_tr); S.inferContext; U.inferContext; crush; unfold lev in *; eauto using extract_value, confine_Value with arith.
 
-        (*   (* execute second projection *) *)
-        (*   intros vs₁' vu₁' vr₁'. *)
-        (*   destruct (valrel_implies_Value vr₁') as (? & ?). *)
-        (*   rewrite S.pctx_cat_app; cbn. *)
-        (*   eapply termreli₀_antired_star. *)
-        (*   - eapply evalToStar. *)
-        (*     assert (S.eval₀ (S.proj₂ (S.pair vs₁ vs₂)) vs₂) as proj_eval₀ by crush. *)
-        (*     unfold inProdDwn. *)
-        (*     eapply (S.eval_from_eval₀ proj_eval₀); S.inferContext; crush; *)
-        (*     eauto using downgrade_value, inject_value. *)
-        (*   - eapply evalToStar. *)
-        (*     assert (U.eval₀ (U.proj₂ (U.pair vu₁ vu₂)) vu₂) as proj_eval₀ by crush. *)
-        (*     eapply (U.ctxeval_from_eval₀ proj_eval₀); U.inferContext; crush; *)
-        (*     eauto using protect_Value. *)
-        (*   - rewrite ?S.pctx_cat_app, ?U.pctx_cat_app; cbn. *)
+        (* continuation boilerplate *)
+        intros vs₂' vu₂' vr₂'.
+        rewrite U.pctx_cat_app; cbn.
+        
+        (* execute first extract/confine *)
+        pose proof (extract_and_confine_work _ _ _ _ τ2 _ _ dwp' vr₂') as extract₂_tr.
+        change w with (lateri 1 (S w)) in extract₂_tr.
+        eapply (termreli₀_ectx' extract₂_tr); S.inferContext; U.inferContext; crush; unfold lev; eauto with arith.
 
-        (*     (* execute second inject/protect *) *)
-        (*     pose proof (inject_and_protect_work n w d p τ2 _ _ dwp' vr₂) as inj₂_tr.  *)
-            
-        (*     change w with (lateri 1 (S w)) in inj₂_tr. *)
-        (*     assert (lev (S w) ≥ 1) by (unfold lev; omega). *)
-        (*     eapply (termreli₀_ectx' inj₂_tr); S.inferContext; U.inferContext; *)
-        (*     crush; eauto using downgrade_value. *)
-          
-        (*     intros vs₂' vu₂' vr₂'. *)
-        (*     rewrite ?S.pctx_cat_app; cbn. *)
+        (* continuation boilerplate *)
+        intros vs₂'' vu₂'' vr₂''.
+        rewrite U.pctx_cat_app; cbn.
 
-        (*     pose proof (valrel_pair' vr₁' vr₂') as vrp. *)
-        (*     eapply termrel₀_inProdDwn in vrp. *)
-        (*     eapply (termreli₀_dfc_mono vrp); eauto with arith. *)
-        (*     exact dwp. *)
-        (* } *)
+        eapply valrel_in_termreli₀.
+        eapply valrel_pair'; assumption.
+
     + (* τ₁ ⊎ τ₂ *)
-      admit.
-      (* rewrite ?protect_sub. *)
+      rewrite ?confine_sub.
 
-      (* destruct w; try eapply termrel₀_zero. *)
-      (* assert (w < S w) as fw by eauto with arith. *)
-      (* assert (dir_world_prec n w d p) as dwp' by eauto using dwp_mono. *)
+      assert (0 + Nat.min 1 1 ≥ 1) as ineq by eauto with arith.
       
-      (* destruct (valrel_ptsum_inversion vr) as (vs' & vu' & [(? & ? & ot' & vrs)|(? & ? & ot' & vrs) ]); *)
-      (*   specialize (vrs w fw); *)
-      (*   subst; cbn in vvs; *)
-      (*   assert (0 + Nat.min 2 2 ≥ 1) as ineq by eauto with arith. *)
-      (* * eapply (termreli₀_antired 0 ineq). *)
-      (*   { (* beta-reduce *) *)
-      (*     eapply stepRel_step. *)
-      (*     eapply (S.eval_ctx₀ S.phole); simpl; *)
-      (*     eauto using S.eval_beta. *)
-      (*     rewrite inSumDwn_sub. cbn. repeat crushStlcSyntaxMatchH. *)
-      (*     rewrite ?inject_sub; cbn. *)
+      eapply (termreli₀_antired 0 ineq).
+      * (* beta-reduce *)
+        eapply stepRel_step.
+        eapply (S.eval_ctx₀ S.phole); simpl;
+        eauto using S.eval_beta.
+        cbn. crushTyping. rewrite caseSumUp_sub. cbn. repeat crushStlcSyntaxMatchH.
+        rewrite ?extract_sub; cbn.
 
-      (*     (* execute the pattern match *) *)
-      (*     eapply stepRel_step. *)
-      (*     assert (S.eval₀ (S.caseof (S.inl vs') (S.inl (S.app (inject n τ1) (S.var 0))) (S.inr (S.app (inject n τ2) (S.var 0)))) (S.inl (S.app (inject n τ1) (S.var 0)))[beta1 vs']) as caseof_eval₀ by crush. *)
-      (*     unfold inSumDwn. *)
-      (*     eapply (S.eval_from_eval₀ caseof_eval₀); S.inferContext; crush; *)
-      (*     eauto using downgrade_value, inject_value. *)
+        eapply stepRel_zero.
 
-      (*     eapply stepRel_zero. *)
-      (*   } *)
-      (*   { (* beta-reduce *) *)
-      (*     eapply stepRel_step. *)
-      (*     eapply U.eval₀_ctxeval. *)
-      (*     eapply U.eval_beta; eauto. *)
-      (*     cbn. repeat crushUtlcSyntaxMatchH. rewrite ?protect_sub. *)
+      * (* beta-reduce *)
+        eapply stepRel_step.
+        eapply U.eval₀_ctxeval.
+        eapply U.eval_beta; eauto.
+        cbn. repeat crushUtlcSyntaxMatchH. rewrite ?confine_sub.
 
-      (*     (* execute the pattern match *) *)
-      (*     eapply stepRel_step. *)
-      (*     assert (U.eval₀ (U.caseof (U.inl vu') (U.inl (U.app (protect τ1) (U.var 0))) *)
-      (*  (U.inr (U.app (protect τ2) (U.var 0)))) (U.inl (U.app (protect τ1) (U.var 0))) [beta1 vu']) as proj_eval₀ by crush. *)
-      (*     eapply (U.ctxeval_from_eval₀ proj_eval₀); U.inferContext; crush; *)
-      (*     eauto using protect_Value. *)
-          
-      (*     eapply stepRel_zero. *)
-      (*   }  *)
-      (*   { crush. *)
-      (*     rewrite ?inject_sub, ?protect_sub; cbn. *)
+        eapply stepRel_zero.
+      * destruct w; try eapply termrel₀_zero.
+        Check termreli₀_extract_ptsum.
+        eapply termreli₀_extract_ptsum; try eassumption.
+        { intros vs₂ vu₂ vr₂.
+          cbn. crush. rewrite confine_sub, extract_sub.
 
-      (*     (* execute inject/protect *) *)
-      (*     pose proof (inject_and_protect_work n w d p τ1 _ _ dwp' vrs) as inj_tr.  *)
-      (*     change w with (lateri 1 (S w)) in inj_tr. *)
-      (*     assert (lev (S w) ≥ 1) by (unfold lev; omega). *)
-      (*     eapply (termreli₀_ectx' inj_tr); S.inferContext; U.inferContext; *)
-      (*     crush; eauto using downgrade_value. *)
+          assert (dir_world_prec n w d p) as dwp' by eauto using dwp_mono.
+          pose proof (extract_and_confine_work _ _ _ _ τ1 _ _ dwp' vr₂) as extract_tr.
+          change w with (lateri 1 (S w)) in extract_tr.
+          eapply (termreli₀_ectx' extract_tr); S.inferContext; U.inferContext; crush; unfold lev; eauto with arith.
 
-      (*     (* and finish up *) *)
-      (*     intros vs'' vu'' vr''. *)
-      (*     destruct (valrel_implies_OfType vr'') as ((? & ?) & (? & ?)). *)
-      (*     rewrite S.pctx_cat_app; cbn. *)
+          intros vs₂' vu₂' vr₂'.
+          cbn.
+          eauto using valrel_in_termreli₀, valrel_inl'.
+        }
+        { intros vs₃ vu₃ vr₃.
+          cbn. crush. rewrite confine_sub, extract_sub.
 
-      (*     eapply valrel_inl' in vr''. *)
-      (*     eapply termrel₀_inSumDwn in vr''; try assumption. *)
-      (*     refine (termreli₀_dfc_mono vr'' _); eauto with arith. *)
-      (*   }  *)
-      (* * eapply (termreli₀_antired 0 ineq). *)
-      (*   { (* beta-reduce *) *)
-      (*     eapply stepRel_step. *)
-      (*     eapply (S.eval_ctx₀ S.phole); simpl; *)
-      (*     eauto using S.eval_beta. *)
-      (*     rewrite inSumDwn_sub. cbn. repeat crushStlcSyntaxMatchH. *)
-      (*     rewrite ?inject_sub; cbn. *)
+          assert (dir_world_prec n w d p) as dwp' by eauto using dwp_mono.
+          pose proof (extract_and_confine_work _ _ _ _ τ2 _ _ dwp' vr₃) as extract_tr.
+          change w with (lateri 1 (S w)) in extract_tr.
+          eapply (termreli₀_ectx' extract_tr); S.inferContext; U.inferContext; crush; unfold lev; eauto with arith.
 
-      (*     (* execute the pattern match *) *)
-      (*     eapply stepRel_step. *)
-      (*     assert (S.eval₀ (S.caseof (S.inr vs') (S.inl (S.app (inject n τ1) (S.var 0))) (S.inr (S.app (inject n τ2) (S.var 0)))) (S.inr (S.app (inject n τ2) (S.var 0)))[beta1 vs']) as caseof_eval₀ by crush. *)
-      (*     unfold inSumDwn. *)
-      (*     eapply (S.eval_from_eval₀ caseof_eval₀); S.inferContext; crush; *)
-      (*     eauto using downgrade_value, inject_value. *)
-
-      (*     eapply stepRel_zero. *)
-      (*   } *)
-      (*   { (* beta-reduce *) *)
-      (*     eapply stepRel_step. *)
-      (*     eapply U.eval₀_ctxeval. *)
-      (*     eapply U.eval_beta; eauto. *)
-      (*     cbn. repeat crushUtlcSyntaxMatchH. rewrite ?protect_sub. *)
-
-      (*     (* execute the pattern match *) *)
-      (*     eapply stepRel_step. *)
-      (*     assert (U.eval₀ (U.caseof (U.inr vu') (U.inl (U.app (protect τ1) (U.var 0))) *)
-      (*                               (U.inr (U.app (protect τ2) (U.var 0)))) (U.inr (U.app (protect τ2) (U.var 0))) [beta1 vu']) as proj_eval₀ by crush. *)
-      (*     eapply (U.ctxeval_from_eval₀ proj_eval₀); U.inferContext; crush; *)
-      (*     eauto using protect_Value. *)
-          
-      (*     eapply stepRel_zero. *)
-      (*   }  *)
-      (*   { crush. *)
-      (*     rewrite ?inject_sub, ?protect_sub; cbn. *)
-
-      (*     (* execute inject/protect *) *)
-      (*     pose proof (inject_and_protect_work n w d p τ2 _ _ dwp' vrs) as inj_tr.  *)
-      (*     change w with (lateri 1 (S w)) in inj_tr. *)
-      (*     assert (lev (S w) ≥ 1) by (unfold lev; omega). *)
-      (*     eapply (termreli₀_ectx' inj_tr); S.inferContext; U.inferContext; *)
-      (*     crush; eauto using downgrade_value. *)
-
-      (*     (* and finish up *) *)
-      (*     intros vs'' vu'' vr''. *)
-      (*     destruct (valrel_implies_OfType vr'') as ((? & ?) & (? & ?)). *)
-      (*     rewrite S.pctx_cat_app; cbn. *)
-
-      (*     eapply valrel_inr' in vr''. *)
-      (*     eapply termrel₀_inSumDwn in vr''; try assumption. *)
-      (*     refine (termreli₀_dfc_mono vr'' _); eauto with arith. *)
-      (*   }  *)
-Admitted.
+          intros vs₃' vu₃' vr₃'.
+          cbn.
+          eauto using valrel_in_termreli₀, valrel_inr'.
+        }
+Qed.
 
 Lemma inject_works_open {d n m τ ts tu Γ p} :
   dir_world_prec n m d p →
