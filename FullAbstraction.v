@@ -110,3 +110,5 @@ Proof.
   split;
   eauto using equivalenceReflection, equivalencePreservation.
 Qed.
+
+Print Assumptions fullAbstraction.
