@@ -15,7 +15,7 @@ Dominique Devriese <dominique.devriese@cs.kuleuven.be>.
 
 ## Coq version
 
-These proofs were successfully checked using Coq v8.6.
+These proofs were successfully checked using Coq v8.6 and v8.5.3.
 
 ## Structure of Coq proof
 
