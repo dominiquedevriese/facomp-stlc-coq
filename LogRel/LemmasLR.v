@@ -391,6 +391,7 @@ Section ClosedLR.
     simpl in tr. unfold lev in *.
     destruct (le_inv_plus ineq) as [r eq]; subst.
     apply tr.
+    change (S m + r) with (S (m + r)) in *.
     apply (S.TerminatingN_lt term); omega.
   Qed.
 
@@ -405,6 +406,7 @@ Section ClosedLR.
     simpl in tr. unfold lev in *.
     destruct (le_inv_plus ineq) as [r eq]; subst.
     apply tr.
+    change (S m + r) with (S (m + r)) in *.
     apply (U.TerminatingN_lt term); omega.
   Qed.
 

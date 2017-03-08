@@ -453,7 +453,8 @@ Proof.
   intros v ty vv.
   - exists (unkUVal 0).
     eauto using unkUVal_Value, unkUValT, downgrade_zero_eval.
-  - canonUVal. 
+  - change (S n + d) with (S (n + d)) in ty.
+    canonUVal.
     + exists (unkUVal (S n)).
       change (S (n + d)) with (S n + d).
       eauto using unkUVal_Value, unkUValT, downgrade_eval_unk.

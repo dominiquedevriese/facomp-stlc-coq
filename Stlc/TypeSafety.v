@@ -30,27 +30,27 @@ Hint Constructors eval₀ : pctx.
 Hint Extern 20 (Value _) => cbn : pctx.
 Hint Extern 20 (ECtx _) => cbn : pctx.
 
-Lemma local_progress {t U} (wt: ⟪ empty ⊢ t : U ⟫) :
-  Value t ∨
-  ∃ C t₀ t₀',
-    t = pctx_app t₀ C ∧
-    t₀ -->₀ t₀' ∧
-    ECtx C.
-Proof.
-  depind wt;
-  repeat
-    (try progressH; cbn in *; destruct_conjs; subst);
-    eauto 20 with pctx;
-    try (exists phole; cbn; eauto 20 with pctx; fail).
-Qed.
+(* Lemma local_progress {t U} (wt: ⟪ empty ⊢ t : U ⟫) : *)
+(*   Value t ∨ *)
+(*   ∃ C t₀ t₀', *)
+(*     t = pctx_app t₀ C ∧ *)
+(*     t₀ -->₀ t₀' ∧ *)
+(*     ECtx C. *)
+(* Proof. *)
+(*   depind wt; *)
+(*   repeat *)
+(*     (try progressH; cbn in *; destruct_conjs; subst); *)
+(*     eauto 20 with pctx; *)
+(*     try (exists phole; cbn; eauto 20 with pctx; fail). *)
+(* Qed. *)
 
-Lemma progress {t U} (wt: ⟪ empty ⊢ t : U ⟫) :
-  Value t ∨
-  ∃ t', t --> t'.
-Proof.
-  destruct (local_progress wt); destruct_conjs;
-    subst; eauto using eval.
-Qed.
+(* Lemma progress {t U} (wt: ⟪ empty ⊢ t : U ⟫) : *)
+(*   Value t ∨ *)
+(*   ∃ t', t --> t'. *)
+(* Proof. *)
+(*   destruct (local_progress wt); destruct_conjs; *)
+(*     subst; eauto using eval. *)
+(* Qed. *)
 
 Lemma context_replacement {Γ C t t' T}
   (hyp: ∀ Γ' T', ⟪ Γ' ⊢ t : T' ⟫ → ⟪ Γ' ⊢ t' : T' ⟫) :

@@ -61,7 +61,7 @@ Section Lemmas.
   Lemma InjSubIxUp (ξ: Sub Ix) :
     Inj ξ → Inj (ξ ↑).
   Proof.
-    intros ? () () ?; cbn in *;
+    intros ? [|?] [|?] ?; cbn in *;
       auto; discriminate.
   Qed.
 

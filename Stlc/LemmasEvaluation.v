@@ -126,7 +126,7 @@ Lemma values_are_normal {t : Tm} : Value t -> normal t.
 Proof.
   generalize @values_are_normal'.
   unfold normal, normal', not.
-  intros ? ? (); eauto.
+  intros ? ? t'; destruct t'; eauto.
 Qed.
 
 Lemma values_terminateN {t n} : Value t → t ⇓_ n.
