@@ -1,3 +1,5 @@
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
 # Fully Abstract Compilation by Approximate Back-translation: Coq proof
 
 This repository contains Coq proofs for the results reported in [1].
@@ -8,15 +10,16 @@ calculus by wrapping compiled terms with dynamic type enforcement wrappers.
 The proof uses a technique called "Approximate back-translation", which we do
 not explain further here, since it is described in detail in [1].
 
-This Coq proof was constructed by Steven Keuchel and Dominique Devriese <dominique.devriese@cs.kuleuven.be>.
+This Coq proof was constructed by Steven Keuchel <steven.keuchel@ugent.be> and
+Dominique Devriese <dominique.devriese@cs.kuleuven.be>.
 
 ## Structure of Coq proof
 
 Here is a list of Coq files with a short description of what they contain, in a
 dependency order:
-* Common/Common.v: A few simple arithmetic lemmas that we didn't immediately
-find in the Coq libraries:
 
+* Common/Common.v: A few simple arithmetic lemmas that we didn't immediately
+find in the Coq libraries
 * Common/Relations.v: Lemmas and definitions concerning the transitive and transitive-reflexive closure of relations and the transitive-reflexive closure indexed with a step count.
 * Db/Spec.v: A generic specification of languages with a De Bruijn binding structure, along with a set of type classes that may be instantiated for such languages.
 * Db/Inst.v: Some instances for the type classes in Db/Spec.v.
@@ -31,9 +34,34 @@ find in the Coq libraries:
 * BackTrans/*.v: Definition of the back-translation and lemmas.
 * FullAbstraction.v: Proof of equivalence preservation and full abstraction.
 
+## Instructions for compiling
+
+We are using the _CoqProject machinery to build, so making your local coq check
+this proof should be as easy as:
+
+    # make
+    ... (no errors means proof checks out)
+    # 
+
+### Checking assumptions of the proof
+
 The file FullAbstraction.v contains the command "Print Assumptions
 fullAbstraction". When Coq checks the file, it tells you that the proof relies
-on only one axiom: functional extensionality.
+on only one axiom: functional extensionality:
+
+    # touch FullAbstraction.v
+    # make
+    
+    make -j -f Makefile.coq
+    make[1]: Map '.../facomp-stlc-coq' wordt binnengegaan
+    "coqdep" -c -R "." FaComp "FullAbstraction.v" > "FullAbstraction.v.d" || ( RV=$?; rm -f "FullAbstraction.v.d"; exit ${RV} )
+    "coqc"  -q  -R "." FaComp   FullAbstraction.v
+    Axioms:
+    functional_extensionality_dep : ∀ (A : Type) (B : A → Type)
+                                    (f g : ∀ x : A, B x),
+                                    (∀ x : A, f x = g x) → f = g
+    make[1]: Map '.../facomp-stlc-coq' wordt verlaten
+    # 
 
 ## References
 
