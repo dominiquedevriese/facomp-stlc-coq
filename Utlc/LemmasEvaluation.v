@@ -742,7 +742,7 @@ Section Termination'.
       + eapply evalToStar.
         eauto with eval.
     - induction H.
-      + refine (evalStepStar _ _ (IHes _)); trivial.
+      + apply (evalStepStar (pctx_app (pctx_app t' C0) C)); auto.
         rewrite <- ?pctx_cat_app.
         eauto using ectx_cat with eval.
       + rewrite <- ?pctx_cat_app.
