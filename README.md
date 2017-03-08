@@ -41,6 +41,12 @@ this proof should be as easy as:
 
     # make
     ... (no errors means proof checks out)
+    "coqc"  -q  -R "." FaComp   FullAbstraction.v
+    Axioms:
+    functional_extensionality_dep : ∀ (A : Type) (B : A → Type)
+                                    (f g : ∀ x : A, B x),
+                                    (∀ x : A, f x = g x) → f = g
+    make[1]: Map '.../facomp-stlc-coq' wordt verlaten
     # 
 
 ### Checking assumptions of the proof
