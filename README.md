@@ -13,6 +13,10 @@ not explain further here, since it is described in detail in [1].
 This Coq proof was constructed by Steven Keuchel <steven.keuchel@ugent.be> and
 Dominique Devriese <dominique.devriese@cs.kuleuven.be>.
 
+## Coq version
+
+These proofs were successfully checked using Coq v8.5pl2.
+
 ## Structure of Coq proof
 
 Here is a list of Coq files with a short description of what they contain, in a
