@@ -3,7 +3,7 @@ Require Export Db.Lemmas.
 Require Export Db.WellScoping.
 Require Export Stlc.SpecSyntax.
 
-Instance vrTm : Vr Tm := {| vr := var |}.
+#[refine] Instance vrTm : Vr Tm := {| vr := var |}.
 Proof. inversion 1; auto. Defined.
 
 Local Ltac crush :=
@@ -29,22 +29,22 @@ Module TmKit <: Kit.
     Context {wkY: Wk Y}.
     Context {liftY: Lift Y Tm}.
 
-    Global Instance inst_ap : Ap Tm Y := {| ap := apTm |}.
+    #[refine] Global Instance inst_ap : Ap Tm Y := {| ap := apTm |}.
     Proof. induction x; crush. Defined.
 
-    Global Instance inst_ap_vr : LemApVr Tm Y := {}.
+    #[refine] Global Instance inst_ap_vr : LemApVr Tm Y := {}.
     Proof. reflexivity. Qed.
 
   End Application.
 
-  Instance inst_ap_inj: LemApInj Tm Ix := {}.
+  #[refine] Instance inst_ap_inj: LemApInj Tm Ix := {}.
   Proof.
     intros m Inj_m x. revert m Inj_m.
     induction x; destruct y; simpl; try discriminate;
     inversion 1; subst; f_equal; eauto using InjSubIxUp.
   Qed.
 
-  Instance inst_ap_comp (Y Z: Type)
+  #[refine] Instance inst_ap_comp (Y Z: Type)
     {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift Y Tm}
     {vrZ: Vr Z} {wkZ: Wk Z} {liftZ: Lift Z Tm}
     {apYZ: Ap Y Z} {compUpYZ: LemCompUp Y Z}
@@ -52,7 +52,7 @@ Module TmKit <: Kit.
     LemApComp Tm Y Z := {}.
   Proof. induction x; crush. Qed.
 
-  Instance inst_ap_liftSub (Y: Type)
+  #[refine] Instance inst_ap_liftSub (Y: Type)
     {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift Y Tm} :
     LemApLiftSub Tm Y := {}.
   Proof. induction t; crush. Qed.

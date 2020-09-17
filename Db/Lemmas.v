@@ -54,7 +54,7 @@ Proof. induction δ₃; cbn; congruence. Qed.
 
 Section Lemmas.
 
-  Ltac crush :=
+  Local Ltac crush :=
     crush' rewrite ?ap_vr, ?comp_up.
 
   (* Injectivity is closed under up. *)
@@ -334,7 +334,7 @@ Section Lemmas.
     Context {apCompX: LemApComp X X X}.
     Context {compUpX: LemCompUp X X}.
 
-    Ltac crush :=
+    Local Ltac crushPointful :=
       (* (* Convert renamings into substitutions *) *)
       (* rewrite <- ?ap_liftSub; *)
       (* Go point-free *)
@@ -353,54 +353,54 @@ Section Lemmas.
 
     Lemma apply_wkm_comm (t: T) (ξ: Sub X) :
       t[ξ][wkm] = t[wkm][ξ↑].
-    Proof. crush. Qed.
+    Proof. crushPointful. Qed.
 
     Lemma apply_wkm_beta1_cancel (t: T) (x: X) :
       t[wkm][beta1 x] = t.
-    Proof. crush. Qed.
+    Proof. crushPointful. Qed.
 
     Lemma apply_beta1_comm (t: T) (x: X) (ζ: Sub X) :
       t[beta1 x][ζ] = t[ζ↑][beta1 x[ζ]].
-    Proof. crush. Qed.
+    Proof. crushPointful. Qed.
 
     (* 1 up variant *)
     Lemma apply_wkm_up_comm (t: T) (ξ: Sub X) :
       t[ξ↑][wkm↑] = t[wkm↑][ξ↑↑].
-    Proof. crush. Qed.
+    Proof. crushPointful. Qed.
 
     Lemma apply_wkm_beta1_up_cancel (t: T) (x: X) :
       t[wkm↑][(beta1 x)↑] = t.
-    Proof. crush. Qed.
+    Proof. crushPointful. Qed.
 
     Lemma apply_beta1_up_comm (t: T) (x: X) (ζ: Sub X) :
       t[(beta1 x)↑][ζ↑] = t[ζ↑↑][(beta1 x[ζ])↑].
-    Proof. crush. Qed.
+    Proof. crushPointful. Qed.
 
     (* 2 ups variant *)
     Lemma apply_wkm_up2_comm (t: T) (ξ: Sub X) :
       t[ξ↑↑][wkm↑↑] = t[wkm↑↑][ξ↑↑↑].
-    Proof. crush. Qed.
+    Proof. crushPointful. Qed.
 
     Lemma apply_wkm_beta1_up2_cancel (t: T) (x: X) :
       t[wkm↑↑][(beta1 x)↑↑] = t.
-    Proof. crush. Qed.
+    Proof. crushPointful. Qed.
 
     Lemma apply_beta1_up2_comm (t: T) (x: X) (ζ: Sub X) :
       t[(beta1 x)↑↑][ζ↑↑] = t[ζ↑↑↑][(beta1 x[ζ])↑↑].
-    Proof. crush. Qed.
+    Proof. crushPointful. Qed.
 
     (* δ ups variant *)
     Lemma apply_wkm_ups_comm (δ: Dom) (t: T) (ξ: Sub X) :
       t[ξ ↑⋆ δ][wkm ↑⋆ δ] = t[wkm ↑⋆ δ][ξ↑ ↑⋆ δ].
-    Proof. crush. Qed.
+    Proof. crushPointful. Qed.
 
     Lemma apply_wkm_beta1_ups_cancel (δ: Dom) (t: T) (x: X) :
       t[wkm ↑⋆ δ][beta1 x ↑⋆ δ] = t.
-    Proof. crush. Qed.
+    Proof. crushPointful. Qed.
 
     Lemma apply_beta1_ups_comm (δ: Dom) (t: T) (x: X) (ζ: Sub X) :
       t[beta1 x ↑⋆ δ][ζ ↑⋆ δ] = t[ζ↑ ↑⋆ δ][beta1 x[ζ] ↑⋆ δ].
-    Proof. crush. Qed.
+    Proof. crushPointful. Qed.
 
   End Pointful.
 

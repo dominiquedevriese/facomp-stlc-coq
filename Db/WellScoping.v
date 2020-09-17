@@ -253,7 +253,7 @@ Section Stuff.
   Proof.
     eapply wsSub_natural'.
     unfold WsSubNatural in *; crush.
-    rewrite ap_vr in H; crush.
+    (* rewrite ap_vr in H; crush. *)
   Qed.
 
   Lemma wsSub_comp {γ₁ γ₂ γ₃: Dom} {ξ₁ ξ₂: Sub X} :

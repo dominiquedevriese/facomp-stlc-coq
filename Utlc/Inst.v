@@ -4,7 +4,7 @@ Require Export Db.WellScoping.
 Require Export Utlc.SpecSyntax.
 Require Export Utlc.SpecScoping.
 
-Instance vrUTm : Vr UTm := {| vr := var |}.
+#[refine] Instance vrUTm : Vr UTm := {| vr := var |}.
 Proof. inversion 1; auto. Defined.
 
 Local Ltac crush :=
@@ -30,22 +30,22 @@ Module UTmKit <: Kit.
     Context {wkY: Wk Y}.
     Context {liftY: Lift Y UTm}.
 
-    Global Instance inst_ap : Ap UTm Y := {| ap := apUTm |}.
+    #[refine] Global Instance inst_ap : Ap UTm Y := {| ap := apUTm |}.
     Proof. induction x; crush. Defined.
 
-    Global Instance inst_ap_vr : LemApVr UTm Y := {}.
+    #[refine] Global Instance inst_ap_vr : LemApVr UTm Y := {}.
     Proof. reflexivity. Qed.
 
   End Application.
 
-  Instance inst_ap_inj: LemApInj UTm Ix := {}.
+  #[refine] Instance inst_ap_inj: LemApInj UTm Ix := {}.
   Proof.
     intros m Inj_m x. revert m Inj_m.
     induction x; destruct y; simpl; try discriminate;
     inversion 1; subst; f_equal; eauto using InjSubIxUp.
   Qed.
 
-  Instance inst_ap_comp (Y Z: Type)
+  #[refine] Instance inst_ap_comp (Y Z: Type)
     {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift Y UTm}
     {vrZ: Vr Z} {wkZ: Wk Z} {liftZ: Lift Z UTm}
     {apYZ: Ap Y Z} {compUpYZ: LemCompUp Y Z}
@@ -53,7 +53,7 @@ Module UTmKit <: Kit.
     LemApComp UTm Y Z := {}.
   Proof. induction x; crush. Qed.
 
-  Instance inst_ap_liftSub (Y: Type)
+  #[refine] Instance inst_ap_liftSub (Y: Type)
     {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift Y UTm} :
     LemApLiftSub UTm Y := {}.
   Proof. induction t; crush. Qed.
@@ -126,7 +126,7 @@ Section ApplicationPCtx.
   Context {wkY: Wk Y}.
   Context {liftYUTm: Lift Y UTm}.
 
-  Global Instance ApPCtx : Ap PCtx Y := {| ap := apPCtx |}.
+  #[refine] Global Instance ApPCtx : Ap PCtx Y := {| ap := apPCtx |}.
   Proof. induction x; crush. Defined.
 
 End ApplicationPCtx.

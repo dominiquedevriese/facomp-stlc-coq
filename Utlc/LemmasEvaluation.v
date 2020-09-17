@@ -352,7 +352,7 @@ Section Determinacy.
         is_var C; destruct C
     end.
 
-  Ltac crush :=
+  Local Ltac crushDet :=
     repeat
       (try discriminate;
        repeat strengthenHyp;
@@ -369,8 +369,8 @@ Section Determinacy.
     (* First look at the decisions encoded in the evaluation contexts. Try as
        fast as possible to get rid of cases where one context indicates that
        the other is reducing a normal form. *)
-    destruct C₁; crush;
-    destruct C₂; crush;
+    destruct C₁; crushDet;
+    destruct C₂; crushDet;
     (* Handle the cases where both contexts actually do the same thing. *)
     cbn; f_equal; eauto;
     (* Only inconsistent cases from here on. *)
@@ -379,11 +379,11 @@ Section Determinacy.
        a look at what the empty context is reducing. We got one layer of
        datatype information from the non-empty context which we use to find
        the reduction. *)
-    try invertEval₀; crush;
+    try invertEval₀; crushDet;
     (* From the inversion of the reduction we learn that the non-empty context
        must in fact be a normal-form which is impossible. Find the non-empty
        context again and give it a final blow. *)
-    try destructECtx; crush.
+    try destructECtx; crushDet.
   Qed.
 
   Lemma determinacy_help2 {t₁ t₁' t} (e₁: t₁ -->₀ t₁') :
@@ -393,11 +393,11 @@ Section Determinacy.
       ECtx C₁ → ECtx C₂ →
       False.
   Proof.
-    induction t; intros; crush;
-    destruct C₂; crush;
-    destruct C₁; crush;
-    inversion e₁; crush;
-    destruct C₂; crush.
+    induction t; intros; crushDet;
+    destruct C₂; crushDet;
+    destruct C₁; crushDet;
+    inversion e₁; crushDet;
+    destruct C₂; crushDet.
   Qed.
 
   Lemma determinacy {t t₁ t₂} :
@@ -418,7 +418,7 @@ Section Determinacy.
     induction es1; auto.
     destruct es2; auto.
     rewrite (determinacy H H0) in *.
-    crush.
+    crushDet.
   Qed.
 End Determinacy.
 
