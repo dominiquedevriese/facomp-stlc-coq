@@ -7,17 +7,21 @@ Module Type Kit.
 
   Parameter TM: Type.
   Parameter inst_vr: Vr TM.
-  Parameter inst_ap: ∀ Y {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift (vrY := inst_vr) Y TM}, Ap TM Y.
+  Existing Instance inst_vr.
+  Parameter inst_ap: ∀ Y {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift Y TM}, Ap TM Y.
+  Existing Instance inst_ap.
 
   Parameter inst_ap_inj: LemApInj (apXY := inst_ap Ix) TM Ix.
+  Existing Instance inst_ap_inj.
   Parameter inst_ap_vr:
-    ∀ Y {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift (vrY := inst_vr) Y TM}, LemApVr (apXY := inst_ap Y) (liftYX := liftY) TM Y.
+    ∀ Y {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift Y TM}, LemApVr TM Y.
+  Existing Instance inst_ap_vr.
   Parameter inst_ap_comp:
     ∀ Y Z {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift Y TM} {vrZ: Vr Z} {wkZ: Wk Z}
       {liftZ: Lift Z TM} {apYZ: Ap Y Z} {compUpYZ: LemCompUp Y Z}
-      {apLiftYZTM: LemApLift (vrZ := inst_vr) (apZY := inst_ap (wkY := wkZ) Z) Y Z TM}, LemApComp (apXY := inst_ap (wkY := wkY) (liftY := liftY)  Y) (apXZ := inst_ap (liftY := liftZ) Z) TM Y Z.
+      {apLiftYZTM: LemApLift Y Z TM}, LemApComp TM Y Z.
   Parameter inst_ap_liftSub:
-    ∀ Y {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift (vrY := inst_vr) Y TM}, LemApLiftSub (apXY := inst_ap Y) (apXIx := inst_ap Ix) TM Y.
+    ∀ Y {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift Y TM}, LemApLiftSub TM Y.
   Parameter inst_ap_ixComp:
     ∀ (t: TM) (ξ: Sub Ix) (ζ: Sub TM), t[ξ][ζ] = t[⌈ξ⌉ >=> ζ].
 
@@ -34,24 +38,30 @@ Module Inst (kit: Kit).
     auto.
 
   Import kit.
+  Existing Instance inst_ap.
+  Existing Instance inst_ap_vr.
+  Existing Instance inst_ap_inj.
+  Existing Instance inst_ap_comp.
+  Existing Instance inst_ap_liftSub.
+
 
   Instance inst_apTMZTM {Z} {vrZ: Vr Z} {apTMZ: Ap TM Z} :
     LemApLift TM Z TM := λ _ _, eq_refl.
   Instance inst_apLiftIxIx: LemApLift Ix Ix TM := ap_vr.
 
-  Instance compUpTMIx: LemCompUp TM Ix := {}.
+  #[refine] Instance compUpTMIx: LemCompUp TM Ix := {}.
   Proof. intros; extensionality i; destruct i; crush. Qed.
 
   Instance inst_wkApIx: LemApWk TM Ix := λ _, eq_refl.
 
-  Instance compUpTM: LemCompUp TM TM := {}.
+  #[refine] Instance compUpTM: LemCompUp TM TM := {}.
   Proof.
     intros; extensionality i; destruct i; crush.
     rewrite inst_ap_ixComp; f_equal.
     extensionality j; destruct j; crush.
   Qed.
 
-  Instance wkApTM: LemApWk TM TM := {}.
+  #[refine] Instance wkApTM: LemApWk TM TM := {}.
   Proof.
     crush.
     rewrite  <- ap_liftSub.
