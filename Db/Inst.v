@@ -7,17 +7,17 @@ Module Type Kit.
 
   Parameter TM: Type.
   Parameter inst_vr: Vr TM.
-  Parameter inst_ap: ∀ Y {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift Y TM}, Ap TM Y.
+  Parameter inst_ap: ∀ Y {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift (vrY := inst_vr) Y TM}, Ap TM Y.
 
-  Parameter inst_ap_inj: LemApInj TM Ix.
+  Parameter inst_ap_inj: LemApInj (apXY := inst_ap Ix) TM Ix.
   Parameter inst_ap_vr:
-    ∀ Y {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift Y TM}, LemApVr TM Y.
+    ∀ Y {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift (vrY := inst_vr) Y TM}, LemApVr (apXY := inst_ap Y) (liftYX := liftY) TM Y.
   Parameter inst_ap_comp:
     ∀ Y Z {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift Y TM} {vrZ: Vr Z} {wkZ: Wk Z}
       {liftZ: Lift Z TM} {apYZ: Ap Y Z} {compUpYZ: LemCompUp Y Z}
-      {apLiftYZTM: LemApLift Y Z TM}, LemApComp TM Y Z.
+      {apLiftYZTM: LemApLift (vrZ := inst_vr) (apZY := inst_ap (wkY := wkZ) Z) Y Z TM}, LemApComp (apXY := inst_ap (wkY := wkY) (liftY := liftY)  Y) (apXZ := inst_ap (liftY := liftZ) Z) TM Y Z.
   Parameter inst_ap_liftSub:
-    ∀ Y {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift Y TM}, LemApLiftSub TM Y.
+    ∀ Y {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift (vrY := inst_vr) Y TM}, LemApLiftSub (apXY := inst_ap Y) (apXIx := inst_ap Ix) TM Y.
   Parameter inst_ap_ixComp:
     ∀ (t: TM) (ξ: Sub Ix) (ζ: Sub TM), t[ξ][ζ] = t[⌈ξ⌉ >=> ζ].
 

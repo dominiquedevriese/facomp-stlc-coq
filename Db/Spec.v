@@ -151,7 +151,7 @@ Section Lift.
   Context {X: Type}.
   Context {vrX: Vr X}.
 
-  Global Instance liftXX : Lift X X := {| lift := fun x => x |}.
+  #[refine] Global Instance liftXX : Lift X X := {| lift := fun x => x |}.
   Proof. unfold Inj; auto. reflexivity. Defined.
 
   Lemma liftXX_id (x: X) : lift x = x.
@@ -198,13 +198,13 @@ Notation "ξ >=> ζ" := (comp ξ ζ).
 (** ** Ix Instances *)
 Section Indices.
 
-  Global Instance vrIx: Vr Ix := {| vr := fun i => i |}.
+  #[refine] Global Instance vrIx: Vr Ix := {| vr := fun i => i |}.
   Proof. unfold Inj; auto. Defined.
-  Global Instance wkIx: Wk Ix := {| wk := S |}.
+  #[refine] Global Instance wkIx: Wk Ix := {| wk := S |}.
   Proof. unfold Inj; auto. reflexivity. Defined.
-  Global Instance apIxIx: Ap Ix Ix := {| ap := fun ξ i => ξ i |}.
+  #[refine] Global Instance apIxIx: Ap Ix Ix := {| ap := fun ξ i => ξ i |}.
   Proof. reflexivity. Defined.
-  Global Instance liftIx {X} {vrX: Vr X}: Lift Ix X := {| lift := vr |}.
+  #[refine] Global Instance liftIx {X} {vrX: Vr X}: Lift Ix X := {| lift := vr |}.
   Proof. apply vr_inj. reflexivity. Defined.
   (* Global Instance sbIx: Subst Ix. *)
 
@@ -347,15 +347,15 @@ Arguments ap_liftSub {_ _ _ _ _ _} t ξ.
 
 Section IndexInstances.
 
-  Global Instance compUpIx: LemCompUp Ix Ix := {}.
+  #[refine] Global Instance compUpIx: LemCompUp Ix Ix := {}.
   Proof. intros; extensionality i; destruct i; reflexivity. Qed.
-  Global Instance apLiftSubIx: LemApLiftSub Ix Ix := {}.
+  #[refine] Global Instance apLiftSubIx: LemApLiftSub Ix Ix := {}.
   Proof. reflexivity. Qed.
-  Global Instance apVrIx: LemApVr Ix Ix := {}.
+  #[refine] Global Instance apVrIx: LemApVr Ix Ix := {}.
   Proof. reflexivity. Qed.
-  Global Instance wkApIxIx: LemApWk Ix Ix := {}.
+  #[refine] Global Instance wkApIxIx: LemApWk Ix Ix := {}.
   Proof. reflexivity. Qed.
-  Global Instance apCompIxIxIx: LemApComp Ix Ix Ix := {}.
+  #[refine] Global Instance apCompIxIxIx: LemApComp Ix Ix Ix := {}.
   Proof. reflexivity. Qed.
   Global Instance wsVrIx : WsVr Ix.
   Proof. constructor; auto. Qed.
