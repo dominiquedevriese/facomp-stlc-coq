@@ -6,16 +6,12 @@ Require Export Coq.Program.Tactics.
 Module Type Kit.
 
   Parameter TM: Type.
-  Parameter inst_vr: Vr TM.
-  Existing Instance inst_vr.
-  Parameter inst_ap: ∀ Y {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift Y TM}, Ap TM Y.
-  Existing Instance inst_ap.
+  Declare Instance inst_vr: Vr TM.
+  Declare Instance inst_ap: ∀ Y {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift Y TM}, Ap TM Y.
 
-  Parameter inst_ap_inj: LemApInj (apXY := inst_ap Ix) TM Ix.
-  Existing Instance inst_ap_inj.
-  Parameter inst_ap_vr:
+  Declare Instance inst_ap_inj: LemApInj (apXY := inst_ap Ix) TM Ix.
+  Declare Instance inst_ap_vr:
     ∀ Y {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift Y TM}, LemApVr TM Y.
-  Existing Instance inst_ap_vr.
   Parameter inst_ap_comp:
     ∀ Y Z {vrY: Vr Y} {wkY: Wk Y} {liftY: Lift Y TM} {vrZ: Vr Z} {wkZ: Wk Z}
       {liftZ: Lift Z TM} {apYZ: Ap Y Z} {compUpYZ: LemCompUp Y Z}
