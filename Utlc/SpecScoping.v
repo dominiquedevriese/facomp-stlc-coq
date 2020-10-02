@@ -3,6 +3,8 @@ Require Import Db.WellScoping.
 
 Section WellScoping.
 
+  (* Reserved Notation "⟨ γ ⊢ t ⟩" *)
+  (*          (at level 0, γ at level 98, t at level 98). *)
   (* Keep this in a section so that the notation for the ws type-class is only
      locally overwritten. *)
   Inductive wsUTm (γ: Dom) : UTm → Prop :=

@@ -941,3 +941,32 @@ Proof.
     eapply termrel₀_in_termrel.
     eapply inject_and_protect_work; eauto using dwp_mono.
 Qed.
+
+Lemma extract_works_open {d n m τ ts tu Γ p} :
+  dir_world_prec n m d p →
+  ⟪ Γ ⊩ ts ⟦ d , m ⟧ tu : pEmulDV n p ⟫ →
+  ⟪ Γ ⊩ S.app (extract n τ) ts ⟦ d , m ⟧ U.app (confine τ) tu : embed τ ⟫.
+Proof.
+  intros dwp lr.
+  destruct lr as (? & ? & lr).
+  unfold OpenLRCtxN; split; [|split].
+  - crushTyping.
+    rewrite repEmul_embed_leftinv.
+    eauto using extractT.
+  - crushUtlcScoping; eauto using confine_closed.
+  - intros w wm γs γu envrel.
+    specialize (lr w wm γs γu envrel).
+
+    cbn; crushTyping; crushUtlcScoping.
+    rewrite extract_sub, confine_sub.
+
+    eapply (termrel_ectx' lr); S.inferContext; U.inferContext;
+    crush; eauto using extract_value, confine_Value.
+
+    intros w' fw vs vu vr.
+    cbn.
+    eapply termrel₀_in_termrel.
+    eapply extract_and_confine_work.
+    eauto using dwp_mono.
+    assumption.
+Qed.

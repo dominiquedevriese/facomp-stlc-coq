@@ -11,3 +11,5 @@ Makefile.coq
 TAGS
 *.vok
 *.vos
+/Makefile.coq.conf
+/.Makefile.coq.d

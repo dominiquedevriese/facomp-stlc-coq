@@ -17,6 +17,9 @@ Require Import Omega.
 Definition compile (τ : S.Ty) (t : S.Tm) : U.UTm :=
   U.app (protect τ) (erase t).
 
+Definition compile_pctx (τ : S.Ty) (C : S.PCtx) : U.PCtx :=
+  U.pctx_cat (U.papp₂ (confine τ) U.phole) (erase_pctx C).
+
 Lemma equivalenceReflection {t₁ t₂ τ} :
   ⟪ S.empty ⊢ t₁ : τ ⟫ →
   ⟪ S.empty ⊢ t₂ : τ ⟫ →
@@ -50,7 +53,7 @@ Proof.
 
   assert (U.Terminating (U.pctx_app (compile τ t₁) (erase_pctx C)))
     as termu₁ by (apply (adequacy_lt lrt₁ termN); omega).
-  
+
   assert (U.Terminating (U.pctx_app (compile τ t₂) (erase_pctx C)))
     by (apply eq; try assumption;
         apply (erase_pctx_scope C _ _ _ _ tyC)).
