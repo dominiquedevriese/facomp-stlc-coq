@@ -24,7 +24,7 @@ Lemma equivalenceReflection {t₁ t₂ τ} :
   ⟪ S.empty ⊢ t₁ ≃ t₂ : τ ⟫.
 Proof.
   revert t₁ t₂ τ.
-  enough (∀ {t₁ t₂} τ,
+  enough (∀ {t₁ t₂} τ, 
             ⟪ S.empty ⊢ t₁ : τ ⟫ →
             ⟪ S.empty ⊢ t₂ : τ ⟫ →
             ⟨ 0 ⊢ compile τ t₁ ≃ compile τ t₂ ⟩ →
