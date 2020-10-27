@@ -1,0 +1,56 @@
+-R . FaComp2
+# BackTrans/UpgradeDowngrade.v
+# BackTrans/UValHelpers.v
+# BackTrans/UValHelpers2.v
+# BackTrans/InjectExtract.v
+# BackTrans/Emulate.v
+Common/Common.v
+Common/Relations.v
+# Compiler/Erase.v
+# Compiler/ProtectConfine.v
+# Compiler/Compiler.v
+Db/Inst.v
+Db/Lemmas.v
+Db/Spec.v
+Db/Tactics.v
+Db/WellScoping.v
+# LogRel/LR.v
+# LogRel/LemmasLR.v
+# LogRel/LemmasIntro.v
+# LogRel/LemmasInversion.v
+# LogRel/LemmasPseudoType.v
+# LogRel/PseudoType.v
+StlcFix/CanForm.v
+StlcFix/Inst.v
+StlcFix/LemmasEvaluation.v
+StlcFix/LemmasProgramContext.v
+StlcFix/LemmasTyping.v
+StlcFix/SpecEquivalent.v
+StlcFix/SpecEvaluation.v
+StlcFix/SpecSyntax.v
+StlcFix/SpecTyping.v
+# StlcFix/StlcOmega.v
+StlcFix/TypeSafety.v
+StlcIso/CanForm.v
+StlcIso/Inst.v
+StlcIso/LemmasEvaluation.v
+StlcIso/LemmasProgramContext.v
+StlcIso/LemmasTyping.v
+StlcIso/SpecEquivalent.v
+StlcIso/SpecEvaluation.v
+StlcIso/SpecSyntax.v
+StlcIso/SpecTyping.v
+# StlcIso/StlcOmega.v
+StlcIso/TypeSafety.v
+UValFI/UVal.v
+# Utlc/DecideEqual.v
+# Utlc/DecideEval.v
+# Utlc/Fix.v
+# Utlc/Inst.v
+# Utlc/LemmasEvaluation.v
+# Utlc/LemmasScoping.v
+# Utlc/SpecEquivalent.v
+# Utlc/SpecEvaluation.v
+# Utlc/SpecScoping.v
+# Utlc/SpecSyntax.v
+# FullAbstraction.v
