@@ -385,3 +385,104 @@ Proof.
   induction 1; constructor; 
   eauto using wtvar_implies_wsvar with ws.
 Qed.
+
+Lemma closed_implies_not_var {i} :
+  ClosedTy (tvar i) → False.
+Proof.
+  intros.
+  inversion H.
+  inversion H1.
+Qed.
+
+
+Lemma closed_implies_not_var_eq {τ} :
+  ClosedTy τ → ∀ i : Ix, τ <> tvar i.
+Proof.
+  intros.
+  intros contra.
+  rewrite contra in H.
+  exact (closed_implies_not_var H).
+Qed.
+
+Lemma closed_arr_implies_closed_argty {τ τ'} :
+  ClosedTy (tarr τ τ') → ClosedTy τ.
+Proof.
+  inversion 1; assumption.
+Qed.
+
+Lemma closed_arr_implies_closed_retty {τ τ'} :
+  ClosedTy (tarr τ τ') → ClosedTy τ'.
+Proof.
+  inversion 1; assumption.
+Qed.
+
+Lemma closed_arr_implies_closed_argty_eq {τ τ1 τ2} :
+  ClosedTy τ →
+  τ = tarr τ1 τ2 →
+  ClosedTy τ1.
+Proof.
+  intros.
+  rewrite H0 in H.
+  exact (closed_arr_implies_closed_argty H).
+Qed.
+
+Lemma closed_arr_implies_closed_retty_eq {τ τ1 τ2} :
+  ClosedTy τ →
+  τ = tarr τ1 τ2 →
+  ClosedTy τ2.
+Proof.
+  intros.
+  rewrite H0 in H.
+  exact (closed_arr_implies_closed_retty H).
+Qed.
+
+Lemma closed_sum_implies_closed_lhs {τ τ'} :
+  ClosedTy (tsum τ τ') → ClosedTy τ.
+Proof.
+  inversion 1; assumption.
+Qed.
+
+Lemma closed_sum_implies_closed_rhs {τ τ'} :
+  ClosedTy (tsum τ τ') → ClosedTy τ'.
+Proof.
+  inversion 1; assumption.
+Qed.
+
+Lemma closed_sum_implies_closed_lhs_eq {τ τ1 τ2} :
+  ClosedTy τ →
+  τ = tsum τ1 τ2 →
+  ClosedTy τ1.
+Proof.
+  intros.
+  rewrite H0 in H.
+  exact (closed_sum_implies_closed_lhs H).
+Qed.
+
+
+Lemma closed_sum_implies_closed_rhs_eq {τ τ1 τ2} :
+  ClosedTy τ →
+  τ = tsum τ1 τ2 →
+  ClosedTy τ2.
+Proof.
+  intros.
+  rewrite H0 in H.
+  exact (closed_sum_implies_closed_rhs H).
+Qed.
+
+Lemma closed_rec_implies_closed_unfold {τ} :
+  ClosedTy (trec τ) → ClosedTy τ[beta1 (trec τ)].
+Proof.
+  inversion 1.
+  induction τ.
+  inversion H1.
+Admitted.
+
+Lemma closed_rec_implies_closed_unfold_eq {τ τ'} :
+  ClosedTy τ →
+  τ = trec τ' →
+  ClosedTy τ'[beta1 (trec τ')].
+Proof.
+  intros.
+  rewrite H0 in H.
+  exact (closed_rec_implies_closed_unfold H).
+Qed.

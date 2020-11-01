@@ -1,47 +1,70 @@
-(* Require Import StlcFix.SpecEvaluation. *)
+Require Import Program.
+Require Import StlcFix.SpecEvaluation.
 Require Import StlcFix.SpecSyntax.
-(* Require Import StlcFix.SpecTyping. *)
-(* Require Import StlcFix.LemmasTyping. *)
-(* Require Import StlcFix.LemmasEvaluation. *)
-(* Require Import StlcFix.CanForm. *)
-(* Require Import StlcIso.SpecEvaluation. *)
+Require Import StlcFix.SpecTyping.
+Require Import StlcFix.LemmasTyping.
+Require Import StlcFix.LemmasEvaluation.
+Require Import StlcFix.CanForm.
+Require Import StlcIso.SpecEvaluation.
 Require Import StlcIso.SpecSyntax.
-(* Require Import StlcIso.SpecTyping. *)
-(* Require Import StlcIso.LemmasTyping. *)
-(* Require Import StlcIso.LemmasEvaluation. *)
-(* Require Import StlcIso.CanForm. *)
-(* Require Import Common.Relations. *)
+Require Import StlcIso.SpecTyping.
+Require Import StlcIso.LemmasTyping.
+Require Import StlcIso.LemmasEvaluation.
+Require Import StlcIso.CanForm.
+Require Import Common.Relations.
 
 Module F.
-  (* Import StlcFix.SpecEvaluation. *)
-  Import StlcFix.SpecSyntax.
-  (* Import StlcFix.SpecTyping. *)
-  (* Import StlcFix.LemmasTyping. *)
-  (* Import StlcFix.LemmasEvaluation. *)
-  (* Import StlcFix.CanForm. *)
+  Include StlcFix.SpecEvaluation.
+  Include StlcFix.SpecSyntax.
+  Include StlcFix.SpecTyping.
+  Include StlcFix.LemmasTyping.
+  Include StlcFix.LemmasEvaluation.
+  Include StlcFix.CanForm.
 End F.
 
 Module I.
-  (* Import StlcIso.SpecEvaluation. *)
-  Import StlcIso.SpecSyntax.
-  (* Import StlcIso.SpecTyping. *)
-  (* Import StlcIso.LemmasTyping. *)
-  (* Import StlcIso.LemmasEvaluation. *)
-  (* Import StlcIso.CanForm. *)
+  Include StlcIso.SpecEvaluation.
+  Include StlcIso.SpecSyntax.
+  Include StlcIso.SpecTyping.
+  Include StlcIso.LemmasTyping.
+  Include StlcIso.LemmasEvaluation.
+  Include StlcIso.CanForm.
 End I.
 
-Fixpoint UValFI (n : nat) (τ : I.Ty) {struct n} : F.Ty :=
+Fixpoint UValFI (n : nat) (τ : I.Ty) {P : ClosedTy τ} {struct n} : F.Ty :=
   match n with
     | 0 => F.tunit
-    | S n => (match τ with
-             | I.tunit => F.tunit
-             | I.tarr τ τ' => F.tarr (UValFI n τ) (UValFI n τ')
-             | I.tsum τ τ' => F.tsum (UValFI n τ) (UValFI n τ')
-             | I.trec τ => UValFI n (τ[I.beta1 (I.trec τ)])
-             (* | I.tvar _ => ! *)
-end)
-            (* tunit ⊎ tunit ⊎ (* tbool ⊎ *) (* (UVal n × UVal n) ⊎ *) (UVal n ⇒ UVal n) ⊎ (UVal n ⊎ UVal n) *)
+    | S n =>
+      let τl := match τ as τ' return (τ = τ' -> _) with
+      | I.tunit => fun _ => F.tunit
+      | I.tarr τ1 τ2 as τ => fun H =>
+        let P1 := closed_arr_implies_closed_argty_eq P H in
+        let P2 := closed_arr_implies_closed_retty_eq P H in
+        let σ1 := @UValFI n τ1 P1 in
+        let σ2 := @UValFI n τ2 P2 in
+        F.tarr σ1 σ2
+      | I.tsum τ1 τ2 => fun H =>
+        let P1 := closed_sum_implies_closed_lhs_eq P H in
+        let P2 := closed_sum_implies_closed_rhs_eq P H in
+        let σ1 := @UValFI n τ1 P1 in
+        let σ2 := @UValFI n τ2 P2 in
+        F.tsum σ1 σ2
+      | I.trec τ => fun H =>
+        let P := closed_rec_implies_closed_unfold_eq P H in
+        @UValFI n τ[beta1 (I.trec τ)] P
+      | I.tvar i => fun H => match closed_implies_not_var_eq P i H with end
+      end eq_refl
+      in F.tsum τl F.tunit
   end.
+
+(* Fixpoint UValFI (n : nat) (τ : I.Ty) {P : ClosedTy τ} {struct n} : F.Ty. *)
+(* Proof. *)
+(*   induction τ. *)
+(*   apply F.tarr. *)
+(*   apply UValFI. *)
+(* Qed. *)
+
+
 
 Fixpoint unkUVal (n : nat) : Tm :=
   match n with
@@ -68,7 +91,7 @@ Proof.
   simpl; trivial.
 Qed.
 
-Lemma inUnit_pctx_T {Γ n} : ⟪ ⊢ inUnit_pctx n : Γ , tunit → Γ , UVal (S n) ⟫.
+Lemma inUnit_pctx_T {Γ n} : ⟪Unit_pctx n : Γ , tunit → Γ , UVal (S n) ⟫.
 Proof.
   unfold inUnit_pctx. crushTyping.
 Qed.

@@ -2,7 +2,7 @@ Require Export Db.Spec.
 
 (** ** Simply typed terms. *)
 Inductive Ty : Set :=
-  | tarr (τ₁ τ₂: Ty)
+  | tarr (τ₁ τ₂ : Ty)
   | tunit
   (* | tbool *)
   (* | tprod (τ₁ τ₂: Ty) *)

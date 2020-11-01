@@ -27,6 +27,27 @@ where "⟪  i : T ∈ Γ  ⟫" := (GetEvar Γ i T).
 (*   end *)
 (*  where "⟪ T : i -> S ⟫" := (subt T S i). *)
 
+Inductive ClosedNTy (n : nat) : Ty → Prop :=
+    | UnitClosed :
+        ClosedNTy n tunit
+    | FnClosed {τ τ'} :
+        ClosedNTy n τ →
+        ClosedNTy n τ' →
+        ClosedNTy n (tarr τ τ')
+    | ClosedSum {τ τ'} :
+        ClosedNTy n τ →
+        ClosedNTy n τ' →
+        ClosedNTy n (tsum τ τ')
+    | ClosedRec {τ} :
+        ClosedNTy (S n) τ →
+        ClosedNTy n (trec τ)
+    | ClosedVar {i} :
+        i < n →
+        ClosedNTy n (tvar i).
+
+Definition ClosedTy : Ty → Prop := ClosedNTy 0.
+
+
 Reserved Notation "⟪  Γ ⊢ t : T  ⟫"
   (at level 0, Γ at level 98, t at level 98, T at level 98 ).
 Inductive Typing (Γ: Env) : Tm → Ty → Prop :=
