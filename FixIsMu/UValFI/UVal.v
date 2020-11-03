@@ -57,6 +57,20 @@ Fixpoint UValFI (n : nat) (τ : I.Ty) {P : ClosedTy τ} {struct n} : F.Ty :=
       in F.tsum τl F.tunit
   end.
 
+Fixpoint UValFI (n : nat) (τ : I.Ty) {struct n} : F.Ty :=
+  match n with
+    | 0 => F.tunit
+    | S n => 
+      match τ with
+        | I.tunit => F.tunit
+        | I.tarr τ1 τ2 => F.tarr (UValFI n τ1) (UValFI n τ2)
+        | I.tsum τ1 τ2 => F.tsum (UValFI n τ1) (UValFI n τ2)
+        | I.trec τ1 => UValFI (n τ1[beta1 (I.trec τ1)])
+        | I.tvar => False
+      end
+  end.
+
+
 (* Fixpoint UValFI (n : nat) (τ : I.Ty) {P : ClosedTy τ} {struct n} : F.Ty. *)
 (* Proof. *)
 (*   induction τ. *)
