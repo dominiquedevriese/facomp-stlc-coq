@@ -8,7 +8,7 @@ Common/Common.v
 Common/Relations.v
 # Compiler/Erase.v
 # Compiler/ProtectConfine.v
-# Compiler/Compiler.v
+CompilerFI/CompilerFI.v
 Db/Inst.v
 Db/Lemmas.v
 Db/Spec.v
@@ -42,6 +42,17 @@ StlcIso/SpecSyntax.v
 StlcIso/SpecTyping.v
 # StlcIso/StlcOmega.v
 StlcIso/TypeSafety.v
+StlcEqui/CanForm.v
+StlcEqui/Inst.v
+StlcEqui/LemmasEvaluation.v
+StlcEqui/LemmasProgramContext.v
+StlcEqui/LemmasTyping.v
+StlcEqui/SpecEquivalent.v
+StlcEqui/SpecEvaluation.v
+StlcEqui/SpecSyntax.v
+StlcEqui/SpecTyping.v
+# StlcEqui/StlcOmega.v
+StlcEqui/TypeSafety.v
 UValFI/UVal.v
 # Utlc/DecideEqual.v
 # Utlc/DecideEval.v

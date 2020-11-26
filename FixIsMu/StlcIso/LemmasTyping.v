@@ -382,7 +382,7 @@ Qed.
 Lemma wt_implies_ws {Γ t τ} :
   ⟪ Γ ⊢ t : τ ⟫ → ⟨ dom Γ ⊢ t ⟩.
 Proof.
-  induction 1; constructor; 
+  induction 1; constructor;
   eauto using wtvar_implies_wsvar with ws.
 Qed.
 
@@ -472,9 +472,22 @@ Qed.
 Lemma closed_rec_implies_closed_unfold {τ} :
   ClosedTy (trec τ) → ClosedTy τ[beta1 (trec τ)].
 Proof.
-  inversion 1.
+  intros.
   induction τ.
+  inversion H.
   inversion H1.
+  assert (H6 : ClosedTy (trec τ1)).
+  constructor.
+  assumption.
+  assert (H7 : ClosedTy (trec τ2)).
+  constructor.
+  assumption.
+  assert (H8 : ClosedTy τ1[beta1 (trec τ1)]).
+  apply IHτ1.
+  assumption.
+  assert (H9 : ClosedTy τ2[beta1 (trec τ2)]).
+  apply IHτ2.
+  assumption.
 Admitted.
 
 Lemma closed_rec_implies_closed_unfold_eq {τ τ'} :
@@ -486,3 +499,23 @@ Proof.
   rewrite H0 in H.
   exact (closed_rec_implies_closed_unfold H).
 Qed.
+
+(* We want a simple way of proving that types are closed under reasonable circumstances (closed environments, etc.).
+
+ This proof should be nasty and require us to insert various changes into the basic structures (i.e. the abs term constructor will require proof that the argument type is closed), so we admit for now as it is obviously valid (with the appropriate changes to terms and environments) and tangential to the rest of the proof. *)
+Lemma typed_terms_are_closed {Γ} (t : Tm) (T : Ty) :
+  (* ClosedEnv Γ → *) (* will need this later, but for now it makes our life difficult as we don't have the mechanisms to easily prove this fact about environments *)
+  ⟪ Γ ⊢ t : T ⟫ →
+  ClosedTy T.
+Proof.
+  intros.
+  induction H.
+Admitted.
+(*   inversion τ. *)
+(*   induction τ. *)
+(*   crushTypingMatchH. *)
+(*   induction H. *)
+(*   induction τ. *)
+(*   rewrite H2 in IHτ1. *)
+(*   rewrite H2 in IHτ2. *)
+(* Admitted. *)

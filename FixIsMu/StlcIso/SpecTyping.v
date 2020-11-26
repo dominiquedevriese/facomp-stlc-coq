@@ -27,6 +27,7 @@ where "⟪  i : T ∈ Γ  ⟫" := (GetEvar Γ i T).
 (*   end *)
 (*  where "⟪ T : i -> S ⟫" := (subt T S i). *)
 
+(*  a type is closed with an (type variable) environment of size n *)
 Inductive ClosedNTy (n : nat) : Ty → Prop :=
     | UnitClosed :
         ClosedNTy n tunit
@@ -47,6 +48,12 @@ Inductive ClosedNTy (n : nat) : Ty → Prop :=
 
 Definition ClosedTy : Ty → Prop := ClosedNTy 0.
 
+Inductive ClosedEnv : Env → Prop :=
+  | EmptyClosed : ClosedEnv empty
+  | VarClosed {Γ τ} :
+      ClosedTy τ →
+      ClosedEnv Γ →
+      ClosedEnv (evar Γ τ).
 
 Reserved Notation "⟪  Γ ⊢ t : T  ⟫"
   (at level 0, Γ at level 98, t at level 98, T at level 98 ).

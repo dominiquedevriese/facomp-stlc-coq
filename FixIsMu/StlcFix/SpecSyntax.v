@@ -50,6 +50,9 @@ Inductive Tm : Set :=
   (* | seq (t₁ t₂: Tm) *)
   | fixt (τ₁ τ₂: Ty) (t: Tm).
 
+Definition Om (τ : Ty) : Tm :=
+  fixt tunit τ (app (abs (tarr tunit τ) (var 0)) unit).
+
 Section WellScoping.
 
   (* Keep this in a section so that the notation for the ws type-class is only

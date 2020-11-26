@@ -57,20 +57,6 @@ Fixpoint UValFI (n : nat) (τ : I.Ty) {P : ClosedTy τ} {struct n} : F.Ty :=
       in F.tsum τl F.tunit
   end.
 
-Fixpoint UValFI (n : nat) (τ : I.Ty) {struct n} : F.Ty :=
-  match n with
-    | 0 => F.tunit
-    | S n => 
-      match τ with
-        | I.tunit => F.tunit
-        | I.tarr τ1 τ2 => F.tarr (UValFI n τ1) (UValFI n τ2)
-        | I.tsum τ1 τ2 => F.tsum (UValFI n τ1) (UValFI n τ2)
-        | I.trec τ1 => UValFI (n τ1[beta1 (I.trec τ1)])
-        | I.tvar => False
-      end
-  end.
-
-
 (* Fixpoint UValFI (n : nat) (τ : I.Ty) {P : ClosedTy τ} {struct n} : F.Ty. *)
 (* Proof. *)
 (*   induction τ. *)
@@ -79,43 +65,43 @@ Fixpoint UValFI (n : nat) (τ : I.Ty) {struct n} : F.Ty :=
 (* Qed. *)
 
 
+Definition unkUVal : F.Tm := F.inr F.unit.
 
-Fixpoint unkUVal (n : nat) : Tm :=
-  match n with
-    | 0 => unit
-    | S n => inl unit
-  end.
-
-Lemma unkUVal_Value {n : nat} : Value (unkUVal n).
-Proof.
-  destruct n; simpl; trivial.
-Qed.
-
-Lemma unkUValT {Γ n} : ⟪ Γ ⊢ unkUVal n : UVal n ⟫.
-Proof.
-  induction n; eauto using Typing.
-Qed.
-
-Definition inUnit_pctx (n : nat) := pinr (pinl phole).
-Definition inUnit (n : nat) (t : Tm) := pctx_app t (inUnit_pctx n).
-Arguments inUnit_pctx / n.
-
-Lemma inUnit_Value {n v} : Value v → Value (inUnit n v).
+Lemma unkUVal_Value : F.Value unkUVal.
 Proof.
   simpl; trivial.
 Qed.
 
-Lemma inUnit_pctx_T {Γ n} : ⟪Unit_pctx n : Γ , tunit → Γ , UVal (S n) ⟫.
+Lemma unkUValT {Γ n τ} {P : ClosedTy τ} {Q : n > 0} : F.Typing Γ unkUVal (@UValFI n τ P).
 Proof.
-  unfold inUnit_pctx. crushTyping.
+  induction n.
+  inversion Q.
+  eauto using F.Typing.
 Qed.
 
-Lemma inUnitT {Γ n t} : ⟪ Γ ⊢ t : tunit ⟫ → ⟪ Γ ⊢ inUnit n t : UVal (S n) ⟫.
-Proof.
-  unfold inUnit. eauto using inUnit_pctx_T with typing.
-Qed.
+(* Definition constr_uvalfi {Γ} (n : nat) (τ : I.Ty) (t : F.Tm) {P : ClosedTy τ} {Q : F.Typing Γ t (@UValFI n τ P)} : F.Tm := *)
+(*   F.inl t. *)
 
-Arguments inUnit n t : simpl never.
+(* Definition inUnit_pctx (n : nat) := pinr (pinl phole). *)
+(* Definition inUnit (n : nat) (t : Tm) := pctx_app t (inUnit_pctx n). *)
+(* Arguments inUnit_pctx / n. *)
+
+(* Lemma inUnit_Value {n v} : Value v → Value (inUnit n v). *)
+(* Proof. *)
+(*   simpl; trivial. *)
+(* Qed. *)
+
+(* Lemma inUnit_pctx_T {Γ n} : ⟪Unit_pctx n : Γ , tunit → Γ , UVal (S n) ⟫. *)
+(* Proof. *)
+(*   unfold inUnit_pctx. crushTyping. *)
+(* Qed. *)
+
+(* Lemma inUnitT {Γ n t} : ⟪ Γ ⊢ t : tunit ⟫ → ⟪ Γ ⊢ inUnit n t : UVal (S n) ⟫. *)
+(* Proof. *)
+(*   unfold inUnit. eauto using inUnit_pctx_T with typing. *)
+(* Qed. *)
+
+(* Arguments inUnit n t : simpl never. *)
 
 (* Definition inBool_pctx (n : nat) : PCtx := pinr (pinr (pinl phole)). *)
 (* Definition inBool (n : nat) (t : Tm): Tm := pctx_app t (inBool_pctx n). *)
@@ -155,44 +141,100 @@ Arguments inUnit n t : simpl never.
 (*   simpl; trivial. *)
 (* Qed. *)
 
-Definition inArr_pctx (n : nat) : PCtx := pinr (pinr (pinr (pinr (pinl phole)))).
-Definition inArr (n : nat) (t : Tm) : Tm := pctx_app t (inArr_pctx n).
+(* Definition inArr_pctx (n : nat) : PCtx := pinr (pinr (pinr (pinr (pinl phole)))). *)
+(* Definition inArr (n : nat) (t : Tm) : Tm := pctx_app t (inArr_pctx n). *)
 
-Arguments inArr_pctx / n.
+(* Arguments inArr_pctx / n. *)
 
-Lemma inArr_pctx_T {Γ n} : ⟪ ⊢ inArr_pctx n : Γ , UVal n ⇒ UVal n → Γ , UVal (S n) ⟫.
+(* Lemma inArr_pctx_T {Γ n} : ⟪ ⊢ inArr_pctx n : Γ , UVal n ⇒ UVal n → Γ , UVal (S n) ⟫. *)
+(* Proof. *)
+(*   unfold inArr_pctx. crushTyping. *)
+(* Qed. *)
+
+(* Lemma inArr_T {Γ n t} : ⟪ Γ ⊢ t : UVal n ⇒ UVal n ⟫ → ⟪ Γ ⊢ inArr n t : UVal (S n) ⟫. *)
+(* Proof. *)
+(*   unfold inArr. eauto using inArr_pctx_T with typing.  *)
+(* Qed. *)
+
+(* Lemma inArr_Value {n v} : Value v → Value (inArr n v). *)
+(* Proof. *)
+(*   simpl; trivial. *)
+(* Qed. *)
+
+
+(* Definition inSum_pctx (n : nat) : PCtx := pinr (pinr (pinr (pinr (pinr phole)))). *)
+(* Definition inSum (n : nat) (t : Tm) : Tm := pctx_app t (inSum_pctx n). *)
+
+(* Lemma inSum_pctx_T {Γ n} : ⟪ ⊢ inSum_pctx n : Γ , UVal n ⊎ UVal n → Γ , UVal (S n) ⟫. *)
+(* Proof. *)
+(*   unfold inSum_pctx. crushTyping. *)
+(* Qed. *)
+
+(* Lemma inSum_T {Γ n t} : ⟪ Γ ⊢ t : UVal n ⊎ UVal n ⟫ → ⟪ Γ ⊢ inSum n t : UVal (S n) ⟫. *)
+(* Proof. *)
+(*   unfold inSum. eauto using inSum_pctx_T with typing.  *)
+(* Qed. *)
+
+(* Lemma inSum_Value {n v} : Value v → Value (inSum n v). *)
+(* Proof. *)
+(*   simpl; trivial. *)
+(* Qed. *)
+
+(* (t : F.Tm) {P : F.Typing t (UValFI n I.tunit)} : F.Tm := *)
+Definition case_uvalfi_unit (n : nat) : F.Tm :=
+  let P := UnitClosed 0 in
+  let τ := @UValFI (S n) I.tunit P in
+  let t := F.caseof (F.var 0) (F.var 0) (F.Om F.tunit) in
+  F.abs τ t.
+
+Definition case_uvalfi_arr (n : nat) (τ1 τ2 : I.Ty) {P1 : ClosedTy τ1} {P2 : ClosedTy τ2} : F.Tm :=
+  let P := FnClosed 0 P1 P2 in
+  let τ := @UValFI (S n) (I.tarr τ1 τ2) P in
+  let τ' := F.tarr (@UValFI n τ1 P1) (@UValFI n τ2 P2) in
+  let t := F.caseof (F.var 0) (F.var 0) (F.Om τ') in
+  F.abs τ t.
+
+Lemma uvalfi_expand_arr {n τ1 τ2 P1 P2} :
+  @UValFI (S n) (I.tarr τ1 τ2) (FnClosed 0 P1 P2) = F.tsum (F.tarr (@UValFI n τ1 P1) (@UValFI n τ2 P2)) F.tunit.
 Proof.
-  unfold inArr_pctx. crushTyping.
-Qed.
+  simpl.
+  reflexivity.
+Admitted.
 
-Lemma inArr_T {Γ n t} : ⟪ Γ ⊢ t : UVal n ⇒ UVal n ⟫ → ⟪ Γ ⊢ inArr n t : UVal (S n) ⟫.
+Lemma case_uval_arr_typing {Γ n τ1 τ2 P1 P2} :
+  let τ := I.tarr τ1 τ2 in
+  let P := FnClosed 0 P1 P2 in
+  let uval_dest := @case_uvalfi_arr n τ1 τ2 P1 P2 in
+  let arg_type := @UValFI (S n) τ P in
+  let ret_type := (F.tarr (@UValFI n τ1 P1) (@UValFI n τ2 P2)) in
+  let type := F.tarr arg_type ret_type in
+  F.Typing Γ uval_dest type.
 Proof.
-  unfold inArr. eauto using inArr_pctx_T with typing. 
-Qed.
+  intros.
+  (* unfold uval_dest, arg_type, ret_type, type, case_uvalfi_arr. *)
+  (* crushTyping. *)
+  constructor.
+  apply (@F.WtCaseof (F.evar Γ arg_type) (F.var 0) (F.var 0) (F.Om ret_type) ret_type F.tunit ret_type).
+  constructor.
+  simpl.
+  Qed.
 
-Lemma inArr_Value {n v} : Value v → Value (inArr n v).
-Proof.
-  simpl; trivial.
-Qed.
 
+Definition case_uvalfi_tsum (n : nat) (τ1 τ2 : I.Ty) {P1 : ClosedTy τ1} {P2 : ClosedTy τ2} : F.Tm :=
+  let P := ClosedSum 0 P1 P2 in
+  let τ := @UValFI (S n) (I.tsum τ1 τ2) P in
+  let τ' := F.tsum (@UValFI n τ1 P1) (@UValFI n τ2 P2) in
+  let t := F.caseof (F.var 0) (F.var 0) (F.Om τ') in
+  F.abs τ t.
 
-Definition inSum_pctx (n : nat) : PCtx := pinr (pinr (pinr (pinr (pinr phole)))).
-Definition inSum (n : nat) (t : Tm) : Tm := pctx_app t (inSum_pctx n).
-
-Lemma inSum_pctx_T {Γ n} : ⟪ ⊢ inSum_pctx n : Γ , UVal n ⊎ UVal n → Γ , UVal (S n) ⟫.
-Proof.
-  unfold inSum_pctx. crushTyping.
-Qed.
-
-Lemma inSum_T {Γ n t} : ⟪ Γ ⊢ t : UVal n ⊎ UVal n ⟫ → ⟪ Γ ⊢ inSum n t : UVal (S n) ⟫.
-Proof.
-  unfold inSum. eauto using inSum_pctx_T with typing. 
-Qed.
-
-Lemma inSum_Value {n v} : Value v → Value (inSum n v).
-Proof.
-  simpl; trivial.
-Qed.
+Definition case_uvalfi_trec (n : nat) (τb : I.Ty) {Pb : ClosedNTy 1 τb} : F.Tm :=
+  let τ_rec := I.trec τb in
+  let P := ClosedRec 0 Pb in
+  let P_unf := closed_rec_implies_closed_unfold P in
+  let τ := @UValFI (S n) τ_rec P in
+  let τ' := @UValFI n τb[beta1 τ_rec] P_unf in
+  let t := F.caseof (F.var 0) (F.var 0) (F.Om τ') in
+  F.abs τ t.
 
 Definition caseV0 (case₁ : Tm) (case₂ : Tm) :=
   caseof (var 0) (case₁ [wkm↑]) (case₂[wkm↑]).
@@ -233,7 +275,7 @@ Proof.
   crushTyping.
   eauto with typing uval_typing.
 Qed.
-  
+
 
 Lemma caseUVal_T {Γ n tscrut tunk tcunit tcbool tcprod tcsum tcarr τ} :
   ⟪ Γ ⊢ tscrut : UVal (S n) ⟫ →
@@ -293,7 +335,7 @@ Proof.
   (caseof (inl v) (case₁[wkm↑][(beta1 (inl v))↑]) (case₂[wkm↑][(beta1 (inl v))↑])).
   crush.
 Qed.
-  
+
 Lemma caseV0_eval_inr {v case₁ case₂}:
   Value v →
   (caseV0 case₁ case₂)[beta1 (inr v)] --> case₂ [beta1 v].
@@ -304,7 +346,7 @@ Proof.
   (caseof (inr v) (case₁[wkm↑][(beta1 (inr v))↑]) (case₂[wkm↑][(beta1 (inr v))↑])).
   crush.
 Qed.
-  
+
 Lemma caseV0_eval {v τ₁ τ₂ case₁ case₂}:
   Value v → ⟪ empty ⊢ v : τ₁ ⊎ τ₂ ⟫ →
   (exists v', v = inl v' ∧ (caseV0 case₁ case₂)[beta1 v] --> case₁ [beta1 v']) ∨
@@ -314,7 +356,7 @@ Proof.
   stlcCanForm; [left|right]; exists x; 
   crush; eauto using caseV0_eval_inl, caseV0_eval_inr.
 Qed.
-  
+
 Local Ltac crushEvalsInCaseUVal :=
   repeat 
     (match goal with
