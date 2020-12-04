@@ -18,8 +18,8 @@ Db/WellScoping.v
 # LogRel/LemmasLR.v
 # LogRel/LemmasIntro.v
 # LogRel/LemmasInversion.v
-# LogRel/LemmasPseudoType.v
-# LogRel/PseudoType.v
+LogRelFI/LemmasPseudoType.v
+LogRelFI/PseudoTypeFI.v
 StlcFix/CanForm.v
 StlcFix/Inst.v
 StlcFix/LemmasEvaluation.v

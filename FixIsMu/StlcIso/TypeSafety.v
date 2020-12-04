@@ -1,8 +1,8 @@
-Require Import StlcFix.CanForm.
-Require Import StlcFix.SpecEvaluation.
-Require Import StlcFix.SpecTyping.
-Require Import StlcFix.LemmasTyping.
-Require Import StlcFix.LemmasProgramContext.
+Require Import StlcIso.CanForm.
+Require Import StlcIso.SpecEvaluation.
+Require Import StlcIso.SpecTyping.
+Require Import StlcIso.LemmasTyping.
+Require Import StlcIso.LemmasProgramContext.
 
 Local Ltac crush :=
   intros; cbn in * |-;
@@ -51,6 +51,73 @@ Hint Extern 20 (ECtx _) => cbn : pctx.
 (*   destruct (local_progress wt); destruct_conjs; *)
 (*     subst; eauto using eval. *)
 (* Qed. *)
+
+Lemma canon_tunit {Γ t} :
+  Value t → ⟪ Γ ⊢ t : tunit ⟫ → t = unit.
+Proof.
+  crush.
+  inversion H0.
+  rewrite <- H2 in H; induction H.
+  rewrite <- H3 in H; induction H.
+  reflexivity.
+  rewrite <- H4 in H; induction H.
+  rewrite <- H2 in H; induction H.
+Qed.
+
+Lemma canon_tarr {Γ t τ τ'} :
+  Value t → ⟪ Γ ⊢ t : tarr τ τ' ⟫
+  → exists t', t = abs τ t'.
+  crush.
+  inversion H0.
+  rewrite <- H2 in H.
+  induction H.
+  eauto.
+  rewrite <- H3 in H.
+  induction H.
+  rewrite <- H4 in H.
+  induction H.
+  rewrite <- H2 in H.
+  induction H.
+Qed.
+
+Lemma canon_tsum {Γ t τ τ'} :
+  Value t → ⟪ Γ ⊢ t : tsum τ τ' ⟫
+  → exists t', Value t' ∧ (t = inl t' ∨ t = inr t').
+Proof.
+  intros.
+  inversion H0.
+  rewrite <- H2 in H.
+  induction H.
+  rewrite <- H3 in H.
+  induction H.
+  rewrite <- H2 in H.
+  exists t0.
+  eauto.
+  rewrite <- H2 in H.
+  exists t0.
+  eauto.
+  rewrite <- H4 in H.
+  induction H.
+  rewrite <- H2 in H; induction H.
+Qed.
+
+Lemma canon_trec {Γ t τ} :
+  Value t → ⟪ Γ ⊢ t : trec τ ⟫ → exists t', Value t' ∧ (t = fold_ t').
+Proof.
+  intros.
+  inversion H0.
+  rewrite <- H2 in H.
+  induction H.
+  rewrite <- H3 in H.
+  induction H.
+  rewrite <- H4 in H.
+  induction H.
+  rewrite <- H2 in H.
+  exists t0.
+  eauto.
+  rewrite <- H2 in H.
+  induction H.
+Qed.
 
 Lemma context_replacement {Γ C t t' T}
   (hyp: ∀ Γ' T', ⟪ Γ' ⊢ t : T' ⟫ → ⟪ Γ' ⊢ t' : T' ⟫) :

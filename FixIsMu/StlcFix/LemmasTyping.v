@@ -322,6 +322,20 @@ Hint Resolve wtSub_beta1 : ws.
 
 (*************************************************************************)
 
+Lemma wtOm_tau {Γ} T : ⟪ Γ ⊢ Om T : T ⟫.
+Proof.
+    unfold Om.
+    apply (@WtApp Γ (fixt tunit T (abs (tarr tunit T) (var 0))) unit tunit T).
+    constructor.
+    constructor.
+    constructor.
+    constructor.
+    constructor.
+Qed.
+
+
+(*************************************************************************)
+
 (* Lemma typing_beta {Γ Δ t T ζ} : *)
 (*   WtSub Δ Γ ζ → ⟪ (Γ ▻▻ Δ) ⊢ t : T ⟫ → ⟪ Γ ⊢ t[beta (dom Δ) ζ] : T ⟫. *)
 (* Proof. intros; eapply typing_sub; eauto with ws. Qed. *)

@@ -51,7 +51,7 @@ Inductive Tm : Set :=
   | fixt (τ₁ τ₂: Ty) (t: Tm).
 
 Definition Om (τ : Ty) : Tm :=
-  fixt tunit τ (app (abs (tarr tunit τ) (var 0)) unit).
+  app (fixt tunit τ (abs (tarr tunit τ) (var 0))) unit.
 
 Section WellScoping.
 

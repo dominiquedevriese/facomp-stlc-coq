@@ -77,6 +77,8 @@ Inductive eval : Tm → Tm → Prop :=
     t -->₀ t' → ECtx C → pctx_app t C --> pctx_app t' C
 where "t₁ --> t₂" := (eval t₁ t₂).
 
+Notation "t -->i t'" := (eval t t') (at level 80).
+
 Hint Constructors eval : eval.
 Hint Constructors eval₀ : eval.
 Hint Constructors clos_refl_trans_1n : eval.
@@ -143,7 +145,11 @@ Definition evaln := stepRel eval.
 Hint Constructors stepRel : eval.
 
 Notation "t₁ -->* t₂" := (clos_refl_trans_1n Tm eval t₁ t₂) (at level 80).
+Notation "⟪ 'F|' t₁ -->* t₂ ⟫" := (clos_refl_trans_1n Tm eval t₁ t₂) (at level 80).
 Notation "t₁ -->+ t₂" := (clos_trans_1n Tm eval t₁ t₂) (at level 80).
+
+(* TODO: get rid of this *)
+Definition horrible_thing := clos_refl_trans_1n Tm eval.
 
 Definition Terminating (t: Tm) : Prop :=
   ∃ v, Value v ∧ t -->* v.

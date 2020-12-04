@@ -473,8 +473,8 @@ Lemma closed_rec_implies_closed_unfold {τ} :
   ClosedTy (trec τ) → ClosedTy τ[beta1 (trec τ)].
 Proof.
   intros.
-  induction τ.
   inversion H.
+  induction τ.
   inversion H1.
   assert (H6 : ClosedTy (trec τ1)).
   constructor.
