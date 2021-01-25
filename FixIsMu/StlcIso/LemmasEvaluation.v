@@ -367,6 +367,47 @@ Proof.
     exists (S n); eapply stepRel_step; crush.
 Qed.
 
+Lemma evaln_to_evalStar {t t' n} :
+  evaln t t' n → t -->* t'.
+Proof.
+  induction 1; crush.
+Qed.
+
+(* The following implication is actually an equivalence, but we don't need that. *)
+Lemma ctxeval_eval_ctx {t t'} : ctxeval t t' → forall Cu, ECtx Cu → pctx_app t Cu --> pctx_app t' Cu.
+Proof.
+  destruct 1; intros; rewrite <- ?pctx_cat_app; eauto using ectx_cat with eval.
+Qed.
+
+Lemma ctxevaln_ctx {t t' n} :
+  ctxevaln t t' n -> forall C, ECtx C → evaln (pctx_app t C) (pctx_app t' C) n.
+Proof.
+  intros ec C eC; unfold evaln.
+  induction ec; eauto using ctxeval_eval_ctx with eval.
+Qed.
+
+Lemma ctxevaln_evaln_ctx {t t' n} : ctxevaln t t' n → forall Cu, ECtx Cu → evaln (pctx_app t Cu) (pctx_app t' Cu) n.
+Proof.
+  induction 1; unfold evaln in *;
+  econstructor; eauto using ctxeval_eval_ctx with eval.
+Qed.
+
+Lemma extend_ctxeval tu tu' Cu : ECtx Cu → ctxeval tu tu' → ctxeval (pctx_app tu Cu) (pctx_app tu' Cu).
+Proof.
+  intros eCu ce. 
+  induction ce.
+  rewrite <- ?pctx_cat_app.
+  eauto using ctxeval, ectx_cat.
+Qed.
+
+Lemma extend_ctxevalStar {tu tu'} Cu : ECtx Cu → ctxevalStar tu tu' → ctxevalStar (pctx_app tu Cu) (pctx_app tu' Cu).
+Proof.
+  intros eCu ce. 
+  unfold ctxevalStar.
+  induction ce;
+  eauto using extend_ctxeval with eval.
+Qed.
+
 (* This should hold, but doesn't? *)
 Lemma Terminating_TerminatingN {t : Tm} : t ⇓ -> ∃ n, t ⇓_ n.
 Proof.
@@ -579,3 +620,5 @@ Ltac crushStlcEval :=
     | [ |- ECtx (papp₁ _ _) ] => unfold ECtx
     | [ |- ECtx (papp₂ _ _) ] => unfold ECtx
   end.
+
+

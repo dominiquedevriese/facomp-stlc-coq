@@ -1,5 +1,5 @@
 -R . FaComp2
-# BackTrans/UpgradeDowngrade.v
+BackTransFI/UpgradeDowngrade.v
 # BackTrans/UValHelpers.v
 # BackTrans/UValHelpers2.v
 # BackTrans/InjectExtract.v
@@ -8,16 +8,16 @@ Common/Common.v
 Common/Relations.v
 # Compiler/Erase.v
 # Compiler/ProtectConfine.v
-CompilerFI/CompilerFI.v
+# CompilerFI/CompilerFI.v
 Db/Inst.v
 Db/Lemmas.v
 Db/Spec.v
 Db/Tactics.v
 Db/WellScoping.v
-# LogRel/LR.v
-# LogRel/LemmasLR.v
-# LogRel/LemmasIntro.v
-# LogRel/LemmasInversion.v
+LogRelFI/LRFI.v
+LogRelFI/LemmasLR.v
+LogRelFI/LemmasIntro.v
+LogRelFI/LemmasInversion.v
 LogRelFI/LemmasPseudoType.v
 LogRelFI/PseudoTypeFI.v
 StlcFix/CanForm.v
@@ -42,6 +42,8 @@ StlcIso/SpecSyntax.v
 StlcIso/SpecTyping.v
 # StlcIso/StlcOmega.v
 StlcIso/TypeSafety.v
+StlcIso/Fix.v
+StlcIso/Contraction.v
 StlcEqui/CanForm.v
 StlcEqui/Inst.v
 StlcEqui/LemmasEvaluation.v

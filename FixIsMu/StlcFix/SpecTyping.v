@@ -66,8 +66,6 @@ Inductive Typing (Γ: Env) : Tm → Ty → Prop :=
       ⟪ Γ ⊢ fixt τ₁ τ₂ t : tarr τ₁ τ₂ ⟫
 where "⟪  Γ ⊢ t : T  ⟫" := (Typing Γ t T).
 
-Notation "⟦ Γ ⊢f t : T ⟧" := (Typing Γ t T).
-
 Reserved Notation "⟪ ⊢ C : Γ₀ , τ₀ → Γ , τ ⟫"
   (at level 0, C at level 98,
    Γ₀ at level 98, τ₀ at level 98,

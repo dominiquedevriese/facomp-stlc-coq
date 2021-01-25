@@ -147,6 +147,19 @@ Proof.
   induction 1; eauto using F.GetEvar.
 Qed.
 
+Fixpoint fxToIsCtx (Γ : PEnv) : I.Env :=
+  match Γ with
+  | pempty => I.empty
+  | pevar Γ τ => I.evar (fxToIsCtx Γ) (fxToIs τ)
+  end.
+
+Lemma fxToIsCtx_works {Γ i τ} :
+  ⟪ i : τ p∈ Γ ⟫ →
+  I.GetEvar (fxToIsCtx Γ) i (fxToIs τ).
+Proof.
+  induction 1; eauto using I.GetEvar.
+Qed.
+
 Fixpoint embed (τ : F.Ty) : PTy :=
   match τ with
     | F.tunit => ptunit

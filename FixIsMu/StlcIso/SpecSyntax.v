@@ -25,15 +25,15 @@ Fixpoint dom (Γ: Env) : Dom :=
     | empty    => O
     | evar Γ τ => S (dom Γ)
   end.
-Notation "Γ ▻ T" := (evar Γ T) (at level 55, left associativity).
+Notation "Γ i▻ T" := (evar Γ T) (at level 55, left associativity).
 
-Reserved Notation "Γ₁ ▻▻ Γ₂" (at level 55, left associativity).
+Reserved Notation "Γ₁ i▻▻ Γ₂" (at level 55, left associativity).
 Fixpoint ecat (Γ₁ Γ₂ : Env) {struct Γ₂} : Env :=
   match Γ₂ with
     | empty  => Γ₁
-    | Γ₂ ▻ τ => (Γ₁ ▻▻ Γ₂) ▻ τ
+    | Γ₂ i▻ τ => (Γ₁ i▻▻ Γ₂) i▻ τ
   end
-where "Γ₁ ▻▻ Γ₂" := (ecat Γ₁ Γ₂).
+where "Γ₁ i▻▻ Γ₂" := (ecat Γ₁ Γ₂).
 
 Inductive Tm : Set :=
   | var (i: Ix)
@@ -265,7 +265,7 @@ Ltac crushStlcSyntaxMatchH :=
     | [ |- tunit = tunit ] => reflexivity
     (* | [ |- seq _ _      = seq _ _      ] => f_equal *)
     (* | [ |- fixt _ _ _   = fixt _ _ _   ] => f_equal *)
-    | [ |- _ ▻ _        = _ ▻ _        ] => f_equal
+    | [ |- _ i▻ _        = _ i▻ _        ] => f_equal
     | [ |- context[apTm ?ξ ?t] ] =>
       change (apTm ξ t) with t[ξ]
     | [ |- context[apTy ?ζ ?τ] ] =>

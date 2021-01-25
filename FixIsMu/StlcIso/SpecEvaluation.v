@@ -154,6 +154,16 @@ Definition evaln := stepRel eval.
 
 Hint Constructors stepRel : eval.
 
+Inductive ctxeval : Tm → Tm → Prop :=
+| mkCtxEval : forall Cu t₀ t₀', ECtx Cu → t₀ -->₀ t₀' → ctxeval (pctx_app t₀ Cu) (pctx_app t₀' Cu).
+
+Definition ctxevalStar := clos_refl_trans_1n Tm ctxeval.
+Definition ctxevaln := stepRel ctxeval.
+
+Arguments ctxevaln /.
+Arguments ctxevalStar /.
+
+
 Notation "t₁ -->* t₂" := (clos_refl_trans_1n Tm eval t₁ t₂) (at level 80).
 Notation "t₁ -->+ t₂" := (clos_trans_1n Tm eval t₁ t₂) (at level 80).
 
@@ -167,3 +177,39 @@ Notation "t ⇑" := (not (Terminating t)) (at level 8, format "t ⇑").
 Definition TerminatingN (t: Tm) (n : nat) : Prop :=
   ∃ v m, Value v ∧ m ≤ n ∧ evaln t v m.
 Notation "t ⇓_ n" := (TerminatingN t n) (at level 8, format "t ⇓_ n").
+
+Section DerivedRules.
+
+  Lemma eval_eval₀ {t t'} : t -->₀ t' -> t --> t'.
+  Proof. intro r; now apply (eval_ctx₀ phole r). Qed.
+
+  Lemma eval_beta'' {t₁ t₂ t' τ} :
+    Value t₂ → t' = t₁[beta1 t₂] →
+    app (abs τ t₁) t₂ -->₀ t'.
+  Proof. intros; subst; auto using eval₀. Qed.
+
+End DerivedRules.
+
+Section CtxEval.
+  Lemma eval₀_ctxeval {t t'} : t -->₀ t' → ctxeval t t'.
+  Proof.
+    apply (mkCtxEval phole _ _ I).
+  Qed.
+
+  Lemma ctxeval_eval {t t'} : ctxeval t t' → t --> t'.
+  Proof.
+    destruct 1.
+    refine (eval_ctx₀ _ _ _); assumption.
+  Qed.
+
+  Lemma ctxevaln_evaln {t t' n} : ctxevaln t t' n → evaln t t' n.
+  Proof.
+    induction 1; econstructor; eauto using ctxeval_eval with eval.
+  Qed.
+
+  (* Lemma ctxevaln_evaln_ctx {t t' n} : ctxevaln t t' n → forall Cu, ECtx Cu → evaln (pctx_app t Cu) (pctx_app t' Cu) n. *)
+  (* Proof. *)
+  (*   induction 1; unfold evaln in *; *)
+  (*   econstructor; eauto using ctxeval_eval_ctx with eval. *)
+  (* Qed. *)
+End CtxEval.

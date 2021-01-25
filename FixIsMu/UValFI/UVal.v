@@ -11,6 +11,7 @@ Require Import StlcIso.SpecTyping.
 Require Import StlcIso.LemmasTyping.
 Require Import StlcIso.LemmasEvaluation.
 Require Import StlcIso.CanForm.
+Require Import StlcIso.Fix.
 Require Import Common.Relations.
 
 Module F.
@@ -29,6 +30,7 @@ Module I.
   Include StlcIso.LemmasTyping.
   Include StlcIso.LemmasEvaluation.
   Include StlcIso.CanForm.
+  Include StlcIso.Fix.
 End I.
 
 Fixpoint UValFI (n : nat) (τ : I.Ty) {struct n} : F.Ty :=
@@ -56,17 +58,20 @@ Fixpoint UValFI (n : nat) (τ : I.Ty) {struct n} : F.Ty :=
 (* Qed. *)
 
 
-Definition unkUVal : F.Tm := F.inr F.unit.
+Definition unkUVal (n : nat) : F.Tm :=
+  match n with
+  | 0 => F.unit
+  | _ => F.inr F.unit
+  end.
 
-Lemma unkUVal_Value : F.Value unkUVal.
+Lemma unkUVal_Value (n : nat) : F.Value (unkUVal n).
 Proof.
-  simpl; trivial.
+  case n; simpl; trivial.
 Qed.
 
-Lemma unkUValT {Γ n τ} {P : ClosedTy τ} {Q : n > 0} : F.Typing Γ unkUVal (UValFI n τ).
+Lemma unkUValT {Γ n τ} : F.Typing Γ (unkUVal n) (UValFI n τ).
 Proof.
-  induction n.
-  inversion Q.
+  induction n;
   eauto using F.Typing.
 Qed.
 
@@ -87,10 +92,10 @@ Qed.
 (*   unfold inUnit_pctx. crushTyping. *)
 (* Qed. *)
 
-(* Lemma inUnitT {Γ n t} : ⟪ Γ ⊢ t : tunit ⟫ → ⟪ Γ ⊢ inUnit n t : UVal (S n) ⟫. *)
-(* Proof. *)
-(*   unfold inUnit. eauto using inUnit_pctx_T with typing. *)
-(* Qed. *)
+Lemma inUnitT {Γ n t} : ⟪ Γ ⊢ t : F.tunit ⟫ → ⟪ Γ ⊢ F.inl t : UValFI (S n) I.tunit ⟫.
+Proof.
+  intuition.
+Qed.
 
 (* Arguments inUnit n t : simpl never. *)
 
@@ -142,16 +147,15 @@ Qed.
 (*   unfold inArr_pctx. crushTyping. *)
 (* Qed. *)
 
-(* Lemma inArr_T {Γ n t} : ⟪ Γ ⊢ t : UVal n ⇒ UVal n ⟫ → ⟪ Γ ⊢ inArr n t : UVal (S n) ⟫. *)
-(* Proof. *)
-(*   unfold inArr. eauto using inArr_pctx_T with typing.  *)
-(* Qed. *)
+Lemma inArr_T {Γ n t τ τ'} : ⟪ Γ ⊢ t : F.tarr (UValFI n τ) (UValFI n τ') ⟫ → ⟪ Γ ⊢ F.inl t : UValFI (S n) (τ ⇒ τ') ⟫.
+Proof.
+  intuition.
+Qed.
 
 (* Lemma inArr_Value {n v} : Value v → Value (inArr n v). *)
 (* Proof. *)
 (*   simpl; trivial. *)
 (* Qed. *)
-
 
 (* Definition inSum_pctx (n : nat) : PCtx := pinr (pinr (pinr (pinr (pinr phole)))). *)
 (* Definition inSum (n : nat) (t : Tm) : Tm := pctx_app t (inSum_pctx n). *)
@@ -161,10 +165,10 @@ Qed.
 (*   unfold inSum_pctx. crushTyping. *)
 (* Qed. *)
 
-(* Lemma inSum_T {Γ n t} : ⟪ Γ ⊢ t : UVal n ⊎ UVal n ⟫ → ⟪ Γ ⊢ inSum n t : UVal (S n) ⟫. *)
-(* Proof. *)
-(*   unfold inSum. eauto using inSum_pctx_T with typing.  *)
-(* Qed. *)
+Lemma inSum_T {Γ n t τ τ'} : ⟪ Γ ⊢ t : F.tsum (UValFI n τ) (UValFI n τ') ⟫ → ⟪ Γ ⊢ F.inl t : UValFI (S n) (τ ⊎ τ') ⟫.
+Proof.
+  intuition.
+Qed.
 
 (* Lemma inSum_Value {n v} : Value v → Value (inSum n v). *)
 (* Proof. *)
@@ -289,11 +293,11 @@ Arguments caseUVal tscrut tunk tcunit tcbool tcprod tcsum tcarr : simpl never.
 
 Arguments UValFI n : simpl never.
 Hint Resolve unkUValT : uval_typing.
-(* Hint Resolve inUnitT : uval_typing. *)
+Hint Resolve inUnitT : uval_typing.
 (* Hint Resolve inBoolT : uval_typing. *)
 (* Hint Resolve inProd_T : uval_typing. *)
-(* Hint Resolve inSum_T : uval_typing. *)
-(* Hint Resolve inArr_T : uval_typing. *)
+Hint Resolve inSum_T : uval_typing.
+Hint Resolve inArr_T : uval_typing.
 (* Hint Resolve inUnit_pctx_T : uval_typing. *)
 (* Hint Resolve inBool_pctx_T : uval_typing. *)
 (* Hint Resolve inProd_pctx_T : uval_typing. *)
@@ -364,6 +368,71 @@ Local Ltac crushEvalsInCaseUVal :=
      end;
      try rewrite -> apply_wkm_beta1_cancel
     ).
+
+
+Lemma canonUValS_Unit {n v} :
+  F.Value v →
+  ⟪ F.empty ⊢ v : UValFI (S n) I.tunit ⟫ →
+  (v = F.inl F.unit) ∨ (v = F.inr F.unit).
+Proof.
+  unfold UValFI.
+  intros.
+  destruct (F.can_form_tsum H H0) as [(? & ? & ?) | (? & ? & ?)];
+  [left | right];
+  assert (F.Value x) by (
+    subst;
+    cbn in H;
+    assumption);
+  pose proof (F.can_form_tunit H3 H2);
+  rewrite H4 in H1;
+  assumption.
+Qed.
+
+Lemma canonUValS_Arr {n v τ τ'} :
+  F.Value v →
+  ⟪ F.empty ⊢ v : UValFI (S n) (I.tarr τ τ') ⟫ →
+  (exists v', F.Value v' ∧ (v = F.inl v') ∧ ⟪ F.empty ⊢ v' : F.tarr (UValFI n τ) (UValFI n τ')⟫) ∨ (v = F.inr F.unit).
+Proof.
+  unfold UValFI.
+  intros vv ty.
+  destruct (F.can_form_tsum vv ty) as [(? & ? & ?) | (? & ? & ?)];
+  [left | right].
+
+  exists x.
+  split.
+  subst.
+  cbn in vv.
+  assumption.
+  split.
+  assumption.
+  assumption.
+
+  assert (F.Value x) by (
+                         subst;
+                         cbn in vv;
+                         assumption
+                         ).
+
+  pose proof (F.can_form_tunit H1 H0).
+  rewrite H2 in H.
+  assumption.
+Qed.
+
+(* Lemma canonUVal_Arr {n v τ τ'} : *)
+(*   F.Value v → *)
+(*   ⟪ F.empty ⊢ v : UValFI n (I.tarr τ τ') ⟫ → *)
+(*   (v = F.unit) ∨ (exists v', F.Value v' ∧ (v = F.inl v') ∧ ⟪ F.empty ⊢ v' : F.tarr (UValFI n τ) (UValFI n τ')⟫) ∨ (v = F.inr F.unit). *)
+(* Proof. *)
+(*   intros. *)
+(*   destruct n as [? | ?]. *)
+(*   left. *)
+(*   unfold UValFI in H0. *)
+(*   F.stlcCanForm. *)
+(*   reflexivity. *)
+
+(*   right. *)
+(*   apply (canonUValS_Arr H). *)
+
 
 (* NOTE: for compatibility lemmas, we might need a UVal context and accompanying lemmas *)
 

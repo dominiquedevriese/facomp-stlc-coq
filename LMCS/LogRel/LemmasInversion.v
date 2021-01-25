@@ -57,7 +57,7 @@ Section ValrelInversion.
     rewrite valrel_fixp; unfold valrel'.
     crush.
   Qed.
-  
+
   Lemma valrel_ptprod_inversion {d w τ₁ τ₂ vs vu} :
     valrel d w (ptprod τ₁ τ₂) vs vu →
     exists vs₁ vs₂ vu₁ vu₂,
