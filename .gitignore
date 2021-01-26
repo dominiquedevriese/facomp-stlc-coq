@@ -9,3 +9,7 @@ Makefile.coq
 .DS_Store
 \#*#
 TAGS
+*.vok
+*.vos
+**/.lia.cache
+**/Makefile.coq.conf
