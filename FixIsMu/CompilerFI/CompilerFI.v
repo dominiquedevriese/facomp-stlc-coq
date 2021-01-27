@@ -1,11 +1,11 @@
 (* Require Import StlcFix.SpecScoping. *)
 (* Require Import StlcFix.LemmasScoping. *)
 (* Require Import StlcFix.DecideEval. *)
-(* Require Import LogRel.PseudoType. *)
-(* Require Import LogRel.LemmasPseudoType. *)
-(* Require Import LogRel.LR. *)
-(* Require Import LogRel.LemmasLR. *)
-(* Require Import LogRel.LemmasIntro. *)
+Require Import LogRelFI.PseudoTypeFI.
+Require Import LogRelFI.LemmasPseudoType.
+Require Import LogRelFI.LRFI.
+Require Import LogRelFI.LemmasLR.
+Require Import LogRelFI.LemmasIntro.
 Require Import Lia.
 Require Import Db.Lemmas.
 
@@ -15,6 +15,7 @@ Require Import StlcFix.SpecTyping.
 Require Import StlcFix.LemmasTyping.
 Require Import StlcFix.LemmasEvaluation.
 Require Import StlcFix.CanForm.
+Require Import StlcFix.SpecEquivalent.
 
 Require Import StlcIso.SpecEvaluation.
 Require Import StlcIso.SpecSyntax.
@@ -22,6 +23,7 @@ Require Import StlcIso.SpecTyping.
 Require Import StlcIso.LemmasTyping.
 Require Import StlcIso.LemmasEvaluation.
 Require Import StlcIso.CanForm.
+Require Import StlcIso.SpecEquivalent.
 
 Module F.
   Include StlcFix.SpecEvaluation.
@@ -39,6 +41,7 @@ Module I.
   Include StlcIso.LemmasTyping.
   Include StlcIso.LemmasEvaluation.
   Include StlcIso.CanForm.
+  Include StlcIso.Fix.
 End I.
 
 Fixpoint compfi_ty (τ : F.Ty) : I.Ty :=
@@ -46,6 +49,12 @@ Fixpoint compfi_ty (τ : F.Ty) : I.Ty :=
     | F.tunit => I.tunit
     | F.tarr τ1 τ2 => I.tarr (compfi_ty τ1) (compfi_ty τ2)
     | F.tsum τ1 τ2 => I.tsum (compfi_ty τ1) (compfi_ty τ2)
+  end.
+
+Fixpoint compfi_env (Γ : F.Env) : I.Env :=
+  match Γ with
+    | F.empty => I.empty
+    | F.evar Γ τ => I.evar (compfi_env Γ) (compfi_ty τ)
   end.
 
 Fixpoint compfi (t : F.Tm) : I.Tm :=
@@ -57,18 +66,63 @@ Fixpoint compfi (t : F.Tm) : I.Tm :=
     | F.inl t => I.inl (compfi t)
     | F.inr t => I.inr (compfi t)
     | F.caseof t1 t2 t3 => I.caseof (compfi t1) (compfi t2) (compfi t3)
-    | F.fixt τ1 τ2 t =>
-      let fold_type := I.trec (I.tarr (I.tvar 0) (compfi_ty (F.tarr τ1 τ2))) in
-      let fny := I.abs (compfi_ty τ1) (I.app (I.app (I.unfold_ (I.var 1)) (I.var 1)) (I.var 0)) in
-      let fnx := I.abs fold_type (I.app (I.var 1) fny) in
-      let fnf := I.abs (compfi_ty (F.tarr (F.tarr τ1 τ2) (F.tarr τ1 τ2))) (I.app (fnx) (I.fold_ fnx)) in
-      I.app fnf (compfi t)
+    | F.fixt τ1 τ2 t => I.app (I.ufix (compfi_ty τ1) (compfi_ty τ2)) (compfi t)
   end.
+
+Fixpoint compfi_pctx (C : F.PCtx) : I.PCtx :=
+  match C with
+  | F.phole => I.phole
+  | F.pabs τ C => I.pabs (compfi_ty τ) (compfi_pctx C)
+  | F.papp₁ C t => I.papp₁ (compfi_pctx C) (compfi t)
+  | F.papp₂ t C => I.papp₂ (compfi t) (compfi_pctx C)
+  | F.pinl C => I.pinl (compfi_pctx C)
+  | F.pinr C => I.pinr (compfi_pctx C)
+  | F.pcaseof₁ C t₂ t₃ => I.pcaseof₁ (compfi_pctx C) (compfi t₂) (compfi t₃)
+  | F.pcaseof₂ t₁ C t₃ => I.pcaseof₂ (compfi t₁) (compfi_pctx C) (compfi t₃)
+  | F.pcaseof₃ t₁ t₂ C => I.pcaseof₃ (compfi t₁) (compfi t₂) (compfi_pctx C)
+  | F.pfixt τ₁ τ₂ C => I.papp₂ (I.ufix (compfi_ty τ₁) (compfi_ty τ₂)) (compfi_pctx C)
+  end.
+
 
 Lemma smoke_test_compiler :
   (compfi F.unit) = I.unit.
 Proof.
   simpl. reflexivity.
+Qed.
+
+Lemma compfi_getevar_works {i τ Γ} :
+  ⟪ i : τ ∈ Γ ⟫ →
+  ⟪ i : compfi_ty τ i∈ compfi_env Γ ⟫.
+Proof.
+  induction 1; constructor; assumption.
+Qed.
+
+Lemma compfi_typing_works {Γ t τ} :
+  ⟪ Γ ⊢ t : τ ⟫ →
+  ⟪ compfi_env Γ i⊢ compfi t : compfi_ty τ ⟫.
+Proof.
+  induction 1; F.crushTyping; I.crushTyping.
+  - apply compfi_getevar_works; assumption.
+  - repeat constructor; apply I.ufix₁_typing; repeat constructor.
+Qed.
+
+Lemma compfi_pctx_works {C Γ Γ' τ τ'} :
+  ⟪ ⊢ C : Γ, τ → Γ', τ' ⟫ →
+  ⟪ i⊢ compfi_pctx C : compfi_env Γ, compfi_ty τ →
+  compfi_env Γ', compfi_ty τ' ⟫.
+Proof.
+  induction 1; I.crushTyping;
+  try exact (compfi_typing_works H);
+  try exact (compfi_typing_works H0);
+  try exact (compfi_typing_works H1);
+  apply I.ufix_typing.
+Qed.
+
+Lemma compileCtx_works {Γ i τ} :
+  F.GetEvar Γ i τ →
+  ⟪ i : embed τ p∈ embedCtx Γ ⟫.
+Proof.
+  induction 1; eauto using GetEvarP.
 Qed.
 
 (* Fixpoint erase (t : S.Tm) : U.UTm := *)
@@ -132,46 +186,69 @@ Qed.
 (*   apply U.ufix_ws. *)
 (* Qed. *)
 
-(* Local Ltac crush := *)
-(*   cbn in * |- ; *)
-(*   repeat *)
-(*     (cbn; *)
-(*      repeat crushLRMatch; *)
-(*      crushOfType; *)
-(*      crushTyping; *)
-(*      repeat crushRepEmulEmbed; *)
-(*      repeat crushUtlcSyntaxMatchH; *)
-(*      repeat crushUtlcScopingMatchH; *)
-(*      subst; *)
-(*      trivial *)
-(*     ); try omega; eauto. *)
+Local Ltac crush :=
+  cbn in * |- ;
+  repeat
+    (cbn;
+     repeat crushLRMatch;
+     crushOfType;
+     F.crushTyping;
+     I.crushTyping;
+     repeat crushRepEmulEmbed;
+     repeat F.crushStlcSyntaxMatchH;
+     repeat I.crushStlcSyntaxMatchH;
+     subst;
+     trivial
+    ); try lia; eauto.
 
-(* Section CompatibilityLemmas. *)
+Lemma compiler_is_fxToIs_embed :
+  ∀ τ : F.Ty, compfi_ty τ = fxToIs (embed τ).
+Proof.
+  induction τ; simpl;
+    try rewrite IHτ1; try rewrite IHτ2;
+      reflexivity.
+Qed.
 
-(*   Lemma compat_lambda {Γ τ' ts d n tu τ} : *)
-(*     ⟪ Γ p▻ τ' ⊩ ts ⟦ d , n ⟧ tu : τ ⟫ → *)
-(*     ⟪ Γ ⊩ (S.abs (repEmul τ') ts) ⟦ d , n ⟧ U.abs tu : ptarr τ' τ ⟫. *)
-(*   Proof. *)
-(*     crush. *)
-(*     - eauto using wsSub_up, envrel_implies_WsSub, wsAp. *)
-(*     - eauto using wtSub_up, envrel_implies_WtSub. *)
-(*     - rewrite -> ?ap_comp. *)
-(*       apply H1; crush. *)
-(*   Qed. *)
+Lemma compiler_is_fxToIs_embed_env :
+  ∀ Γ : F.Env, compfi_env Γ = fxToIsCtx (embedCtx Γ).
+Proof.
+  induction Γ; crush; apply compiler_is_fxToIs_embed.
+Qed.
 
-(*   Lemma compat_lambda_embed {Γ τ' ts d n tu τ} : *)
-(*     ⟪ Γ p▻ embed τ' ⊩ ts ⟦ d , n ⟧ tu : τ ⟫ → *)
-(*     ⟪ Γ ⊩ (S.abs τ' ts) ⟦ d , n ⟧ abs tu : ptarr (embed τ') τ ⟫. *)
-(*   Proof. *)
-(*     rewrite <- (repEmul_embed_leftinv τ') at 2. *)
-(*     apply compat_lambda. *)
-(*   Qed. *)
+Section CompatibilityLemmas.
 
-(*   Lemma compat_unit {Γ d n} : *)
-(*     ⟪ Γ ⊩ S.unit ⟦ d , n ⟧ U.unit : ptunit ⟫. *)
-(*   Proof. *)
-(*     crush. *)
-(*   Qed. *)
+  Lemma compat_lambda {Γ τ' ts d n tu τ} :
+    ⟪ Γ p▻ τ' ⊩ ts ⟦ d , n ⟧ tu : τ ⟫ →
+    ⟪ Γ ⊩ (F.abs (repEmul τ') ts) ⟦ d , n ⟧ (I.abs (fxToIs τ') tu) : ptarr τ' τ ⟫.
+  Proof.
+    crush.
+    - eauto using I.wtSub_up, envrel_implies_WtSub_iso.
+    - eauto using F.wtSub_up, envrel_implies_WtSub.
+    - rewrite -> ?ap_comp.
+      apply H1; crush.
+  Qed.
+
+  Lemma compat_lambda_embed {Γ τ' ts d n tu τ} :
+    ⟪ Γ p▻ embed τ' ⊩ ts ⟦ d , n ⟧ tu : τ ⟫ →
+    ⟪ Γ ⊩ (F.abs τ' ts) ⟦ d , n ⟧ (I.abs (fxToIs (embed τ')) tu) : ptarr (embed τ') τ ⟫.
+  Proof.
+    rewrite <- (repEmul_embed_leftinv τ') at 2.
+    apply compat_lambda.
+  Qed.
+
+  Lemma compat_lambda_embed' {Γ τ' ts d n tu τ} :
+    ⟪ Γ p▻ embed τ' ⊩ ts ⟦ d , n ⟧ tu : τ ⟫ →
+    ⟪ Γ ⊩ (F.abs τ' ts) ⟦ d , n ⟧ (I.abs (compfi_ty τ') tu) : ptarr (embed τ') τ ⟫.
+  Proof.
+    rewrite (compiler_is_fxToIs_embed τ').
+    apply compat_lambda_embed.
+  Qed.
+
+  Lemma compat_unit {Γ d n} :
+    ⟪ Γ ⊩ F.unit ⟦ d , n ⟧ I.unit : ptunit ⟫.
+  Proof.
+    crush.
+  Qed.
 
 (*   Lemma compat_true {Γ d n} : *)
 (*     ⟪ Γ ⊩ S.true ⟦ d , n ⟧ U.true : ptbool ⟫. *)
@@ -196,32 +273,32 @@ Qed.
 (*     eauto using envrel_mono. *)
 (*   Qed. *)
 
-(*   Lemma compat_app {Γ d n ts₁ tu₁ τ₁ ts₂ tu₂ τ₂} : *)
-(*     ⟪ Γ ⊩ ts₁ ⟦ d , n ⟧ tu₁ : ptarr τ₁ τ₂ ⟫ → *)
-(*     ⟪ Γ ⊩ ts₂ ⟦ d , n ⟧ tu₂ : τ₁ ⟫ → *)
-(*     ⟪ Γ ⊩ S.app ts₁ ts₂ ⟦ d , n ⟧ U.app tu₁ tu₂ : τ₂ ⟫. *)
-(*   Proof. *)
-(*     crush. *)
-(*     refine (termrel_app _ _); crush. *)
-(*     refine (H2 w' _ _ _ _); unfold lev in *; try omega. *)
-(*     crush. *)
-(*   Qed. *)
+  Lemma compat_app {Γ d n ts₁ tu₁ τ₁ ts₂ tu₂ τ₂} :
+    ⟪ Γ ⊩ ts₁ ⟦ d , n ⟧ tu₁ : ptarr τ₁ τ₂ ⟫ →
+    ⟪ Γ ⊩ ts₂ ⟦ d , n ⟧ tu₂ : τ₁ ⟫ →
+    ⟪ Γ ⊩ F.app ts₁ ts₂ ⟦ d , n ⟧ I.app tu₁ tu₂ : τ₂ ⟫.
+  Proof.
+    crush.
+    refine (termrel_app _ _); crush.
+    refine (H2 w' _ _ _ _); unfold lev in *; try lia.
+    crush.
+  Qed.
 
-(*   Lemma compat_inl {Γ d n ts tu τ₁ τ₂} : *)
-(*     ⟪ Γ ⊩ ts ⟦ d , n ⟧ tu : τ₁ ⟫ → *)
-(*     ⟪ Γ ⊩ S.inl ts ⟦ d , n ⟧ U.inl tu : ptsum τ₁ τ₂ ⟫. *)
-(*   Proof. *)
-(*     crush. *)
-(*     refine (termrel_inl _); crush. *)
-(*   Qed. *)
+  Lemma compat_inl {Γ d n ts tu τ₁ τ₂} :
+    ⟪ Γ ⊩ ts ⟦ d , n ⟧ tu : τ₁ ⟫ →
+    ⟪ Γ ⊩ F.inl ts ⟦ d , n ⟧ I.inl tu : ptsum τ₁ τ₂ ⟫.
+  Proof.
+    crush.
+    refine (termrel_inl _); crush.
+  Qed.
 
-(*   Lemma compat_inr {Γ d n ts tu τ₁ τ₂} : *)
-(*     ⟪ Γ ⊩ ts ⟦ d , n ⟧ tu : τ₂ ⟫ → *)
-(*     ⟪ Γ ⊩ S.inr ts ⟦ d , n ⟧ U.inr tu : ptsum τ₁ τ₂ ⟫. *)
-(*   Proof. *)
-(*     crush. *)
-(*     refine (termrel_inr _); crush. *)
-(*   Qed. *)
+  Lemma compat_inr {Γ d n ts tu τ₁ τ₂} :
+    ⟪ Γ ⊩ ts ⟦ d , n ⟧ tu : τ₂ ⟫ →
+    ⟪ Γ ⊩ F.inr ts ⟦ d , n ⟧ I.inr tu : ptsum τ₁ τ₂ ⟫.
+  Proof.
+    crush.
+    refine (termrel_inr _); crush.
+  Qed.
 
 (*   Lemma compat_seq {Γ d n ts₁ tu₁ ts₂ tu₂ τ₂} : *)
 (*     ⟪ Γ ⊩ ts₁ ⟦ d , n ⟧ tu₁ : ptunit ⟫ → *)
@@ -261,58 +338,132 @@ Qed.
 (*     - refine (H3 w' _ _ _ _); crush. *)
 (*   Qed. *)
 
-(*   Lemma compat_caseof {Γ d n ts₁ tu₁ ts₂ tu₂ ts₃ tu₃ τ₁ τ₂ τ} : *)
-(*     ⟪ Γ ⊩ ts₁ ⟦ d , n ⟧ tu₁ : ptsum τ₁ τ₂ ⟫ → *)
-(*     ⟪ Γ p▻ τ₁ ⊩ ts₂ ⟦ d , n ⟧ tu₂ : τ ⟫ → *)
-(*     ⟪ Γ p▻ τ₂ ⊩ ts₃ ⟦ d , n ⟧ tu₃ : τ ⟫ → *)
-(*     ⟪ Γ ⊩ S.caseof ts₁ ts₂ ts₃ ⟦ d , n ⟧ U.caseof tu₁ tu₂ tu₃ : τ ⟫. *)
-(*   Proof. *)
-(*     crush. *)
-(*     refine (termrel_caseof _ _ _); crush; *)
-(*     rewrite -> ?ap_comp. *)
-(*     - refine (H5 w' _ _ _ _); crush. *)
-(*     - refine (H3 w' _ _ _ _); crush. *)
-(*   Qed. *)
+  Lemma compat_caseof {Γ d n ts₁ tu₁ ts₂ tu₂ ts₃ tu₃ τ₁ τ₂ τ} :
+    ⟪ Γ ⊩ ts₁ ⟦ d , n ⟧ tu₁ : ptsum τ₁ τ₂ ⟫ →
+    ⟪ Γ p▻ τ₁ ⊩ ts₂ ⟦ d , n ⟧ tu₂ : τ ⟫ →
+    ⟪ Γ p▻ τ₂ ⊩ ts₃ ⟦ d , n ⟧ tu₃ : τ ⟫ →
+    ⟪ Γ ⊩ F.caseof ts₁ ts₂ ts₃ ⟦ d , n ⟧ I.caseof tu₁ tu₂ tu₃ : τ ⟫.
+  Proof.
+    crush.
+    refine (termrel_caseof _ _ _); crush;
+    rewrite -> ?ap_comp.
+    - refine (H5 w' _ _ _ _); crush.
+    - refine (H3 w' _ _ _ _); crush.
+  Qed.
 
-(*   Lemma compat_fix {Γ d n ts tu τ₁ τ₂} : *)
-(*     ⟪ Γ ⊩ ts ⟦ d , n ⟧ tu : ptarr (ptarr τ₁ τ₂) (ptarr τ₁ τ₂) ⟫ → *)
-(*     ⟪ Γ ⊩ S.fixt (repEmul τ₁) (repEmul τ₂) ts ⟦ d , n ⟧ U.app U.ufix tu : ptarr τ₁ τ₂ ⟫. *)
-(*   Proof. *)
-(*     crush. *)
-(*     - eapply ufix_ws. *)
-(*     - refine (termrel_fix _); crush. *)
-(*   Qed. *)
+  Lemma compat_fix {Γ d n ts tu τ₁ τ₂} :
+    ⟪ Γ ⊩ ts ⟦ d , n ⟧ tu : ptarr (ptarr τ₁ τ₂) (ptarr τ₁ τ₂) ⟫ →
+    ⟪ Γ ⊩ F.fixt (repEmul τ₁) (repEmul τ₂) ts ⟦ d , n ⟧ I.app (I.ufix (fxToIs τ₁) (fxToIs τ₂)) tu : ptarr τ₁ τ₂ ⟫.
+  Proof.
+    crush.
+    - eapply I.ufix_typing.
+    - refine (termrel_fix _); crush.
+  Qed.
 
-(*   Lemma compat_fix' {Γ d n ts tu τ₁ τ₂} : *)
-(*     ⟪ Γ ⊩ ts ⟦ d , n ⟧ tu : embed (tarr (tarr τ₁ τ₂) (tarr τ₁ τ₂)) ⟫ → *)
-(*     ⟪ Γ ⊩ S.fixt τ₁ τ₂ ts ⟦ d , n ⟧ U.app U.ufix tu : ptarr (embed τ₁) (embed τ₂) ⟫. *)
-(*   Proof. *)
-(*     intros tr. *)
-(*     rewrite <- (repEmul_embed_leftinv τ₁) at 1. *)
-(*     rewrite <- (repEmul_embed_leftinv τ₂) at 1. *)
-(*     apply compat_fix; assumption. *)
-(*   Qed. *)
+  Lemma compat_fix' {Γ d n ts tu τ₁ τ₂} :
+    ⟪ Γ ⊩ ts ⟦ d , n ⟧ tu : embed (F.tarr (F.tarr τ₁ τ₂) (F.tarr τ₁ τ₂)) ⟫ →
+    ⟪ Γ ⊩ F.fixt τ₁ τ₂ ts ⟦ d , n ⟧ I.app (I.ufix (compfi_ty τ₁) (compfi_ty τ₂)) tu : ptarr (embed τ₁) (embed τ₂) ⟫.
+  Proof.
+    intros tr.
+    rewrite <- (repEmul_embed_leftinv τ₁) at 1.
+    rewrite <- (repEmul_embed_leftinv τ₂) at 1.
+    rewrite (compiler_is_fxToIs_embed τ₁) at 1.
+    rewrite (compiler_is_fxToIs_embed τ₂) at 1.
+    apply compat_fix; assumption.
+  Qed.
 
-(*   Lemma erase_correct {Γ d n ts τ} : *)
-(*     ⟪ Γ ⊢ ts : τ ⟫ → *)
-(*     ⟪ embedCtx Γ ⊩ ts ⟦ d , n ⟧ erase ts : embed τ ⟫. *)
-(*   Proof. *)
-(*     induction 1; simpl; eauto using compat_inl, compat_inr, compat_pair, compat_lambda_embed, compat_app, compat_false, compat_true, compat_var, compat_unit, embedCtx_works, compat_seq, compat_ite, compat_proj₁, compat_proj₂, compat_caseof, compat_fix'. *)
-(*   Qed.  *)
+  Lemma compat_fix'' {Γ d n ts tu τ₁ τ₂} :
+    ⟪ Γ ⊩ ts ⟦ d , n ⟧ tu : embed (F.tarr (F.tarr τ₁ τ₂) (F.tarr τ₁ τ₂)) ⟫ →
+    ⟪ Γ ⊩ F.fixt τ₁ τ₂ ts ⟦ d , n ⟧ I.app (I.ufix (fxToIs (embed τ₁)) (fxToIs (embed τ₂))) tu : ptarr (embed τ₁) (embed τ₂) ⟫.
+  Proof.
+    rewrite <- (compiler_is_fxToIs_embed τ₁) at 1.
+    rewrite <- (compiler_is_fxToIs_embed τ₂) at 1.
+    exact compat_fix'.
+  Qed.
 
-(*   Lemma erase_ctx_correct {Γ Γ' d n C τ τ'} : *)
-(*     ⟪ ⊢ C : Γ , τ → Γ' , τ'⟫ → *)
-(*     ⟪ ⊩ C ⟦ d , n ⟧ erase_pctx C : embedCtx Γ , embed τ → embedCtx Γ' , embed τ' ⟫. *)
-(*   Proof. *)
-(*     intros ty; unfold OpenLRCtxN; split; [crush|idtac]. *)
-(*     induction ty; simpl;  *)
-(*     intros ts tu lr; *)
-(*       try assumption; (* deal with phole *) *)
-(*       repeat match goal with *)
-(*                | [ H : ⟪ _ ⊢ _ : _ ⟫ |- _ ] => eapply erase_correct in H *)
-(*              end; *)
-(*       specialize (IHty ts tu lr); *)
-(*       eauto using compat_inl, compat_inr, compat_pair, compat_lambda_embed, compat_app, compat_false, compat_true, compat_var, compat_unit, embedCtx_works, compat_seq, compat_ite, compat_proj₁, compat_proj₂, compat_caseof, compat_fix'. *)
-(*   Qed.  *)
+  Lemma compfi_correct {Γ d n ts τ} :
+    ⟪ Γ ⊢ ts : τ ⟫ →
+    ⟪ embedCtx Γ ⊩ ts ⟦ d , n ⟧ compfi ts : embed τ ⟫.
+  Proof.
+    induction 1; simpl; try rewrite (compiler_is_fxToIs_embed τ₁); try rewrite (compiler_is_fxToIs_embed τ₂); eauto using compat_inl, compat_inr, (* compat_pair, *) compat_lambda_embed, compat_app, (* compat_false, compat_true, *) compat_var, compat_unit, embedCtx_works, (* compat_seq, compat_ite, compat_proj₁, compat_proj₂, *) compat_caseof, compat_fix''.
+  Qed.
 
-(* End CompatibilityLemmas. *)
+  Lemma compfi_ctx_correct {Γ Γ' d n C τ τ'} :
+    ⟪ ⊢ C : Γ , τ → Γ' , τ'⟫ →
+    ⟪ ⊩ C ⟦ d , n ⟧ compfi_pctx C : embedCtx Γ , embed τ → embedCtx Γ' , embed τ' ⟫.
+  Proof.
+    intros ty; unfold OpenLRCtxN; split; [crush|split]; [crush|idtac].
+    rewrite <- (compiler_is_fxToIs_embed τ);
+    rewrite <- (compiler_is_fxToIs_embed τ');
+    rewrite <- (compiler_is_fxToIs_embed_env Γ);
+    rewrite <- (compiler_is_fxToIs_embed_env Γ').
+    exact (compfi_pctx_works ty).
+    induction ty; simpl;
+    intros ts tu lr;
+      try assumption; (* deal with phole *)
+      repeat match goal with
+               | [ H : ⟪ _ ⊢ _ : _ ⟫ |- _ ] => eapply compfi_correct in H
+             end;
+      specialize (IHty ts tu lr);
+      eauto using compat_inl, compat_inr, (* compat_pair, *) compat_lambda_embed', compat_app, (* compat_false, compat_true, *) compat_var, compat_unit, embedCtx_works, (* compat_seq, compat_ite, compat_proj₁, compat_proj₂, *) compat_caseof, compat_fix'.
+  Qed.
+
+End CompatibilityLemmas.
+
+Lemma equivalenceReflection {Γ t₁ t₂ τ} :
+  ⟪ Γ ⊢ t₁ : τ ⟫ →
+  ⟪ Γ ⊢ t₂ : τ ⟫ →
+  ⟪ compfi_env Γ i⊢ compfi t₁ ≃ compfi t₂ : compfi_ty τ ⟫ →
+  ⟪ Γ ⊢ t₁ ≃ t₂ : τ ⟫.
+Proof.
+  revert t₁ t₂ τ.
+  enough (∀ {t₁ t₂} τ,
+            ⟪ Γ ⊢ t₁ : τ ⟫ →
+            ⟪ Γ ⊢ t₂ : τ ⟫ →
+            ⟪ compfi_env Γ i⊢ compfi t₁ ≃ compfi t₂ : compfi_ty τ ⟫ →
+            ∀ C τ', ⟪ ⊢ C : Γ , τ → F.empty, τ' ⟫ →
+                    F.Terminating (F.pctx_app t₁ C) → F.Terminating (F.pctx_app t₂ C)) as Hltor
+  by (intros t₁ t₂ τ ty1 ty2 eq C τ';
+      assert (⟪ compfi_env Γ i⊢ compfi t₂ ≃ compfi t₁ : compfi_ty τ ⟫)
+        by (apply I.pctx_equiv_symm; assumption);
+  split;
+  refine (Hltor _ _ τ _ _ _ C τ' _); assumption).
+
+  intros t₁ t₂ τ ty1 ty2 eq C τ' tyC term.
+
+  destruct (F.Terminating_TerminatingN term) as [n termN]; clear term.
+
+  assert (⟪ embedCtx Γ ⊩ t₁ ⟦ dir_lt , S n ⟧ compfi t₁ : embed τ ⟫) as lrt₁ by exact (compfi_correct ty1).
+
+  assert (⟪ ⊩ C ⟦ dir_lt , S n ⟧ compfi_pctx C : embedCtx Γ , embed τ → pempty , embed τ' ⟫) as lrC_lt
+      by apply (compfi_ctx_correct tyC).
+
+  apply lrC_lt in lrt₁.
+
+  assert (I.Terminating (I.pctx_app (compfi t₁) (compfi_pctx C)))
+    as termu₁ by (apply (adequacy_lt lrt₁ termN); lia).
+
+  assert (I.Terminating (I.pctx_app (compfi t₂) (compfi_pctx C))).
+  eapply eq; try assumption;
+  apply (compfi_pctx_works tyC).
+
+  destruct (I.Terminating_TerminatingN H) as [n' termN']; clear H.
+
+  assert (⟪ ⊩ C ⟦ dir_gt , S n' ⟧ compfi_pctx C : embedCtx Γ , embed τ → pempty , embed τ' ⟫) as lrC_gt
+    by (apply (compfi_ctx_correct tyC)).
+
+  assert (⟪ embedCtx Γ ⊩ t₂ ⟦ dir_gt , S n' ⟧ compfi t₂ : embed τ ⟫) as lrt₂ by exact (compfi_correct ty2).
+
+  apply lrC_gt in lrt₂.
+
+  apply (adequacy_gt lrt₂ termN'); lia.
+Qed.
+
+Lemma equivalenceReflectionEmpty {t₁ t₂ τ} :
+  ⟪ F.empty ⊢ t₁ : τ ⟫ →
+  ⟪ F.empty ⊢ t₂ : τ ⟫ →
+  ⟪ I.empty i⊢ compfi t₁ ≃ compfi t₂ : compfi_ty τ ⟫ →
+  ⟪ F.empty ⊢ t₁ ≃ t₂ : τ ⟫.
+Proof.
+  apply @equivalenceReflection.
+Qed.

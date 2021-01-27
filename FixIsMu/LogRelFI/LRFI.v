@@ -1,13 +1,14 @@
-Require Export LogRel.PseudoType.
-Require Import LogRel.LemmasPseudoType.
-Require Import LogRel.PseudoType.
+Require Export LogRelFI.PseudoTypeFI.
+Require Import LogRelFI.LemmasPseudoType.
+Require Import LogRelFI.PseudoTypeFI.
 Require Import StlcFix.SpecSyntax.
 Require Import StlcFix.SpecEvaluation.
 Require Import StlcFix.SpecTyping.
 Require Import StlcIso.SpecSyntax.
+Require Import StlcIso.SpecTyping.
 Require Import StlcIso.SpecEvaluation.
 Require Import StlcIso.Inst.
-Require Import UVal.UVal.
+Require Import UValFI.UVal.
 
 Require Import Coq.Program.Basics.
 Require Import Coq.Logic.FunctionalExtensionality.
@@ -22,13 +23,13 @@ Definition World := nat.
 Definition lev : World → nat := fun w => w.
 Definition later : World → World := pred.
 Fixpoint lateri (i : nat) : World → World :=
-  match i with 
+  match i with
     | 0 => id
     | S i => fun w => pred (lateri i w)
   end.
 
-Definition PTRel := PTy → S.Tm → U.UTm → Prop.
-Definition PCRel := PTy → S.PCtx → U.PCtx → Prop.
+Definition PTRel := PTy → F.Tm → I.Tm → Prop.
+Definition PCRel := PTy → F.PCtx → I.PCtx → Prop.
 
 (* Intuitively: observing termination takes a step in addition to the actual evaluation steps *)
 Definition Observe (n : nat) (T : nat → Prop) : Prop :=
@@ -44,30 +45,31 @@ Proof.
   refine (le_n_S _ _ fw').
 Defined.
 
-Definition prod_rel (R₁ R₂ : S.Tm → U.UTm → Prop) : S.Tm → U.UTm → Prop :=
+(* Definition prod_rel (R₁ R₂ : F.Tm → I.Tm → Prop) : F.Tm → I.Tm → Prop := *)
+(*   fun ts tu => *)
+(*     match ts , tu with *)
+(*       | S.pair ts₁ ts₂ , U.pair tu₁ tu₂ => R₁ ts₁ tu₁ ∧ R₂ ts₂ tu₂ *)
+(*       | _              , _              => False *)
+(*     end. *)
+Definition sum_rel (R₁ R₂ : F.Tm → I.Tm → Prop) : F.Tm → I.Tm → Prop :=
   fun ts tu =>
     match ts , tu with
-      | S.pair ts₁ ts₂ , U.pair tu₁ tu₂ => R₁ ts₁ tu₁ ∧ R₂ ts₂ tu₂
-      | _              , _              => False
-    end.
-Definition sum_rel (R₁ R₂ : S.Tm → U.UTm → Prop) : S.Tm → U.UTm → Prop :=
-  fun ts tu =>
-    match ts , tu with
-      | S.inl ts' , U.inl tu' => R₁ ts' tu'
-      | S.inr ts' , U.inr tu' => R₂ ts' tu'
+      | F.inl ts' , I.inl tu' => R₁ ts' tu'
+      | F.inr ts' , I.inr tu' => R₂ ts' tu'
       | _         , _         => False
     end.
-Definition arr_rel (R₁ R₂ : S.Tm → U.UTm → Prop) : S.Tm → U.UTm → Prop :=
+Definition arr_rel (R₁ R₂ : F.Tm → I.Tm → Prop) : F.Tm → I.Tm → Prop :=
   fun ts tu =>
     match ts , tu with
-      | S.abs τ₁' tsb , U.abs tub =>
+      (* might need to guarantee some relation on τ₁' and σ₁' *)
+    | F.abs τ₁' tsb , I.abs σ₁' tub =>
         ∀ ts' tu',
           R₁ ts' tu' →
           R₂ (tsb [beta1 ts']) (tub [beta1 tu'])
       | _ , _ => False
     end.
 
-Arguments prod_rel R₁ R₂ !ts !tu.
+(* Arguments prod_rel R₁ R₂ !ts !tu. *)
 Arguments sum_rel R₁ R₂ !ts !tu.
 Arguments arr_rel R₁ R₂ !ts !tu.
 
@@ -75,32 +77,34 @@ Section LogicalRelation.
 
   Variable (d: Direction).
 
-  Definition Obs (w : World) (ts : S.Tm) (tu : U.UTm) :=
+  Definition Obs (w : World) (ts : F.Tm) (tu : I.Tm) :=
     match d with
-      | dir_lt => Observe (lev w) (S.TerminatingN ts) → U.Terminating tu
-      | dir_gt => Observe (lev w) (U.TerminatingN tu) → S.Terminating ts
+      | dir_lt => Observe (lev w) (F.TerminatingN ts) → I.Terminating tu
+      | dir_gt => Observe (lev w) (I.TerminatingN tu) → F.Terminating ts
     end.
 
   Definition contrel' (w : World) (vr' : ∀ w' : World, w' ≤ w → PTRel) : PCRel :=
-   fun τ Cs Cu => ∀ w' (fw : w' ≤ w) ts tu, vr' w' fw τ ts tu → Obs w' (S.pctx_app ts Cs) (U.pctx_app tu Cu).
+   fun τ Cs Cu => ∀ w' (fw : w' ≤ w) ts tu, vr' w' fw τ ts tu → Obs w' (F.pctx_app ts Cs) (I.pctx_app tu Cu).
 
   Definition termrel' (w : World) (vr' : ∀ w' : World, w' ≤ w → PTRel) : PTRel :=
-    fun τ ts tu => ∀ Cs Cu, S.ECtx Cs → U.ECtx Cu → contrel' w vr' τ Cs Cu → Obs w (S.pctx_app ts Cs) (U.pctx_app tu Cu).
+    fun τ ts tu => ∀ Cs Cu, F.ECtx Cs → I.ECtx Cu → contrel' w vr' τ Cs Cu → Obs w (F.pctx_app ts Cs) (I.pctx_app tu Cu).
+
+  Definition is_inl (t t': F.Tm) : Prop := t = F.inl t'.
 
   Definition valrel' (w : World) (ind : ∀ w' : World, w' < w → PTRel) : PTRel :=
     fun τ ts tu =>
       OfType τ ts tu ∧
       let latervr : PTRel := fun τ ts tu => ∀ w' (fw : w' < w), ind w' fw τ ts tu in
       let laterlatervr : ∀ w' (fw : w' < w) w'' (fw' : w'' ≤ w'), PTRel := fun w' fw w'' fw' => ind w'' (lt_le fw fw') in
-      let vrunit : S.Tm → U.UTm → Prop := fun ts tu => ts = S.unit ∧ tu = U.unit in
-      let vrbool : S.Tm → U.UTm → Prop := fun ts tu => (ts = S.true ∧ tu = U.true) ∨ (ts = S.false ∧ tu = U.false) in
-      let vrprod : PTy → PTy → S.Tm → U.UTm → Prop :=
-          fun τ₁ τ₂ =>
-            prod_rel (latervr τ₁) (latervr τ₂) in
-      let vrsum : PTy → PTy → S.Tm → U.UTm → Prop :=
+      let vrunit : F.Tm → I.Tm → Prop := fun ts tu => ts = F.unit ∧ tu = I.unit in
+      (* let vrbool : S.Tm → U.UTm → Prop := fun ts tu => (ts = S.true ∧ tu = U.true) ∨ (ts = S.false ∧ tu = U.false) in *)
+      (* let vrprod : PTy → PTy → S.Tm → U.UTm → Prop := *)
+      (*     fun τ₁ τ₂ => *)
+      (*       prod_rel (latervr τ₁) (latervr τ₂) in *)
+      let vrsum : PTy → PTy → F.Tm → I.Tm → Prop :=
           fun τ₁ τ₂ =>
             sum_rel (latervr τ₁) (latervr τ₂) in
-      let vrarr : PTy → PTy → S.Tm → U.UTm → Prop :=
+      let vrarr : PTy → PTy → F.Tm → I.Tm → Prop :=
           fun τ₁ τ₂ ts tu =>
             ∀ w' (fw : w' < w),
               arr_rel
@@ -110,26 +114,29 @@ Section LogicalRelation.
       in
       match τ with
         | ptunit => vrunit ts tu
-        | ptbool => vrbool ts tu
-        | ptprod τ₁ τ₂ => vrprod τ₁ τ₂ ts tu
+        (* | ptbool => vrbool ts tu *)
+        (* | ptprod τ₁ τ₂ => vrprod τ₁ τ₂ ts tu *)
         | ptsum τ₁ τ₂ => vrsum τ₁ τ₂ ts tu
         | ptarr τ₁ τ₂ => vrarr τ₁ τ₂ ts tu
-        | pEmulDV n p => match n with
-                           | 0 => ts = S.unit ∧ p = imprecise
-                           | S n' => (ts = unkUVal (S n') ∧ p = imprecise) ∨
-                                     exists ts',
-                                       (ts = inUnit n' ts' ∧ vrunit ts' tu) ∨
-                                       (ts = inBool n' ts' ∧ vrbool ts' tu) ∨
-                                       (ts = inProd n' ts' ∧ vrprod (pEmulDV n' p) (pEmulDV n' p) ts' tu ∧
-                                        OfTypeUtlc (ptprod (pEmulDV n' p) (pEmulDV n' p)) tu) ∨
-                                       (ts = inSum n' ts' ∧ vrsum (pEmulDV n' p) (pEmulDV n' p) ts' tu ∧ 
-                                        OfTypeUtlc (ptsum (pEmulDV n' p) (pEmulDV n' p)) tu) ∨
-                                       (ts = inArr n' ts' ∧ vrarr (pEmulDV n' p) (pEmulDV n' p) ts' tu ∧ 
-                                        OfTypeUtlc (ptarr (pEmulDV n' p) (pEmulDV n' p)) tu)
+        | pEmulDV n p τ' => match n with
+                           | 0 => ts = F.unit ∧ p = imprecise
+                           | S n' => (ts = unkUVal n ∧ p = imprecise) ∨
+                                    exists ts',
+                                    match τ' with
+                                     | I.tunit => is_inl ts ts' ∧ vrunit ts' tu
+                                     | I.tarr τ₁ τ₂ => is_inl ts ts' ∧ vrarr (pEmulDV n' p τ₁) (pEmulDV n' p τ₂) ts' tu
+                                     | I.tsum τ₁ τ₂ => is_inl ts ts' ∧ vrsum (pEmulDV n' p τ₁) (pEmulDV n' p τ₂) ts' tu
+                                     | I.trec τ'' =>
+                                       let unrolled_type : I.Ty := τ''[beta1 (I.trec τ'')] in
+                                       is_inl ts ts'
+                                       ∧ exists tu', tu = I.fold_ tu'
+                                       ∧ latervr (pEmulDV n' p unrolled_type) ts' tu'
+                                     | I.tvar _ => False
+                                     end
                          end
       end.
 
-  Definition valrel (w : World) (τ : PTy)(t₁ : S.Tm) (t₂ : U.UTm) : Prop :=
+  Definition valrel (w : World) (τ : PTy)(t₁ : F.Tm) (t₂ : I.Tm) : Prop :=
     Fix lt_wf (fun w => PTRel) valrel' w τ t₁ t₂.
 
   Lemma valrel_def_funext w (ind₁ ind₂ : ∀ w', w' < w → PTRel) :
@@ -166,24 +173,27 @@ Section LogicalRelation.
     apply valrel_fixp.
   Qed.
 
-  Definition envrel (w : World) (Γ : PEnv) (γs : Sub S.Tm) (γu : Sub U.UTm) : Prop :=
+  Definition envrel (w : World) (Γ : PEnv) (γs : Sub F.Tm) (γu : Sub I.Tm) : Prop :=
     ∀ i τ, ⟪ i : τ p∈ Γ ⟫ → valrel w τ (γs i) (γu i).
 
-  Definition OpenLRN (n : nat) (Γ : PEnv) (ts : S.Tm) (tu : U.UTm) (τ : PTy) : Prop :=
+  Definition OpenLRN (n : nat) (Γ : PEnv) (ts : F.Tm) (tu : I.Tm) (τ : PTy) : Prop :=
     ⟪ repEmulCtx Γ ⊢ ts : repEmul τ ⟫ ∧
-    ⟨ pdom Γ ⊢ tu ⟩ ∧
+    ⟪ fxToIsCtx Γ i⊢ tu : fxToIs τ ⟫ ∧
+    (* ⟨ pdom Γ ⊢ tu ⟩ ∧ *)
     ∀ w, lev w ≤ n → ∀ γs γu, envrel w Γ γs γu → termrel w τ (ts [ γs ]) (tu [ γu ]).
 
-  Definition OpenLR (Γ : PEnv) (ts : S.Tm) (tu : U.UTm) (τ : PTy) : Prop :=
+  Definition OpenLR (Γ : PEnv) (ts : F.Tm) (tu : I.Tm) (τ : PTy) : Prop :=
     ∀ n, OpenLRN n Γ ts tu τ.
 
-  Definition OpenLRCtxN (n : nat) (Cs : S.PCtx) (Cu : U.PCtx) (Γ' : PEnv) (τ' : PTy) (Γ : PEnv) (τ : PTy) : Prop :=
+  Definition OpenLRCtxN (n : nat) (Cs : F.PCtx) (Cu : I.PCtx) (Γ' : PEnv) (τ' : PTy) (Γ : PEnv) (τ : PTy) : Prop :=
     ⟪ ⊢ Cs : repEmulCtx Γ' , repEmul τ' → repEmulCtx Γ , repEmul τ ⟫ ∧
-    ∀ ts tu, OpenLRN n Γ' ts tu τ' -> OpenLRN n Γ (S.pctx_app ts Cs) (U.pctx_app tu Cu) τ.
+    ⟪ i⊢ Cu : fxToIsCtx Γ' , fxToIs τ' → fxToIsCtx Γ , fxToIs τ ⟫ ∧
+    ∀ ts tu, OpenLRN n Γ' ts tu τ' -> OpenLRN n Γ (F.pctx_app ts Cs) (I.pctx_app tu Cu) τ.
 
-  Definition OpenLRCtx (Cs : S.PCtx) (Cu : U.PCtx) (Γ' : PEnv) (τ' : PTy) (Γ : PEnv) (τ : PTy) : Prop :=
+  Definition OpenLRCtx (Cs : F.PCtx) (Cu : I.PCtx) (Γ' : PEnv) (τ' : PTy) (Γ : PEnv) (τ : PTy) : Prop :=
     ⟪ ⊢ Cs : repEmulCtx Γ' , repEmul τ' → repEmulCtx Γ' , repEmul τ ⟫ ∧
-    ∀ ts tu, OpenLR Γ' ts tu τ' → OpenLR Γ (S.pctx_app ts Cs) (U.pctx_app tu Cu) τ.
+    ⟪ i⊢ Cu : fxToIsCtx Γ' , fxToIs τ' → fxToIsCtx Γ' , fxToIs τ ⟫ ∧
+    ∀ ts tu, OpenLR Γ' ts tu τ' → OpenLR Γ (F.pctx_app ts Cs) (I.pctx_app tu Cu) τ.
 
 End LogicalRelation.
 
@@ -221,15 +231,15 @@ Notation "⟪ ⊩ Cs ⟦ d ⟧ Cu : Γ₀ , τ₀ → Γ , τ ⟫" := (OpenLRCtx
 
 Section TermRelZero.
   Definition termreli₀ d dfc w τ ts tu :=
-    (∃ vs vu, clos_refl_trans_1n S.Tm S.eval ts vs ∧ U.ctxevalStar tu vu ∧
+    (∃ vs vu, clos_refl_trans_1n F.Tm F.eval ts vs ∧ I.ctxevalStar tu vu ∧
               valrel d w τ vs vu) ∨
-    (forall Cs Cu, S.ECtx Cs → U.ECtx Cu → Obs d (lateri dfc w) (S.pctx_app ts Cs) (U.pctx_app tu Cu)).
+    (forall Cs Cu, F.ECtx Cs → I.ECtx Cu → Obs d (lateri dfc w) (F.pctx_app ts Cs) (I.pctx_app tu Cu)).
 
   Arguments termreli₀ d dfc w τ ts tu : simpl never.
 
   Definition termrel₀ d w τ ts tu :=
     termreli₀ d 0 w τ ts tu.
-  
+
   Arguments termrel₀ d w τ ts tu : simpl never.
 
 End TermRelZero.

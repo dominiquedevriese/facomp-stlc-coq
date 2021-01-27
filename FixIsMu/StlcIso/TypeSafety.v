@@ -16,7 +16,7 @@ Local Ltac crush :=
 
 Ltac progressH :=
   match goal with
-    | [ H: ⟪ _ : _ ∈ empty ⟫ |- _         ] => inversion H
+    | [ H: ⟪ _ : _ i∈ empty ⟫ |- _         ] => inversion H
     | [ H: _ ∨ _             |- _         ] => destruct H
     | [ H: True              |- _         ] => clear H
     | [ H: False             |- _         ] => inversion H
@@ -53,7 +53,7 @@ Hint Extern 20 (ECtx _) => cbn : pctx.
 (* Qed. *)
 
 Lemma canon_tunit {Γ t} :
-  Value t → ⟪ Γ ⊢ t : tunit ⟫ → t = unit.
+  Value t → ⟪ Γ i⊢ t : tunit ⟫ → t = unit.
 Proof.
   crush.
   inversion H0.
@@ -65,7 +65,7 @@ Proof.
 Qed.
 
 Lemma canon_tarr {Γ t τ τ'} :
-  Value t → ⟪ Γ ⊢ t : tarr τ τ' ⟫
+  Value t → ⟪ Γ i⊢ t : tarr τ τ' ⟫
   → exists t', t = abs τ t'.
   crush.
   inversion H0.
@@ -81,7 +81,7 @@ Lemma canon_tarr {Γ t τ τ'} :
 Qed.
 
 Lemma canon_tsum {Γ t τ τ'} :
-  Value t → ⟪ Γ ⊢ t : tsum τ τ' ⟫
+  Value t → ⟪ Γ i⊢ t : tsum τ τ' ⟫
   → exists t', Value t' ∧ (t = inl t' ∨ t = inr t').
 Proof.
   intros.
@@ -102,7 +102,7 @@ Proof.
 Qed.
 
 Lemma canon_trec {Γ t τ} :
-  Value t → ⟪ Γ ⊢ t : trec τ ⟫ → exists t', Value t' ∧ (t = fold_ t').
+  Value t → ⟪ Γ i⊢ t : trec τ ⟫ → exists t', Value t' ∧ (t = fold_ t').
 Proof.
   intros.
   inversion H0.
@@ -120,16 +120,16 @@ Proof.
 Qed.
 
 Lemma context_replacement {Γ C t t' T}
-  (hyp: ∀ Γ' T', ⟪ Γ' ⊢ t : T' ⟫ → ⟪ Γ' ⊢ t' : T' ⟫) :
-    ⟪ Γ ⊢ pctx_app t C : T ⟫ →
-    ⟪ Γ ⊢ pctx_app t' C : T ⟫.
+  (hyp: ∀ Γ' T', ⟪ Γ' i⊢ t : T' ⟫ → ⟪ Γ' i⊢ t' : T' ⟫) :
+    ⟪ Γ i⊢ pctx_app t C : T ⟫ →
+    ⟪ Γ i⊢ pctx_app t' C : T ⟫.
 Proof.
   intro wt; depind wt; induction C;
     crush; eauto using Typing.
 Qed.
 
 Lemma preservation₀ {t t'} (r : t -->₀ t') :
-  ∀ {Γ τ}, ⟪ Γ ⊢ t : τ ⟫ → ⟪ Γ ⊢ t' : τ ⟫.
+  ∀ {Γ τ}, ⟪ Γ i⊢ t : τ ⟫ → ⟪ Γ i⊢ t' : τ ⟫.
 Proof.
   induction r;
     eauto using context_replacement;
@@ -137,13 +137,13 @@ Proof.
 Qed.
 
 Lemma preservation {t t'} (r: t --> t') :
-  ∀ {Γ τ}, ⟪ Γ ⊢ t : τ ⟫ → ⟪ Γ ⊢ t' : τ ⟫.
+  ∀ {Γ τ}, ⟪ Γ i⊢ t : τ ⟫ → ⟪ Γ i⊢ t' : τ ⟫.
 Proof.
   induction r.
   eauto using context_replacement, preservation₀.
 Qed.
 
-Lemma termination_value {t τ} (wt: ⟪ empty ⊢ t : τ ⟫) :
+Lemma termination_value {t τ} (wt: ⟪ empty i⊢ t : τ ⟫) :
   t⇓ → ∃ t', t -->* t' ∧ Value t'.
 Proof.
   destruct 1; crush.
