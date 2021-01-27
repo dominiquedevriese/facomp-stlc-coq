@@ -345,37 +345,15 @@ Qed.
 Lemma SimpleRecSub_implies_SimpleRec {τ ξ} : SimpleRec τ → SimpleRecSub ξ → SimpleRec τ[ξ].
 Proof.
   intro H.
+  Hint Constructors SimpleContr : contr.
+  Hint Constructors SimpleRec : contr.
   apply (simp_rec_mut_ind
            (fun {τ} (_ : SimpleContr τ) => (forall ξ : Sub Ty, SimpleRecSub ξ → SimpleContr τ[ξ]))
-           (fun {τ} (_ : SimpleRec τ) => (forall ξ : Sub Ty, SimpleRecSub ξ → SimpleRec τ[ξ]))).
-  cbn.
-  constructor.
-  cbn.
-  intros.
-  constructor; intuition.
-  apply H0.
-  assumption.
-  apply H1.
-  assumption.
-  cbn.
-  intros.
-  constructor; intuition.
-  apply H0.
-  assumption.
-  apply H1.
-  assumption.
-  cbn.
+           (fun {τ} (_ : SimpleRec τ) => (forall ξ : Sub Ty, SimpleRecSub ξ → SimpleRec τ[ξ]))); cbn; eauto with contr.
+
   intros.
   constructor.
   eauto using H0, SimpleRecSub_implies_SimpleRecSubUp.
-
-  intros.
-  apply H0.
-
-  intros.
-  eauto using SimpleRecContr.
-
-  assumption.
 Qed.
 
 Check simp_contr_mut_ind.
