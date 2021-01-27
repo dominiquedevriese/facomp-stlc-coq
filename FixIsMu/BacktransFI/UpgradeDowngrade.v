@@ -556,30 +556,30 @@ Proof.
   - change (S n + d) with (S (n + d)) in ty.
     destruct τ.
     + destruct (canonUValS_Arr vv ty) as [(? & ? & ? & ?) | ?].
-      pose proof (F.can_form_tarr H H1).
-      exists (F.inl (F.abs (UValFI n τ1) (F.app (downgrade n d τ2)
-                                                                  (F.app x
-                                                                          (F.app (upgrade n d τ1)
-                                                                                (* x))))). *)
-                                                                                (F.var 0)))))).
-      repeat split.
-      apply inArr_T.
-      constructor.
-      econstructor.
-      eapply downgrade_T.
-      econstructor.
-      eauto with typing ws.
-      I.crushTyping.
-      pose proof (F.wtRen_wkm F.empty (UValFI n τ1)).
-      unfold WtRen in H3.
-      eapply H1.
-      eapply upgrade_T.
-      eauto using inArr_T.
-      eauto with typing uval_typing.
-      simpl.
-      repeat constructor.
-      eauto using inArr_Value, downgrade_eval_inArr, inArr_T, 
-      downgrade_T, upgrade_T with typing.
+      * pose proof (F.can_form_tarr H H1).
+        exists (F.inl (F.abs (UValFI n τ1) (F.app (downgrade n d τ2)
+                                             (F.app x
+                                                    (F.app (upgrade n d τ1)
+                                                           (* x))))). *)
+                                                           (F.var 0)))))).
+        repeat split.
+        replace x with x [wk] by (eapply wsClosed_invariant;
+                                  refine (F.wt_implies_ws H1)).
+        eauto using downgrade_T, upgrade_T with typing ws.
+        cbn.
+        eapply evalStepStar.
+        refine (eval_ctx₀ phole (eval_beta _) I); eauto.
+        subst; cbn; crush; rewrite downgrade_sub, upgrade_sub.
+        eapply evalStepStar.
+        refine (eval_ctx₀ phole (eval_case_inl _) I); eauto.
+        cbn; crush; rewrite downgrade_sub, upgrade_sub.
+        change ((beta1 x)↑ (wk 0)) with x [wk].
+        replace x[wk] with x; [econstructor|].
+        eapply eq_sym, wsClosed_invariant.
+        refine (F.wt_implies_ws H1).
+        (* eauto using inArr_Value, downgrade_eval_inArr, inArr_T,  *)
+        (* downgrade_T, upgrade_T with typing. *)
+      * 
 Qed.
 
 Lemma upgrade_reduces {n v} d :
