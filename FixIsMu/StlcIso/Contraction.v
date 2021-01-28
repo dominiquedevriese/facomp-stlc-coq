@@ -191,6 +191,21 @@ Compute (wk (tarr tunit (tvar 0))).
 Compute ((tvar 0)[wk↑]).
 Compute ((tvar 1)[wk↑]).
 
+Lemma SimpleContrRec_ren :
+  (forall τ (sτ : SimpleContr τ) (ξ : Sub Ix), SimpleContr τ[ξ]) /\
+  (forall τ (sτ : SimpleRec τ) (ξ : Sub Ix), SimpleRec τ[ξ]).
+Proof.
+  apply simp_contr_comb_ind; cbn; intros;
+    repeat change (apTy ?ξ ?τ) with τ[ξ];
+    constructor; auto.
+Qed.
+
+Corollary SimpleRec_wk {τ} : SimpleRec τ → SimpleRec τ[wk].
+Proof. intros s. now apply SimpleContrRec_ren. Qed.
+
+Corollary SimpleContr_wk {τ} : SimpleContr τ → SimpleContr τ[wk].
+Proof. intros s. now apply SimpleContrRec_ren. Qed.
+
 (* Due to definition of wk and up this seems to be cyclic with SimpleRecSubUp *)
 Lemma SimpleRec_wk {τ} : SimpleRec τ → SimpleRec τ[wk]
 with SimpleContr_wk {τ} : SimpleContr τ → SimpleContr τ[wk].
