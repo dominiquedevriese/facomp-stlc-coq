@@ -553,41 +553,21 @@ Lemma fu_eq_unfold_fu {τ} : SimpleContr τ → fu' (trec τ) = fu' (τ[beta1 (t
   unfold fu'.
   cbn.
   repeat change (apTy ?ξ ?τ) with τ[ξ].
-  rewrite ?ap_comp,
-  ?up_idm,
-  ?comp_id_right,
-  ?comp_id_left,
-  ?ap_id.
-
-  assert (beta1 (trec τ) = beta1 (trec τ) >=> idm Ty) by (symmetry; apply comp_id_right).
-  rewrite H0 at 1.
-  exact (@fu_accum_subst_eq τ (beta1 (trec τ)) (idm Ty) H).
-Qed.
-
-Lemma lmc_fu_zero {τ} : SimpleContr τ → LMC (fu' τ) = 0.
-Proof.
-  unfold fu'.
-  functional induction (fu_accum τ (idm Ty)) using fu_accum_ind;
-  repeat cbn; trivial.
-
-  inversion 1.
-  specialize (IHt H1).
-  assumption.
-
-  inversion 1.
+  rewrite <- (@fu_accum_subst_eq τ (beta1 (trec τ)) (idm Ty) H).
+  rewrite ?ap_comp, ?up_idm, ?comp_id_right, ?comp_id_left, ?ap_id.
+  reflexivity.
 Qed.
 
 Lemma lmc_fu_zero' {τ ξ} : SimpleContr τ → LMC (fu_accum τ ξ) = 0.
 Proof.
+  intros contr.
   revert ξ.
-  functional induction (fu_accum τ (idm Ty)) using fu_accum_ind;
-  repeat cbn; trivial.
+  induction contr; cbn; trivial.
+Qed.
 
-  inversion 1.
-  apply IHt.
-  assumption.
-
-  inversion 1.
+Lemma lmc_fu_zero {τ} : SimpleContr τ → LMC (fu' τ) = 0.
+Proof.
+  eapply lmc_fu_zero'.
 Qed.
 
 Lemma fu_id_lmc_zero {τ} : LMC τ = 0 → fu' τ = τ.
@@ -595,41 +575,29 @@ Proof.
   intros.
   destruct τ; cbn; trivial; repeat change (apTy ?ξ ?τ) with τ[ξ];
   repeat rewrite ap_id; try reflexivity.
-  enough (LMC (trec τ) <> 0) by contradiction.
-  cbn.
-  auto.
+  inversion H.
 Qed.
 
-Lemma fu_idem {τ} : SimpleContr τ → fu' (fu' (τ)) = fu' τ.
+Lemma fu_idem {τ} : SimpleContr τ → fu' (fu' τ) = fu' τ.
 Proof.
   auto using fu_id_lmc_zero, lmc_fu_zero.
 Qed.
 
-Lemma fu_eq_lhs {τ} : SimpleContr τ → ⟪ fu' τ ≗ τ ⟫.
+Lemma
+  fu_eq_lhs {τ} : SimpleContr τ → ⟪ fu' τ ≗ τ ⟫
+with
+  fu_eq_refl {τ} : SimpleRec τ → ⟪ τ ≗ τ ⟫.
 Proof.
-  unfold fu'.
-  intro H.
-  remember (fu_accum τ (idm Ty)) as P.
-  assert (τ = τ[idm Ty]) by (symmetry; apply ap_id).
-  rewrite H0.
-  rewrite HeqP.
-  clear HeqP H0.
-  generalize (idm Ty) as ξ.
-  intro ξ.
-  functional induction (fu_accum τ ξ) using fu_accum_ind;
-    intros.
-  admit.
-  admit.
-  admit.
-  inversion H.
-  specialize (IHt H1).
-  cbn.
-  constructor.
-  apply lmc_fu_zero'.
-  assumption.
-
-
-  admit.
+  - induction 1; cbn; repeat change (apTy ?ξ ?τ) with τ[ξ];
+      erewrite ?ap_id; constructor; eauto using fu_eq_refl, lmc_fu_zero'.
+    erewrite ?up_idm, ?comp_id_left, ?ap_id.
+    replace (fu_accum τ (beta1 (trec τ))) with (fu_accum τ (beta1 (trec τ) >=> idm Ty)) by (erewrite comp_id_right; reflexivity). 
+    erewrite (fu_accum_subst_eq H).
+    eapply fu_eq_lhs.
+    eapply (SimpleContrSub_implies_SimpleContr H).
+    admit.
+  - induction 1; [ constructor |].
+    induction H; try constructor; eauto using fu_eq_refl, lmc_fu_zero'.
 Admitted.
 
 
