@@ -436,6 +436,14 @@ Proof.
   assumption.
 Qed.
 
+Lemma SimpleRecSub_beta {τ} : SimpleContr τ -> SimpleRecSub (beta1 τ).
+Proof.
+  intros srec i; cbn.
+  destruct i; cbn; constructor; auto.
+Qed.
+
+
+
 Lemma simpl_contr_implies_contr_fu {τ} : SimpleContr τ → SimpleContr (fu' τ)
 with simpl_rec_implies_rec_fu {τ} : SimpleRec τ → SimpleRec (fu' τ).
 Proof.
@@ -481,6 +489,44 @@ Admitted.
 
     (* cbn; try constructor. *)
     (* induction 1; cbn; constructor || intuition. *)
+
+Lemma LMC_ind : forall (P : Ty -> Prop),
+    (forall τ, SimpleContr τ -> LMC τ = 0 -> P τ) ->
+    (forall n, (forall τ, SimpleContr τ -> LMC τ = n -> P τ) -> (forall τ, SimpleContr τ -> LMC τ = S n -> P τ)) ->
+    forall τ, SimpleContr τ -> P τ.
+Proof.
+  intros P P0 Ps τ.
+  remember (LMC τ) as n.
+  revert τ Heqn.
+  induction n; eauto.
+Qed.
+
+Lemma LMC_SimpleContr {τ ξ} : SimpleContr τ -> LMC (τ [ξ]) = LMC τ.
+Proof.
+  intros contr.
+  revert ξ.
+  induction contr; cbn; trivial.
+  repeat change (apTy ?ξ ?τ) with τ[ξ].
+  eauto.
+Qed.
+
+
+Lemma unfolding_ind : forall (P : Ty -> Prop),
+    (forall τ, SimpleContr τ -> LMC τ = 0 -> P τ) ->
+    (forall τ, SimpleContr τ -> P (τ [beta1 (trec τ)]) -> P (trec τ)) ->
+    forall τ, SimpleContr τ -> P τ.
+Proof.
+  intros P P0 Ps τ contr.
+  induction contr using LMC_ind.
+  - eauto.
+  - destruct contr; try inversion H0.
+    eapply (Ps _ contr).
+    eapply H.
+    + eapply SimpleContrSub_implies_SimpleContr; try assumption.
+      eapply SimpleRecSub_beta.
+      constructor; assumption.
+    + erewrite LMC_SimpleContr; auto.
+Qed.
 
 Reserved Notation "⟪ τ ≗ τ' ⟫"
   (at level 0, τ at level 98, τ' at level 98).
@@ -583,6 +629,17 @@ Proof.
   auto using fu_id_lmc_zero, lmc_fu_zero.
 Qed.
 
+Lemma fu_eq_pres {τ σ} : SimpleContr τ → SimpleContr σ → ⟪ fu' τ ≗ σ ⟫ → ⟪ τ ≗ σ ⟫.
+Proof.
+  intros cτ cσ.
+  induction cτ using unfolding_ind.
+  - rewrite (fu_id_lmc_zero H).
+    auto.
+  - rewrite (fu_eq_unfold_fu cτ).
+    intros eq.
+    constructor; eauto.
+Qed.
+
 Lemma
   fu_eq_lhs {τ} : SimpleContr τ → ⟪ fu' τ ≗ τ ⟫
 with
@@ -600,56 +657,6 @@ Proof.
     induction H; try constructor; eauto using fu_eq_refl, lmc_fu_zero'.
 Admitted.
 
-
-Lemma fu_eq_pres {τ σ} : SimpleContr τ → SimpleContr σ → ⟪ fu' τ ≗ σ ⟫ → ⟪ τ ≗ σ ⟫.
-Proof.
-  unfold fu'.
-  intros.
-  revert H1.
-
-  induction H; intros.
-  cbn in H1.
-  assumption.
-
-  cbn in H2.
-  repeat change (apTy ?ξ ?τ) with τ[ξ] in H2.
-  repeat rewrite ap_id in H2.
-  assumption.
-
-  cbn in H2.
-  repeat change (apTy ?ξ ?τ) with τ[ξ] in *.
-  repeat rewrite ap_id in H2.
-  assumption.
-
-  functional induction (fu_accum (trec τ) (idm Ty)) using fu_accum_ind.
-
-  cbn in H1.
-Admitted.
-  (* rewrite up_idm in H1. *)
-  (* rewrite comp_id_left in H1. *)
-  (* repeat change (apTy ?ξ ?τ) with τ[ξ] in *. *)
-  (* pose proof (@fu_eq_unfold_fu τ H). *)
-  (* unfold fu' in H2. *)
-  (* constructor. *)
-  (* rewrite H2 in IHSImpl *)
-  (* . *)
-
-
-
-
-
-
-  (* assert (σ = σ[idm Ty]) by (symmetry; apply ap_id). *)
-  (* rewrite H. *)
-  (* clear H. *)
-  (* generalize (idm Ty) as ξ. *)
-  (* intros. *)
-  (* functional induction (fu_accum τ ξ) using fu_accum_ind. *)
-  (* cbn in *. *)
-  (* repeat change
- (apTy ?ξ ?τ) with τ[ξ] in *. *)
-  (* inversion H1. *)
-  (* constructor. *)
 
 Lemma fu_pres_tyeq'_lhs {τ σ} : Tyeq' τ σ → Tyeq' (fu' τ) σ.
   intros.
