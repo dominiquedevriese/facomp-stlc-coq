@@ -3,7 +3,10 @@ Require Export StlcIso.SpecSyntax.
 Require Export StlcIso.SpecTyping.
 Require Coq.Program.Tactics.
 Require Coq.Program.Wf.
+Require Wf.
+Require Arith.
 Require Coq.Arith.Wf_nat.
+Require Import Coq.Arith.Compare_dec.
 Require Import Coq.Logic.FunctionalExtensionality.
 
 Require Import FunInd.
@@ -79,7 +82,6 @@ Fixpoint fu_accum (τ : Ty) (current_sub : Sub Ty) {struct τ} : Ty :=
 
 Definition fu' (τ : Ty) := fu_accum τ (idm Ty).
 
-
 Eval compute in (fu' (trec (tsum (tvar 0) tunit))).
 Eval compute in (fu' (trec (trec (tsum (tvar 0) tunit)))).
 Compute (fu' (trec (trec (tsum (tvar 1) (tvar 0))))).
@@ -123,6 +125,9 @@ Scheme simp_contr_mut_ind := Induction for SimpleContr Sort Prop
   with simp_rec_mut_ind := Induction for SimpleRec Sort Prop.
 
 Combined Scheme simp_contr_comb_ind from simp_contr_mut_ind, simp_rec_mut_ind.
+
+Hint Constructors SimpleContr : simple_contr_rec.
+Hint Constructors SimpleRec : simple_contr_rec.
 
 Definition SimpleContrSub (ξ : Sub Ty) : Prop := forall i : Ix, SimpleContr (ξ i).
 Definition SimpleRecSub (ξ : Sub Ty) : Prop := forall i : Ix, SimpleRec (ξ i).
@@ -206,53 +211,53 @@ Proof. intros s. now apply SimpleContrRec_ren. Qed.
 Corollary SimpleContr_wk {τ} : SimpleContr τ → SimpleContr τ[wk].
 Proof. intros s. now apply SimpleContrRec_ren. Qed.
 
-(* Due to definition of wk and up this seems to be cyclic with SimpleRecSubUp *)
-Lemma SimpleRec_wk {τ} : SimpleRec τ → SimpleRec τ[wk]
-with SimpleContr_wk {τ} : SimpleContr τ → SimpleContr τ[wk].
-Proof.
-  (* change τ[wk] with (wk τ). *)
-  (* rewrite ap_wk. *)
-  (* intros. *)
+(* (* Due to definition of wk and up this seems to be cyclic with SimpleRecSubUp *) *)
+(* Lemma SimpleRec_wk {τ} : SimpleRec τ → SimpleRec τ[wk] *)
+(* with SimpleContr_wk {τ} : SimpleContr τ → SimpleContr τ[wk]. *)
+(* Proof. *)
+(*   (* change τ[wk] with (wk τ). *) *)
+(*   (* rewrite ap_wk. *) *)
+(*   (* intros. *) *)
 
-  induction τ; cbn; intros;
-  repeat change (apTy ?ξ ?τ) with τ[ξ].
+(*   induction τ; cbn; intros; *)
+(*   repeat change (apTy ?ξ ?τ) with τ[ξ]. *)
 
-  inversion H.
-  inversion H0.
-  specialize (IHτ1 H4).
-  specialize (IHτ2 H5).
-  constructor.
-  constructor; assumption.
+(*   inversion H. *)
+(*   inversion H0. *)
+(*   specialize (IHτ1 H4). *)
+(*   specialize (IHτ2 H5). *)
+(*   constructor. *)
+(*   constructor; assumption. *)
 
-  constructor.
-  constructor.
+(*   constructor. *)
+(*   constructor. *)
 
-  inversion H.
-  inversion H0.
-  specialize (IHτ1 H4).
-  specialize (IHτ2 H5).
-  constructor.
-  constructor; assumption.
+(*   inversion H. *)
+(*   inversion H0. *)
+(*   specialize (IHτ1 H4). *)
+(*   specialize (IHτ2 H5). *)
+(*   constructor. *)
+(*   constructor; assumption. *)
 
-  (* constructor. *)
-  (* constructor. *)
-
-
-  (* apply SimpleRec_implies_SimpleRecSub_snoc. *)
+(*   (* constructor. *) *)
+(*   (* constructor. *) *)
 
 
-  (* inversion H. *)
-  (* inversion H0. *)
-  (* pose proof (SimpleRecContr H3). *)
-  (* specialize (IHτ H4). *)
-  (* constructor. *)
-  (* constructor. *)
+(*   (* apply SimpleRec_implies_SimpleRecSub_snoc. *) *)
 
-  (* (* remember wk↑ as ξ. *) *)
-  (* rewrite <- ap_wk. *)
-  (* unfold up. *)
 
-Admitted.
+(*   (* inversion H. *) *)
+(*   (* inversion H0. *) *)
+(*   (* pose proof (SimpleRecContr H3). *) *)
+(*   (* specialize (IHτ H4). *) *)
+(*   (* constructor. *) *)
+(*   (* constructor. *) *)
+
+(*   (* (* remember wk↑ as ξ. *) *) *)
+(*   (* rewrite <- ap_wk. *) *)
+(*   (* unfold up. *) *)
+
+(* Admitted. *)
   (* apply SimpleRec_implies_SimpleRecSub_snoc. *)
   (* assumption. *)
   (* unfold up, fcomp, snoc. *)
@@ -501,6 +506,31 @@ Proof.
   induction n; eauto.
 Qed.
 
+Lemma LMC_ind' : forall (Pc : forall {τ : Ty}, SimpleContr τ -> Prop) (Pr : forall {τ : Ty}, SimpleRec τ -> Prop),
+    (forall {τ} (sc : SimpleContr τ), LMC τ = 0 -> Pc sc) ->
+    (forall {τ} (sr : SimpleRec τ), LMC τ = 0 -> Pr sr) ->
+    (forall n, (forall {τ} (sc : SimpleContr τ), LMC τ = n -> Pc sc) -> (forall {τ} (sc : SimpleContr τ), LMC τ = S n -> Pc sc)) ->
+    (forall n, (forall {τ} (sr : SimpleRec τ), LMC τ = n -> Pr sr) -> (forall {τ} (sr : SimpleRec τ), LMC τ = S n -> Pr sr)) ->
+    forall {τ}, (forall (sc : SimpleContr τ), Pc sc) /\ (forall (sr : SimpleRec τ), Pr sr).
+Proof.
+  intros Pc Pr Pc0 Pr0 Pcs Prs τ.
+  remember (LMC τ) as n.
+  revert τ Heqn.
+  induction n.
+  - intros τ eq0.
+    split; eauto using Pc0, Pr0.
+  - intros τ eqsn.
+    split.
+    + intros contr.
+      eapply (Pcs n); eauto.
+      intros τ0 contr0 eqn.
+      refine (proj1 (IHn τ0 _) contr0); auto.
+    + intros rec.
+      eapply (Prs n); eauto.
+      intros τ0 contr0 eqn.
+      refine (proj2 (IHn τ0 _) contr0); auto.
+Qed.
+
 Lemma LMC_SimpleContr {τ ξ} : SimpleContr τ -> LMC (τ [ξ]) = LMC τ.
 Proof.
   intros contr.
@@ -526,6 +556,11 @@ Proof.
       eapply SimpleRecSub_beta.
       constructor; assumption.
     + erewrite LMC_SimpleContr; auto.
+Qed.
+
+Lemma unfold_preserves_contr {τ} : SimpleContr τ -> SimpleContr (τ [beta1 (trec τ)]).
+Proof.
+  eauto using SimpleContrSub_implies_SimpleContr, SimpleRecSub_beta, SimpContrRec.
 Qed.
 
 Reserved Notation "⟪ τ ≗ τ' ⟫"
@@ -554,6 +589,8 @@ CoInductive Tyeq : Ty → Ty → Prop :=
     ⟪ τ ≗ trec σ ⟫
 where "⟪ τ ≗ τ' ⟫" := (Tyeq τ τ').
 
+Hint Constructors Tyeq : tyeq.
+
 CoInductive Tyeq' : Ty → Ty → Prop :=
 | EqPrim' : Tyeq' tunit tunit
 | EqArr' {τ τ' σ σ'} :
@@ -576,6 +613,12 @@ CoInductive Tyeq' : Ty → Ty → Prop :=
     Tyeq' τ (fu' (trec σ)) →
     Tyeq' τ (trec σ).
 
+
+CoInductive Tyeq'' (τ σ : Ty) : Prop :=
+  tyEq {
+      obs : (fu' τ = tunit /\ fu' σ = tunit)
+            \/ (exists τ₁ τ₂ σ₁ σ₂, fu' τ = tarr τ₁ τ₂ /\ fu' σ = tarr σ₁ σ₂ /\ Tyeq'' τ₁ σ₁ /\ Tyeq'' τ₂ σ₂)
+    }.
 
 Lemma fu_accum_subst_eq {τ ξ ζ} : SimpleContr τ → fu_accum τ (ξ >=> ζ) = fu_accum τ[ξ] ζ.
 Proof.
@@ -638,25 +681,121 @@ Proof.
   - rewrite (fu_eq_unfold_fu cτ).
     intros eq.
     constructor; eauto.
+    Show Proof.
 Qed.
 
-Lemma
-  fu_eq_lhs {τ} : SimpleContr τ → ⟪ fu' τ ≗ τ ⟫
-with
-  fu_eq_refl {τ} : SimpleRec τ → ⟪ τ ≗ τ ⟫.
+Lemma fu_eq_pres2 {τ σ} : SimpleContr τ → SimpleContr σ → ⟪ τ ≗ fu' σ ⟫ → ⟪ τ ≗ σ ⟫.
 Proof.
-  - induction 1; cbn; repeat change (apTy ?ξ ?τ) with τ[ξ];
-      erewrite ?ap_id; constructor; eauto using fu_eq_refl, lmc_fu_zero'.
-    erewrite ?up_idm, ?comp_id_left, ?ap_id.
-    replace (fu_accum τ (beta1 (trec τ))) with (fu_accum τ (beta1 (trec τ) >=> idm Ty)) by (erewrite comp_id_right; reflexivity). 
-    erewrite (fu_accum_subst_eq H).
-    eapply fu_eq_lhs.
-    eapply (SimpleContrSub_implies_SimpleContr H).
-    admit.
-  - induction 1; [ constructor |].
-    induction H; try constructor; eauto using fu_eq_refl, lmc_fu_zero'.
+  intros cτ cσ.
+  induction cτ using unfolding_ind.
+  - induction cσ using unfolding_ind.
+    + rewrite (fu_id_lmc_zero H0).
+      auto.
+    + rewrite (fu_eq_unfold_fu cσ).
+      intros eq.
+      constructor; eauto.
+  - constructor; eauto.
+    eapply IHcτ.
+    dependent destruction H; eauto.
+Qed.
+
+Definition unfoldOnce (τ : Ty) : Ty :=
+  match τ with
+    | trec τ => τ [ (beta1 (trec τ))]
+    | _ => τ
+  end.
+Fixpoint unfoldn (n : nat) (τ : Ty) : Ty :=
+  match n with
+    | 0 => τ
+    | S n => unfoldOnce (unfoldn n τ)
+  end.
+
+Lemma SimpleContr_unfoldOnce (τ : Ty) : SimpleContr τ -> SimpleContr (unfoldOnce τ).
+Proof.
+  destruct τ; cbn; eauto with simple_contr_rec.
+  intros contr.
+  dependent destruction contr.
+  eauto using unfold_preserves_contr.
+Qed.
+
+Hint Resolve SimpleContr_unfoldOnce : simple_contr_rec.
+
+Lemma SimpleContr_unfoldn (τ : Ty) (n : nat) : SimpleContr τ -> SimpleContr (unfoldn n τ).
+Proof.
+  induction n; cbn; eauto with simple_contr_rec.
+Qed.
+
+Hint Resolve SimpleContr_unfoldn : simple_contr_rec.
+
+Lemma decide_mu (τ : Ty) : (exists τ', τ = trec τ') \/ LMC τ = 0.
+Proof.
+  destruct τ; cbn; eauto.
+Qed.
+
+Lemma eq_refl {τ} : SimpleRec τ → ⟪ τ ≗ τ ⟫
+with eq_refl' {τ} : SimpleContr τ -> LMC τ = 0 → ⟪ τ ≗ τ ⟫.
+Proof.
+  - intros [x|τ' contr]; [constructor|].
+    eapply (fu_eq_pres2 contr contr).
+    eapply (fu_eq_pres contr).
+    + eauto using simpl_contr_implies_contr_fu.
+    + eauto using eq_refl', lmc_fu_zero, simpl_contr_implies_contr_fu.
+  - intros contr.
+    destruct τ; dependent destruction contr; inversion 1;
+      constructor; eauto using eq_refl.
+    (* not syntactically productive *)
 Admitted.
 
+Lemma eq_refl_rec {τ} : SimpleRec τ → ⟪ τ ≗ τ ⟫
+with eq_refl_contr {τ} : SimpleContr τ → ⟪ τ ≗ τ ⟫
+with eq_refl_itleft' {τ} (n : nat) :
+       (forall n', n' < n -> exists τ', unfoldn n' τ = trec τ') ->
+       0 < n ->
+       SimpleContr τ ->
+       SimpleContr (unfoldn n τ) -> ⟪ unfoldn n τ ≗ τ ⟫
+with eq_refl_itright' {τ} (n n' : nat) :
+       SimpleContr τ -> SimpleContr (unfoldn n' τ) -> LMC (unfoldn n τ) = 0 ->
+       (forall n', n' < n -> exists τ', unfoldn n' τ = trec τ') ->
+       n' < n ->
+       ⟪ unfoldn n τ ≗ unfoldn n' τ ⟫.
+Proof.
+  - induction 1 as [|τ contr]; eauto with tyeq.
+  - induction 1; eauto with tyeq.
+    eapply EqMuL; eauto.
+    change (τ[beta1 (trec τ)]) with (unfoldn 1 (trec τ)).
+    eapply eq_refl_itleft'; eauto with simple_contr_rec.
+    intros n' ineq; assert (n' = 0) by lia; cbn; subst.
+    exists τ; auto.
+  - intros recs nn0 contr contr'.
+    destruct (decide_mu (unfoldn n τ)) as [[τ2 eq2]|lmceq].
+    + rewrite eq2 in *.
+      dependent destruction contr'.
+      eapply EqMuL; eauto with simple_contr_rec.
+      change (τ2[beta1 (trec τ2)]) with (unfoldOnce (trec τ2)).
+      rewrite <- eq2.
+      change (unfoldOnce (unfoldn (S n) τ)) with (unfoldn (S (S n)) τ).
+      eapply (eq_refl_itleft' _ (S n)); eauto with simple_contr_rec.
+      intros n' ineq.
+      destruct (dec_lt n' n) as [ineq'|nineq'].
+      * exact (recs n' ineq').
+      * assert (n' = n) by lia; subst.
+        exists τ2; auto.
+    + eapply (eq_refl_itright' _ n 0); eauto.
+  - intros contr contr' lmc0 recs ineq.
+    destruct (recs n' ineq) as [τ' eq].
+    rewrite eq in *.
+    dependent destruction contr'.
+    eapply EqMuR; eauto with simple_contr_rec.
+    change (τ'[beta1 (trec τ')]) with (unfoldOnce (trec τ')).
+    rewrite <- eq.
+    change (unfoldOnce (unfoldn n' τ)) with (unfoldn (S n') τ).
+    destruct (dec_lt (S n') n).
+    + eapply (eq_refl_itright' _ n (S n')); eauto with simple_contr_rec.
+    + assert (eqn' : S n' = n) by lia; rewrite eqn'.
+      eapply eq_refl_contr; eauto with simple_contr_rec.
+      Show Proof.
+      (* Err... this should be syntactically productive, I would think... *)
+Admitted.
 
 Lemma fu_pres_tyeq'_lhs {τ σ} : Tyeq' τ σ → Tyeq' (fu' τ) σ.
   intros.
