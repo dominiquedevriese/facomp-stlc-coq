@@ -746,8 +746,9 @@ Proof.
     (* not syntactically productive *)
 Admitted.
 
-Lemma eq_refl_rec {τ} : SimpleRec τ → ⟪ τ ≗ τ ⟫
-with eq_refl_contr {τ} : SimpleContr τ → ⟪ τ ≗ τ ⟫
+(* eq_refl_rec {τ} : SimpleRec τ → ⟪ τ ≗ τ ⟫ *)
+(*   with  *)
+CoFixpoint eq_refl_contr {τ} : SimpleContr τ → ⟪ τ ≗ τ ⟫
 with eq_refl_itleft' {τ} (n : nat) :
        (forall n', n' < n -> exists τ', unfoldn n' τ = trec τ') ->
        0 < n ->
@@ -759,17 +760,23 @@ with eq_refl_itright' {τ} (n n' : nat) :
        n' < n ->
        ⟪ unfoldn n τ ≗ unfoldn n' τ ⟫.
 Proof.
-  - induction 1 as [|τ contr]; eauto with tyeq.
-  - induction 1; eauto with tyeq.
-    eapply EqMuL; eauto.
-    change (τ[beta1 (trec τ)]) with (unfoldn 1 (trec τ)).
-    eapply eq_refl_itleft'; eauto with simple_contr_rec.
-    intros n' ineq; assert (n' = 0) by lia; cbn; subst.
-    exists τ; auto.
+  - destruct 1; eauto with tyeq.
+    + eapply EqArr.
+      * destruct H; eauto with tyeq.
+      * destruct H0; eauto with tyeq.
+    + eapply EqSum.
+      * destruct H; eauto with tyeq.
+      * destruct H0; eauto with tyeq.
+    + eapply EqMuL; eauto.
+      change (τ[beta1 (trec τ)]) with (unfoldn 1 (trec τ)).
+      eapply eq_refl_itleft'; eauto with simple_contr_rec.
+      intros n' ineq; assert (n' = 0) by lia; cbn; subst.
+      exists τ; auto.
   - intros recs nn0 contr contr'.
     destruct (decide_mu (unfoldn n τ)) as [[τ2 eq2]|lmceq].
     + rewrite eq2 in *.
-      dependent destruction contr'.
+      remember (trec τ2) in contr'.
+      destruct contr'; inversion Heqt; subst.
       eapply EqMuL; eauto with simple_contr_rec.
       change (τ2[beta1 (trec τ2)]) with (unfoldOnce (trec τ2)).
       rewrite <- eq2.
@@ -780,22 +787,32 @@ Proof.
       * exact (recs n' ineq').
       * assert (n' = n) by lia; subst.
         exists τ2; auto.
-    + eapply (eq_refl_itright' _ n 0); eauto.
+    + destruct (recs 0 nn0) as [τ' eq]; cbn in eq.
+      destruct τ; inversion eq.
+      eapply EqMuR; subst; eauto with simple_contr_rec.
+      * dependent destruction contr; eauto.
+      * change (τ'[beta1 (trec τ')]) with (unfoldOnce (trec τ')).
+        change (unfoldOnce (trec τ')) with (unfoldn 1 (trec τ')).
+        destruct (dec_lt 1 n).
+        eapply (eq_refl_itright' _ n 1); eauto with simple_contr_rec.
+        assert (eqn' : 1 = n) by lia; rewrite eqn'.
+        eapply eq_refl_contr; eauto with simple_contr_rec.
+  (* eapply (eq_refl_itright' _ n 0); eauto. *)
   - intros contr contr' lmc0 recs ineq.
     destruct (recs n' ineq) as [τ' eq].
-    rewrite eq in *.
-    dependent destruction contr'.
+    rewrite eq.
     eapply EqMuR; eauto with simple_contr_rec.
-    change (τ'[beta1 (trec τ')]) with (unfoldOnce (trec τ')).
-    rewrite <- eq.
-    change (unfoldOnce (unfoldn n' τ)) with (unfoldn (S n') τ).
-    destruct (dec_lt (S n') n).
-    + eapply (eq_refl_itright' _ n (S n')); eauto with simple_contr_rec.
-    + assert (eqn' : S n' = n) by lia; rewrite eqn'.
-      eapply eq_refl_contr; eauto with simple_contr_rec.
-      Show Proof.
-      (* Err... this should be syntactically productive, I would think... *)
-Admitted.
+    + rewrite eq in contr'.
+      dependent destruction contr'.
+      eauto.
+    + change (τ'[beta1 (trec τ')]) with (unfoldOnce (trec τ')).
+      rewrite <- eq.
+      change (unfoldOnce (unfoldn n' τ)) with (unfoldn (S n') τ).
+      destruct (dec_lt (S n') n).
+      * eapply (eq_refl_itright' _ n (S n')); eauto with simple_contr_rec.
+      * assert (eqn' : S n' = n) by lia; rewrite eqn'.
+        eapply eq_refl_contr; eauto with simple_contr_rec.
+Qed.
 
 Lemma fu_pres_tyeq'_lhs {τ σ} : Tyeq' τ σ → Tyeq' (fu' τ) σ.
   intros.
