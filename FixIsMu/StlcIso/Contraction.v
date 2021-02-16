@@ -781,15 +781,15 @@ Proof.
       * assert (n' = n) by lia; subst.
         exists τ2; auto.
     + destruct (recs 0 nn0) as [τ' eq]; cbn in eq; subst τ.
+      dependent destruction contr.
       eapply EqMuR; subst; eauto with simple_contr_rec.
-      * dependent destruction contr; eauto.
-      * change (τ'[beta1 (trec τ')]) with (unfoldOnce (trec τ')).
-        change (unfoldOnce (trec τ')) with (unfoldn 1 (trec τ')).
-        destruct (dec_lt 1 n).
-        eapply (eq_refl_itright' _ n 1); eauto with simple_contr_rec.
-        assert (eqn' : 1 = n) by lia; rewrite eqn'.
-        eapply eq_refl_contr; eauto with simple_contr_rec.
-  (* eapply (eq_refl_itright' _ n 0); eauto. *)
+      change (τ'[beta1 (trec τ')]) with (unfoldOnce (trec τ')).
+      change (unfoldOnce (trec τ')) with (unfoldn 1 (trec τ')).
+      destruct (dec_lt 1 n).
+      eapply (eq_refl_itright' _ n 1); eauto with simple_contr_rec.
+      assert (eqn' : 1 = n) by lia; rewrite eqn'.
+      eapply eq_refl_contr; eauto with simple_contr_rec.
+      (* eapply (eq_refl_itright' _ n 0); eauto. *)
   - intros contr contr' lmc0 recs ineq.
     destruct (recs n' ineq) as [τ' eq].
     rewrite eq.
