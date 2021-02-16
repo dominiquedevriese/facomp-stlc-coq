@@ -760,18 +760,13 @@ with eq_refl_itright' {τ} (n n' : nat) :
        n' < n ->
        ⟪ unfoldn n τ ≗ unfoldn n' τ ⟫.
 Proof.
-  - destruct 1; eauto with tyeq.
-    + eapply EqArr.
-      * destruct H; eauto with tyeq.
-      * destruct H0; eauto with tyeq.
-    + eapply EqSum.
-      * destruct H; eauto with tyeq.
-      * destruct H0; eauto with tyeq.
-    + eapply EqMuL; eauto.
-      change (τ[beta1 (trec τ)]) with (unfoldn 1 (trec τ)).
-      eapply eq_refl_itleft'; eauto with simple_contr_rec.
-      intros n' ineq; assert (n' = 0) by lia; cbn; subst.
-      exists τ; auto.
+  - destruct 1; repeat (match goal with H : SimpleRec ?t |- _ => destruct H end);
+      eauto with tyeq.
+    eapply EqMuL; eauto.
+    change (τ[beta1 (trec τ)]) with (unfoldn 1 (trec τ)).
+    eapply eq_refl_itleft'; eauto with simple_contr_rec.
+    intros n' ineq; assert (n' = 0) by lia; cbn; subst.
+    exists τ; auto.
   - intros recs nn0 contr contr'.
     destruct (decide_mu (unfoldn n τ)) as [[τ2 eq2]|lmceq].
     + rewrite eq2 in *.
