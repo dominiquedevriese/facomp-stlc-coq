@@ -746,8 +746,6 @@ Proof.
     (* not syntactically productive *)
 Admitted.
 
-(* eq_refl_rec {τ} : SimpleRec τ → ⟪ τ ≗ τ ⟫ *)
-(*   with  *)
 CoFixpoint eq_refl_contr {τ} : SimpleContr τ → ⟪ τ ≗ τ ⟫
 with eq_refl_itleft' {τ} (n : nat) :
        (forall n', n' < n -> exists τ', unfoldn n' τ = trec τ') ->
@@ -782,8 +780,7 @@ Proof.
       * exact (recs n' ineq').
       * assert (n' = n) by lia; subst.
         exists τ2; auto.
-    + destruct (recs 0 nn0) as [τ' eq]; cbn in eq.
-      destruct τ; inversion eq.
+    + destruct (recs 0 nn0) as [τ' eq]; cbn in eq; subst τ.
       eapply EqMuR; subst; eauto with simple_contr_rec.
       * dependent destruction contr; eauto.
       * change (τ'[beta1 (trec τ')]) with (unfoldOnce (trec τ')).
